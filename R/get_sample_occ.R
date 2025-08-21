@@ -48,12 +48,8 @@ get_sample_occ <- function(n_occ,
     stop("'env_bg' must be a terra::SpatRaster, data.frame, or matrix.")
   }
 
-  # 1e) Branch on desired output type
-  if (out %in% c("spatial", "both")) {
-    # For spatial outputs we REQUIRE a SpatRaster so geometry is preserved
-    if (!inherits(env_bg, "SpatRaster")) {
-      stop("For spatial output, 'env_bg' must be a terra::SpatRaster.")
-    }
+  # 1e) Branch on the data type
+  if (inherits(env_bg, "SpatRaster")) {
 
     # Build a data.frame with XY and layer values for lookups later
     env_bg_df <- terra::as.data.frame(env_bg, xy = TRUE, na.rm = FALSE)
@@ -71,9 +67,9 @@ get_sample_occ <- function(n_occ,
     }
 
   } else {
-    # data.frame or matrix path (non-spatial outputs)
+    # data.frame or matrix path (non-spatial data types)
     if (!(is.matrix(env_bg) || is.data.frame(env_bg))) {
-      stop("For 'data.frame' output, 'env_bg' must be a matrix or data.frame.")
+      stop("'env_bg' must be a matrix or data.frame.")
     }
 
     env_bg_df <- as.data.frame(env_bg)

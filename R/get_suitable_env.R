@@ -68,12 +68,15 @@ get_suitable_env <- function(niche,
     }
 
   } else {
-    # data.frame or matrix path (non-spatial outputs)
-    if (!(is.matrix(env_bg) || is.data.frame(env_bg))) {
-      stop("For 'data.frame' output, 'env_bg' must be a matrix or data.frame.")
+
+    if (inherits(env_bg, "SpatRaster")){
+      # Build a data.frame with XY and layer values for lookups later
+      env_bg_df <- terra::as.data.frame(env_bg, xy = TRUE, na.rm = FALSE)
+
+    }else{
+      env_bg_df <- as.data.frame(env_bg)
     }
 
-    env_bg_df <- as.data.frame(env_bg)
     niche_vars <- setdiff(names(env_bg_df), c("x", "y"))
 
     if (ncol(env_bg_df) < niche$dimen) {

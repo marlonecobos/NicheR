@@ -103,7 +103,7 @@ plot_e_space(df,
 
 # Extract points
 pts_in <- get_suitable_env(niche = FN_1,
-                           env_bg = df[, c("env_x", "env_y", "env_z")],
+                           env_bg = df,
                            out = "data.frame")
 
 ras_in <- get_suitable_env(niche = FN_1,
@@ -116,7 +116,7 @@ both_in <- get_suitable_env(niche = FN_1,
                             env_bg = bio_stack,
                             out = "both")
 
-
+both_in
 
 # Visual in 2D
 # Function for plotting does it inside of it, just set show.pts.in = TRUE
@@ -137,17 +137,17 @@ sampled_pts_random_df <- get_sample_occ(n_occ = 100,
                                         env_bg = df,
                                         seed = 101)
 
-sampled_pts_random_sp <- get_sample_occ(n = 100,
+sampled_pts_random_sp <- get_sample_occ(n = 5000,
                                         niche = FN_1,
                                         env_bg = bio_stack,
                                         seed = 101)
 
-sampled_pts_center <- get_sample_occ(n = 100,
+sampled_pts_center <- get_sample_occ(n = 5000,
                                      niche = FN_1,
                                      env_bg = bio_stack,
                                      method = "center")
 
-sampled_pts_edge <- get_sample_occ(n = 100,
+sampled_pts_edge <- get_sample_occ(n = 5000,
                                    niche = FN_1,
                                    env_bg = bio_stack,
                                    method = "edge")
@@ -213,6 +213,18 @@ ggplot(sampled_pts_center, aes(x=env_z, y=env_x) ) +
 ggplot(sampled_pts_center, aes(x=env_z, y=env_y) ) +
   geom_bin2d() +
   theme_bw()
+
+
+ggplot(sampled_pts_edge, aes(x=env_y, y=env_x) ) +
+  geom_bin2d() +
+  theme_bw()
+ggplot(sampled_pts_edge, aes(x=env_z, y=env_x) ) +
+  geom_bin2d() +
+  theme_bw()
+ggplot(sampled_pts_edge, aes(x=env_z, y=env_y) ) +
+  geom_bin2d() +
+  theme_bw()
+
 
 
 
@@ -301,6 +313,19 @@ plot_e_space(env_bg = bio_df,
              niche = FN_2,
              occ_pts = sampled_occ,
              show.occ.density = TRUE)
+
+# 6. (optional) Visualize in g-space
+# Plot the background layer
+plot(get_suitable_env(niche = niche, env_bg = bio_stack, out = "spatial"),
+     main = "Suitable Geographic Environemt",
+     col  = rev(terrain.colors(50)))
+
+# Overlay the sampled points
+points(sampled_occ$x, sampled_occ$y,
+       pch   = 20,         # solid circle
+       col   = "red",
+       cex   = 0.4)        # point size multiplier
+
 
 
 
