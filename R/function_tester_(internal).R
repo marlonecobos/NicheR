@@ -18,6 +18,10 @@ library(terra)
 
 # Make Package alone should load all dependencies!
 
+source("R/build_ellps.R")
+source("R/plot_e_space.R")
+source("R/get_suitable_env.R")
+source("R/get_sample_occ.R")
 
 # Environmental Predictors ------------------------------------------------
 
@@ -54,7 +58,6 @@ ggplot(data = df_plotting) +
 
 
 # Visualize E-space -------------------------------------------------------
-source("R/plot_e_space.R")
 
 # 2D plot
 plot_e_space(df,
@@ -70,7 +73,6 @@ plot_e_space(df,
 
 # Create Ellipsoids -------------------------------------------------------
 
-source("R/build_ellps.R")
 
 # 3D Ellipsoid #
 center <- c(300, 1500, 2000) # center
@@ -98,7 +100,6 @@ plot_e_space(df,
 
 # Extract Points from Ellipsoid -------------------------------------------
 
-source("R/get_suitable_env.R")
 
 # Extract points
 pts_in <- get_suitable_env(niche = FN_1,
@@ -129,8 +130,6 @@ plot_e_space(env_bg = df, x = "env_x", y = "env_y", z = "env_z",
 
 
 # Sampling Occurrences ----------------------------------------------------
-
-source("R/get_sample_occ.R")
 
 
 sampled_pts_random_df <- get_sample_occ(n_occ = 100,

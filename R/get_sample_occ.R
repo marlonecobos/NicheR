@@ -1,4 +1,6 @@
 # Sample Occurrence Points from a Suitable Environment
+library(dplyr)
+
 
 get_sample_occ <- function(n_occ,
                            env_bg, # accepts Spat.Rasters and data.frames
@@ -9,26 +11,84 @@ get_sample_occ <- function(n_occ,
   method <- tolower(match.arg(method))
 
 
-  # EDIT: add the option to accept raster, but transform to SpatRaster. Also for
-  # tibble
+  # --- 1) Input validation and coercion ---
 
-  # Make env_bg a data.frame if other
-  if(class(env_bg) != "data.frame"){
-    env_bg <- as.data.frame(env_bg, xy = TRUE, na.rm = TRUE)
-    niche_vars <- names(env_bg)[which(!names(env_bg) %in% c("x", "y"))]
+  # 1a) Check niche structure early
+  if (!inherits(niche, "ellipsoid")) {
+    stop("'niche' must be an object of class 'ellipsoid' produced by build_ellipsoid().")
+  }
 
-  }else{
+  need <- c("center", "Sigma_inv", "dimen")
+  miss <- setdiff(need, names(niche))
 
-    if (ncol(env_bg) != niche$dimen + 2) {
+  if (length(miss)) {
+    stop(sprintf("'niche' is missing required fields: %s", paste(miss, collapse = ", ")))
+  }
+
+  if (!(is.numeric(niche$center) && length(niche$center) == niche$dimen)) {
+    stop("'niche$center' must be numeric with length equal to 'niche$dimen'.")
+  }
+
+  if (!is.matrix(niche$Sigma_inv) || any(!is.finite(niche$Sigma_inv))) {
+    stop("'niche$Sigma_inv' must be a finite numeric matrix.")
+  }
+
+  # 1b) Accept tibble -> data.frame (keeps names and types)
+  if (inherits(env_bg, "tbl_df")) {
+    env_bg <- as.data.frame(env_bg)
+  }
+
+  # 1c) Accept raster::Raster* by converting to terra::SpatRaster
+  if (inherits(env_bg, "Raster")) {
+    env_bg <- terra::rast(env_bg)
+  }
+
+  # 1d) Validate env_bg type now
+  if (!inherits(env_bg, c("SpatRaster", "data.frame", "matrix"))) {
+    stop("'env_bg' must be a terra::SpatRaster, data.frame, or matrix.")
+  }
+
+  # 1e) Branch on desired output type
+  if (out %in% c("spatial", "both")) {
+    # For spatial outputs we REQUIRE a SpatRaster so geometry is preserved
+    if (!inherits(env_bg, "SpatRaster")) {
+      stop("For spatial output, 'env_bg' must be a terra::SpatRaster.")
+    }
+
+    # Build a data.frame with XY and layer values for lookups later
+    env_bg_df <- terra::as.data.frame(env_bg, xy = TRUE, na.rm = FALSE)
+
+    # Ensure XY names exist
+    if (!all(c("x", "y") %in% names(env_bg_df))) {
+      stop("Could not find 'x' and 'y' columns after converting raster to data.frame.")
+    }
+
+    # Predictor columns will be all raster layers (exclude x,y)
+    niche_vars <- setdiff(names(env_bg_df), c("x", "y"))
+
+    if (length(niche_vars) < niche$dimen) {
+      stop("Raster has fewer predictor layers than 'niche$dimen'.")
+    }
+
+  } else {
+    # data.frame or matrix path (non-spatial outputs)
+    if (!(is.matrix(env_bg) || is.data.frame(env_bg))) {
+      stop("For 'data.frame' output, 'env_bg' must be a matrix or data.frame.")
+    }
+
+    env_bg_df <- as.data.frame(env_bg)
+    niche_vars <- setdiff(names(env_bg_df), c("x", "y"))
+
+    # Ensure XY names exist
+    if (!all(c("x", "y") %in% names(env_bg_df))) {
       stop("'evn_bg' must include spatial columns, x and y are necessary. Update data.frame or use Spat.Raster")
     }
 
-    niche_vars <- names(env_bg)[which(!names(env_bg) %in% c("x", "y"))]
   }
 
   # Calculate mahalanobis distance
   suitable_pool <- get_suitable_env(niche,
-                                    env_bg[ , c(niche_vars)],
+                                    env_bg,
                                     out = "data.frame",
                                     distances = TRUE)
 
@@ -75,12 +135,6 @@ get_sample_occ <- function(n_occ,
   occ$dist_sq <- NULL
   rownames(occ) <- NULL
 
-  occ_xy <- left_join(occ, env_bg, by = niche_vars)
-
-  # table(duplicated(suitable_pool[,1:3]))
-  occ_xy <- occ_xy[, c(which(!names(occ_xy) %in% c(niche_vars)),
-                       which(names(occ_xy) %in% c(niche_vars)))]
-
   message(sprintf("Done sampling %d occurrences", n_occ))
-  return(occ_xy)
+  return(occ)
 }
