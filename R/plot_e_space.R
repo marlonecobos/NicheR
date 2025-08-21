@@ -1,0 +1,429 @@
+# Plot pairwise environmental space views with optional ellipsoid overlays
+library(ggplot2)
+library(plotly)
+library(RColorBrewer)
+
+
+plot_e_space <- function(env_bg, 
+                         x, y, z,
+                         labels = c("ENV 1", "ENV 2", "ENV 3"),
+                         n_bg = 10000,
+                         niche = NULL,
+                         show.pts.in = FALSE,
+                         occ_pts = NULL,
+                         rand_seed = 1234,
+                         show.occ.density = FALSE, # only for 2D plots
+                         plot.3d = FALSE){
+  
+  # -- 0. Validate (no rlang in helper) --
+  v <- validate_plot_e_space_args(env_bg, x, y, z,
+                                  labels, n_bg, niche, show.pts.in,
+                                  occ_pts, show.occ.density)
+  
+  # Downsample info + action
+  if (nrow(env_bg) > n_bg) {
+    message(sprintf("Sampling %d of %d rows from 'env_bg' for plotting.", n_bg, nrow(env_bg)))
+    set.seed(rand_seed)
+    env_bg <- env_bg[sample.int(nrow(env_bg), size = n_bg, replace = FALSE), ]
+  }
+  
+  # --- 1. Base scatter layers ---
+  if (isTRUE(plot.3d)) {
+    return_plot <- plotly::plot_ly(data = env_bg,
+                                   x = env_bg[[if (is.numeric(x)) names(env_bg)[x] else x]],
+                                   y = env_bg[[if (is.numeric(y)) names(env_bg)[y] else y]],
+                                   z = env_bg[[if (is.numeric(z)) names(env_bg)[z] else z]],
+                                   type = "scatter3d",
+                                   mode = "markers",
+                                   marker = list(color = "lightgrey", size = 2),
+                                   name = "Background Environments") %>% 
+      plotly::layout(
+        title = list(text = "Background Environments (E-space)"),
+        scene = list(
+          xaxis = list(title = list(text = labels[1])),
+          yaxis = list(title = list(text = labels[2])),
+          zaxis = list(title = list(text = labels[3]))
+        ),
+        legend = list(x = 0.05, y = 0.95)
+      )
+
+  } else {
+    
+    # Use .data pronoun inside aes as you had; validator already resolved names
+    p_main_y_x <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]],
+                                                   y = .data[[ if (is.numeric(x)) names(env_bg)[x] else x ]])) +
+      ggplot2::geom_point(alpha = 0.5, color = "grey", pch = ".") +
+      ggplot2::theme_bw() +
+      ggplot2::theme(axis.title = ggplot2::element_blank())
+    
+    p_main_z_x <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[ if (is.numeric(z)) names(env_bg)[z] else z ]],
+                                                   y = .data[[ if (is.numeric(x)) names(env_bg)[x] else x ]])) +
+      ggplot2::geom_point(alpha = 0.5, color = "grey", pch = ".") +
+      ggplot2::theme_bw() +
+      ggplot2::theme(axis.title = ggplot2::element_blank())
+    
+    p_main_z_y <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[ if (is.numeric(z)) names(env_bg)[z] else z ]],
+                                                   y = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]])) +
+      ggplot2::geom_point(alpha = 0.5, color = "grey", pch = ".") +
+      ggplot2::theme_bw() +
+      ggplot2::theme(axis.title = ggplot2::element_blank())
+    
+    x_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[1])) + ggplot2::xlab(NULL)
+    y_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[2])) + ggplot2::xlab(NULL)
+    z_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[3])) + ggplot2::xlab(NULL)
+    
+    return_plot <- ggpubr::ggarrange(
+      x_name, p_main_y_x, p_main_z_x,
+      NULL,   y_name,    p_main_z_y,
+      NULL,   NULL,      z_name,
+      ncol = 3, nrow = 3,
+      widths = c(0.15, 0.425, 0.425),
+      heights = c(0.45, 0.45, 0.15)
+    )
+  }
+  
+  # --- 2. Ellipsoid overlays and extras ---
+  if (!is.null(niche)) {
+    if(isTRUE(plot.3d)){
+      
+      return_plot <- return_plot %>%
+        add_trace(data = niche$surface,
+                  x = niche$surface[[names(niche$surface)[1]]], 
+                  y = niche$surface[[names(niche$surface)[2]]], 
+                  z = niche$surface[[names(niche$surface)[3]]],
+                  type ="scatter3d", mode="lines",
+                  line =list(color="blue"),
+                  name ="Niche Boundary", inherit = FALSE) %>%
+        add_markers(x = niche$center[1], y = niche$center[2], z = niche$center[3],
+                    marker = list(color = 'red', size = 5),
+                    name = "Niche Centroid") %>%
+        plotly::layout(
+          title = "Virtual Niche Boundary in E-space",
+          legend = list(x = 0.05, y = 0.95)
+        )
+      
+      if (isTRUE(show.pts.in)) {
+        # Use base subsetting with resolved names from validator
+        pts_in <- get_suitable_environment(niche = FN_1,
+                                           env_bg = env_bg[, v$col_names, drop = FALSE],
+                                           out = "data.frame")
+        
+        return_plot <- return_plot %>%
+          add_markers(data = pts_in, 
+                      x = pts_in[[names(pts_in)[1]]], 
+                      y = pts_in[[names(pts_in)[2]]], 
+                      z = pts_in[[names(pts_in)[3]]],
+                      marker = list(color="darkgreen", size = 3),
+                      name = "Suitable Environments", inherit = FALSE) %>% 
+          plotly::layout(
+            title = "Virtual Niche Suitable Environment in E-space",
+            legend = list(x = 0.05, y = 0.95)
+          )
+      }
+      
+      if (!is.null(occ_pts)) {
+        
+        return_plot <- return_plot %>%
+          add_markers(data = occ_pts, 
+                      x = occ_pts[[if (is.numeric(x)) names(occ_pts)[x] else x]],
+                      y = occ_pts[[if (is.numeric(y)) names(occ_pts)[y] else y]],
+                      z = occ_pts[[if (is.numeric(z)) names(occ_pts)[z] else z]],
+                      marker = list(color="orange", size = 3),
+                      name = "Sampled Occurrences", inherit = FALSE) %>% 
+          plotly::layout(
+            title = "Virtual Niche and Sampled Occurrences in E-space",
+            legend = list(x = 0.05, y = 0.95)
+          )
+      }
+      
+      
+    }else{
+      
+      center_y_x <- c(niche$center[2], niche$center[1])
+      axes_y_x   <- c(niche$axes[2],   niche$axes[1])
+      
+      center_z_x <- c(niche$center[3], niche$center[1])
+      axes_z_x   <- c(niche$axes[3],   niche$axes[1])
+      
+      center_z_y <- c(niche$center[3], niche$center[2])
+      axes_z_y   <- c(niche$axes[3],   niche$axes[2])
+      
+      # 2D ellipse projections in each plane
+      ell2d_y_x <- build_ellipsoid(center = center_y_x, axes = axes_y_x, angles = c(0, 0))
+      ell2d_z_x <- build_ellipsoid(center = center_z_x, axes = axes_z_x, angles = c(0, 0))
+      ell2d_z_y <- build_ellipsoid(center = center_z_y, axes = axes_z_y, angles = c(0, 0))
+      
+      ell_y_x <- p_main_y_x +
+        geom_path(data = ell2d_y_x$surface, mapping = aes(x, y),
+                  color = "royalblue", size = 0.5) +
+        geom_segment(aes(x = ell2d_y_x$center[1] - ell2d_y_x$axes[1],
+                         xend = ell2d_y_x$center[1] + ell2d_y_x$axes[1],
+                         y = ell2d_y_x$center[2], yend = ell2d_y_x$center[2]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_segment(aes(y = ell2d_y_x$center[2] - ell2d_y_x$axes[2],
+                         yend = ell2d_y_x$center[2] + ell2d_y_x$axes[2],
+                         x = ell2d_y_x$center[1], xend = ell2d_y_x$center[1]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_point(aes(x = ell2d_y_x$center[1], y = ell2d_y_x$center[2]),
+                   color = "tomato", size = 2)
+      
+      ell_z_x <- p_main_z_x +
+        geom_path(data = ell2d_z_x$surface, mapping = aes(x, y),
+                  color = "royalblue", size = 0.5) +
+        geom_segment(aes(x = ell2d_z_x$center[1] - ell2d_z_x$axes[1],
+                         xend = ell2d_z_x$center[1] + ell2d_z_x$axes[1],
+                         y = ell2d_z_x$center[2], yend = ell2d_z_x$center[2]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_segment(aes(y = ell2d_z_x$center[2] - ell2d_z_x$axes[2],
+                         yend = ell2d_z_x$center[2] + ell2d_z_x$axes[2],
+                         x = ell2d_z_x$center[1], xend = ell2d_z_x$center[1]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_point(aes(x = ell2d_z_x$center[1], y = ell2d_z_x$center[2]),
+                   color = "tomato", size = 2)
+      
+      ell_z_y <- p_main_z_y +
+        geom_path(data = ell2d_z_y$surface, mapping = aes(x, y),
+                  color = "royalblue", size = 0.5) +
+        geom_segment(aes(x = ell2d_z_y$center[1] - ell2d_z_y$axes[1],
+                         xend = ell2d_z_y$center[1] + ell2d_z_y$axes[1],
+                         y = ell2d_z_y$center[2], yend = ell2d_z_y$center[2]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_segment(aes(y = ell2d_z_y$center[2] - ell2d_z_y$axes[2],
+                         yend = ell2d_z_y$center[2] + ell2d_z_y$axes[2],
+                         x = ell2d_z_y$center[1], xend = ell2d_z_y$center[1]),
+                     color = "paleturquoise", linetype = "dashed") +
+        geom_point(aes(x = ell2d_z_y$center[1], y = ell2d_z_y$center[2]),
+                   color = "tomato", size = 2)
+      
+      return_plot <- ggpubr::ggarrange(
+        x_name, ell_y_x, ell_z_x,
+        NULL,   y_name,  ell_z_y,
+        NULL,   NULL,    z_name,
+        ncol = 3, nrow = 3,
+        widths = c(0.15, 0.425, 0.425),
+        heights = c(0.45, 0.45, 0.15)
+      )
+      
+      if (isTRUE(show.pts.in)) {
+        # Use base subsetting with resolved names from validator
+        pts_in <- get_suitable_environment(niche = FN_1,
+                                 env_bg = env_bg[, v$col_names, drop = FALSE],
+                                 out = "data.frame")
+        
+        ell_y_x <- ell_y_x +
+          ggplot2::geom_point(data = pts_in,
+                              ggplot2::aes(x = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]],
+                                           y = .data[[ if (is.numeric(x)) names(env_bg)[x] else x ]]),
+                              color = "darkolivegreen3", size = 0.5)
+        ell_z_x <- ell_z_x +
+          ggplot2::geom_point(data = pts_in,
+                              ggplot2::aes(x = .data[[ if (is.numeric(z)) names(env_bg)[z] else z ]],
+                                           y = .data[[ if (is.numeric(x)) names(env_bg)[x] else x ]]),
+                              color = "darkolivegreen3", size = 0.5)
+        ell_z_y <- ell_z_y +
+          ggplot2::geom_point(data = pts_in,
+                              ggplot2::aes(x = .data[[ if (is.numeric(z)) names(env_bg)[z] else z ]],
+                                           y = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]]),
+                              color = "darkolivegreen3", size = 0.5)
+        
+        return_plot <- ggpubr::ggarrange(
+          x_name, ell_y_x, ell_z_x,
+          NULL,   y_name,  ell_z_y,
+          NULL,   NULL,    z_name,
+          ncol = 3, nrow = 3,
+          widths = c(0.15, 0.425, 0.425),
+          heights = c(0.45, 0.45, 0.15)
+        )
+      }
+      
+      
+      if (!is.null(occ_pts)) {
+        ell_y_x <- ell_y_x + 
+          geom_point(data = occ_pts, aes(x = .data[[y]], y = .data[[x]]),
+                     color = "darkorange", size = 0.5)
+        ell_z_x <- ell_z_x + 
+          geom_point(data = occ_pts, aes(x = .data[[z]], y = .data[[x]]),
+                     color = "darkorange", size = 0.5)
+        ell_z_y <- ell_z_y + 
+          geom_point(data = occ_pts, aes(x = .data[[z]], y = .data[[y]]),
+                     color = "darkorange", size = 0.5)
+        
+        return_plot <- ggpubr::ggarrange(
+          x_name, ell_y_x, ell_z_x,
+          NULL,   y_name,  ell_z_y,
+          NULL,   NULL,    z_name,
+          ncol = 3, nrow = 3,
+          widths = c(0.15, 0.425, 0.425),
+          heights = c(0.45, 0.45, 0.15)
+        )
+        
+        if (isTRUE(show.occ.density)) {
+          # Use base range() to avoid tidyselect here
+          rng_z <- range(env_bg[[ if (is.numeric(z)) names(env_bg)[z] else z ]], na.rm = TRUE)
+          rng_y <- range(env_bg[[ if (is.numeric(y)) names(env_bg)[y] else y ]], na.rm = TRUE)
+          rng_x <- range(env_bg[[ if (is.numeric(x)) names(env_bg)[x] else x ]], na.rm = TRUE)
+          
+          env_z_top <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[ if (is.numeric(z)) names(env_bg)[z] else z ]])) +
+            ggplot2::geom_density(fill = "darkorange", alpha = 0.6) +
+            ggplot2::scale_x_continuous(limits = rng_z) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+                           axis.title.x = ggplot2::element_blank(),
+                           axis.title.y = ggplot2::element_blank())
+          
+          env_y_top <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]])) +
+            ggplot2::geom_density(fill = "darkorange", alpha = 0.6) +
+            ggplot2::scale_x_continuous(limits = rng_y) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+                           axis.title.x = ggplot2::element_blank(),
+                           axis.title.y = ggplot2::element_blank())
+          
+          env_x_right <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[ if (is.numeric(x)) names(env_bg)[x] else x ]])) +
+            ggplot2::geom_density(fill = "darkorange", alpha = 0.6) +
+            ggplot2::coord_flip() +
+            ggplot2::scale_x_continuous(limits = rng_x) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                           axis.title.y = ggplot2::element_blank(),
+                           axis.title.x = ggplot2::element_blank())
+          
+          env_y_right <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[ if (is.numeric(y)) names(env_bg)[y] else y ]])) +
+            ggplot2::geom_density(fill = "darkorange", alpha = 0.6) +
+            ggplot2::coord_flip() +
+            ggplot2::scale_x_continuous(limits = rng_y) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                           axis.title.y = ggplot2::element_blank(),
+                           axis.title.x = ggplot2::element_blank())
+          
+          return_plot <- ggpubr::ggarrange(
+            NULL,      env_y_top, env_z_top, NULL,
+            x_name,    ell_y_x,   ell_z_x,   env_x_right,
+            NULL,      y_name,    ell_z_y,   env_y_right,
+            NULL,      NULL,      z_name,    NULL,
+            ncol = 4, nrow = 4,
+            widths  = c(0.1, 0.4, 0.4, 0.1),
+            heights = c(0.1, 0.4, 0.4, 0.1)
+          )
+        }
+      }
+    }
+  }
+  
+  return(return_plot)
+}
+
+
+
+
+
+
+#' Validate arguments for plot_e_space
+#'
+#' Performs input checks for \code{plot_e_space} and emits informative errors
+#' or warnings. Ensures required columns exist and are numeric, labels are correctly
+#' specified, sampling size is valid, and optional objects have the needed structure.
+#'
+#' @param env_bg A data.frame with at least 3 numeric predictor columns.
+#' @param x,y,z Column names or integer indices in \code{env_bg} for the three predictors,
+#'   in the same order used to define the niche/ellipsoid.
+#' @param labels Character vector of length 3 for axis labels.
+#' @param n_bg Positive number of background rows to plot at most.
+#' @param niche Optional list with elements \code{center} (numeric length 3)
+#'   and \code{axes} (numeric length 3). Additional elements ignored here.
+#' @param show.pts.in Logical. If TRUE, expects \code{niche} to be provided.
+#' @param occ_pts Optional data.frame with the same predictor columns present.
+#' @param show.occ.density Logical. If TRUE, expects \code{occ_pts}.
+#'
+#' @return An invisible list with \code{col_names}, the resolved predictor names.
+#' @keywords internal
+#' @export
+validate_plot_e_space_args <- function(env_bg, x, y, z,
+                                       labels, n_bg,
+                                       niche, show.pts.in,
+                                       occ_pts, show.occ.density) {
+  if (!is.data.frame(env_bg)) stop("'env_bg' must be a data.frame.")
+  
+  # Helper: resolve a single spec (name or index) to a valid column name
+  resolve_one <- function(spec) {
+    if (is.character(spec) && length(spec) == 1) {
+      if (!spec %in% names(env_bg)) stop(sprintf("Column '%s' not found in 'env_bg'.", spec))
+      spec
+    } else if (is.numeric(spec) && length(spec) == 1) {
+      idx <- as.integer(spec)
+      if (is.na(idx) || idx < 1 || idx > ncol(env_bg)) stop("'x', 'y', 'z' index out of range for 'env_bg'.")
+      names(env_bg)[idx]
+    } else {
+      stop("'x', 'y', and 'z' must be column names or single integer indices.")
+    }
+  }
+  
+  col_x <- resolve_one(x)
+  col_y <- resolve_one(y)
+  col_z <- resolve_one(z)
+  col_names <- c(col_x, col_y, col_z)
+  
+  # All numeric
+  non_numeric <- col_names[!vapply(env_bg[, col_names, drop = FALSE], is.numeric, logical(1))]
+  if (length(non_numeric)) {
+    stop(sprintf("These columns must be numeric in 'env_bg': %s", paste(non_numeric, collapse = ", ")))
+  }
+  
+  # labels
+  if (!(is.character(labels) && length(labels) == 3)) {
+    stop("'labels' must be a character vector of length 3.")
+  }
+  
+  # n_bg
+  if (!(length(n_bg) == 1 && is.finite(n_bg) && n_bg > 0)) {
+    stop("'n_bg' must be a positive number.")
+  }
+  if (n_bg > 100000) {
+    warning("'n_bg' is very large. Plotting may be slow.", call. = FALSE, immediate. = TRUE)
+  }
+  if (n_bg > 10000) {
+    warning("Selected number of background points is large. The larger the number, the longer it may take.",
+            call. = FALSE, immediate. = TRUE)
+  }
+  
+  # niche object if provided
+  if (!is.null(niche)) {
+    need <- c("center", "axes")
+    miss <- setdiff(need, names(niche))
+    if (length(miss)) stop(sprintf("'niche' is missing required fields: %s", paste(miss, collapse = ", ")))
+    if (!(is.numeric(niche$center) && length(niche$center) == 3)) {
+      stop("'niche$center' must be numeric of length 3.")
+    }
+    if (!(is.numeric(niche$axes) && length(niche$axes) == 3)) {
+      stop("'niche$axes' must be numeric of length 3.")
+    }
+    if (any(niche$axes <= 0)) stop("'niche$axes' must contain positive values.")
+  }
+  
+  # occ_pts and density flags
+  if (isTRUE(show.pts.in) && is.null(niche)) {
+    warning("'show.pts.in' is TRUE but 'niche' is NULL. Points inside cannot be computed.",
+            call. = FALSE, immediate. = TRUE)
+  }
+  if (!is.null(occ_pts)) {
+    if (!is.data.frame(occ_pts)) stop("'occ_pts' must be a data.frame.")
+    missing_occ <- setdiff(col_names, names(occ_pts))
+    if (length(missing_occ)) {
+      stop(sprintf("'occ_pts' is missing required columns: %s", paste(missing_occ, collapse = ", ")))
+    }
+    non_num_occ <- col_names[!vapply(occ_pts[, col_names, drop = FALSE], is.numeric, logical(1))]
+    if (length(non_num_occ)) {
+      stop(sprintf("These 'occ_pts' columns must be numeric: %s", paste(non_num_occ, collapse = ", ")))
+    }
+  } else if (isTRUE(show.occ.density)) {
+    warning("'show.occ.density' is TRUE but 'occ_pts' is NULL. Density panels will be skipped.",
+            call. = FALSE, immediate. = TRUE)
+  }
+  
+  invisible(list(col_names = col_names))
+}
+
