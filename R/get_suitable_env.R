@@ -1,6 +1,37 @@
-# Extract from the enviroemntal raster layer the suitble area based  on the
-# ellipsoid
-
+#' Extract Suitable Environmental Area from a Niche Ellipsoid
+#'
+#' This function identifies and extracts all environmental grid cells or data
+#' points that fall within a defined ellipsoid niche based on Mahalanobis distance.
+#'
+#' @param niche An object of class `ellipsoid` created by `build_ellipsoid()`.
+#' @param env_bg A `terra::SpatRaster`, `data.frame`, or `matrix` of
+#'   environmental predictor variables. It must contain the variables
+#'   referenced by the `niche` object.
+#' @param out A character string specifying the desired output format. Can be
+#'   `"data.frame"`, `"spatial"`, or `"both"`.
+#'   \itemize{
+#'     \item `"data.frame"`: Returns a data frame of all suitable points.
+#'     \item `"spatial"`: Returns a `terra::SpatRaster` where suitable cells
+#'       are marked with 1 and unsuitable with 0. Requires `env_bg` to be a
+#'       `terra::SpatRaster`.
+#'     \item `"both"`: Returns a list containing both the spatial raster and
+#'       the data frame of suitable points.
+#'   }
+#' @param distances Logical; if `TRUE`, an additional column named `dist_sq`
+#'   is added to the output data frame containing the squared Mahalanobis
+#'   distance for each suitable point.
+#'
+#' @return The suitable environmental area in the specified format, which can be
+#'   a `data.frame`, a `terra::SpatRaster`, or a list containing both.
+#'
+#' @details The function converts `env_bg` to a data frame, calculates the
+#'   squared Mahalanobis distance for each point, and then filters for points
+#'   where this distance is less than or equal to 1. This method efficiently
+#'   identifies all locations within the niche's boundary.
+#'
+#' @seealso [build_ellipsoid()], [get_sample_occ()]
+#'
+#' @export
 get_suitable_env <- function(niche,
                              env_bg,
                              out = c("data.frame", "spatial", "both"),
@@ -175,14 +206,13 @@ get_suitable_env <- function(niche,
 
 }
 
-# ---- Pretty print helper ----
 #' @export
 print.suitable_env <- function(x, ...) {
   if (is.list(x) && all(c("suitable_env_sp", "suitable_env_df") %in% names(x))) {
     cat("Suitable environment object:\n")
-    cat("  • Spatial layer (SpatRaster):\n")
+    cat("Spatial layer (SpatRaster):\n")
     print(x$suitable_env_sp)
-    cat("\n  • Data frame (showing first 6 rows):\n")
+    cat("\n Data frame (showing first 6 rows):\n")
     print(utils::head(x$suitable_env_df))
   } else if (inherits(x, "SpatRaster")) {
     cat("Suitable environment raster:\n")
