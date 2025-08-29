@@ -151,9 +151,9 @@ plot_e_space <- function(env_bg,
 
       if (isTRUE(show.pts.in)) {
         # Use base subsetting with resolved names from validator
-        pts_in <- get_suitable_environment(niche = FN_1,
-                                           env_bg = env_bg[, v$col_names, drop = FALSE],
-                                           out = "data.frame")
+        pts_in <- get_suitable_env(niche = niche,
+                                   env_bg = env_bg[, v$col_names, drop = FALSE],
+                                   out = "data.frame")
 
         return_plot <- return_plot %>%
           add_markers(data = pts_in,
@@ -255,7 +255,7 @@ plot_e_space <- function(env_bg,
 
       if (isTRUE(show.pts.in)) {
         # Use base subsetting with resolved names from validator
-        pts_in <- get_suitable_env(niche = niche, # Corrected FN_1 to niche
+        pts_in <- get_suitable_env(niche = niche,
                                    env_bg = env_bg[, v$col_names, drop = FALSE],
                                    out = "data.frame")
 
