@@ -18,31 +18,21 @@ knitr::opts_chunk$set(
 )
 ```
 
-# NicheR: Ecological Niche Modeling and Simulation in R
+# NicheR: An R package for ellipsoid-based virtual species and niche visualization in environmental (E-space) and geographic (G-space) space
 
 <!-- badges: start -->
 
 <!-- badges: end -->
 
-The goal of NicheR is to provide a robust set of tools for researchers
-and modelers to:
+The goal of **NicheR** is to provide a robust set of tools for researchers and modelers to:  
 
-Construct and define virtual niches using ellipsoid geometries in 2D or
-3D environmental dimensions.
+   - Construct and define virtual niches using ellipsoid geometries in 2D or 3D environmental dimensions.  
+  - Identify and extract suitable environmental areas from various data sources (rasters, data frames).  
+  - Simulate species occurrence points within suitable habitats using flexible sampling strategies (random, center-biased, or edge-biased).  
+  - Visualize niche boundaries and simulated occurrences in both environmental space (E-space) and geographic space (G-space).  
 
-Identify and extract suitable environmental areas based on these defined
-niches from various environmental data sources (rasters, data frames).
+Inspired by the methodologies of **NicheA** and the **virtualspecies** R package, **NicheR** streamlines niche conceptualization and data generation for ecological studies.
 
-Simulate species occurrence points within suitable habitats, offering
-different sampling strategies (random, biased towards center, or biased
-towards edges).
-
-Visualize niche boundaries and simulated occurrences effectively in both
-environmental (E-space) and geographic (G-space).
-
-Inspired by the methodologies in NicheA and the virtualspecies R
-package, NicheR aims to streamline the process of niche
-conceptualization and data generation for ecological studies.
 
 ## Authors 
 
@@ -52,18 +42,18 @@ Paanwaris Paansri
 
 Connor Hughes
 
-## Installation You can install the development version of NicheR from
+## Installation
 
-GitHub with pak or remotes:
+You can install the development version of NicheR from GitHub as follows:
 
-```{r}
+```{r echo =TRUE, eval = FALSE}
 # 1. Install devtools if you don't have it yet
-# if (!require("devtools")) {
-#  install.packages("devtools")
-# }
+if (!require("devtools")) {
+ install.packages("devtools")
+}
 
 # 2. Install bean from GitHub
-# devtools::install_github("castanedaM/NicheR")
+devtools::install_github("castanedaM/NicheR")
 ```
 
 ## Dependencies NicheR relies on the following R packages, which will be
@@ -139,7 +129,7 @@ It can generate both static 2D pairwise plots and interactive 3D plots.
 
 #### 3.1. 2D Pairwise Plots
 
-```{r}
+```{r, fig.width=11, fig.height=8}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -203,7 +193,7 @@ plot(suitable_g_space, main = "Suitable Geographic Environment (G-space)",
 Simply toggle the argument `show.pts.in` in `plot_e_space()`, and the function will automatically calculate and plot the suitable environments.
 
 
-```{r, rgl=TRUE}
+```{r, rgl=TRUE, fig.width=11, fig.height=8}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -244,7 +234,7 @@ points(sampled_occ_center$x, sampled_occ_center$y,
 Visualize Sampled Occurrences in Environmental Space You can integrate
 these simulated occurrences back into your environmental space plots.
 
-```{r, rgl=TRUE}
+```{r, rgl=TRUE, fig.width=11, fig.height=8}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -261,7 +251,7 @@ plot_e_space(
 
 Finally, we visualize all objects in one visualization.
 
-```{r, rgl=TRUE}
+```{r, rgl=TRUE, fig.width=11, fig.height=8}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -362,7 +352,7 @@ ggplot(df, aes(x = role, y = palette, fill = color)) +
 
 Example: Palette 4
 
-```{r echo = FALSE}
+```{r echo = FALSE, fig.width=11, fig.height=8}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -378,7 +368,7 @@ plot_e_space(
 
 Example: Palette 6 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.width=11, fig.height=8}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -396,7 +386,7 @@ plot_e_space(
 
 Don’t like these palettes? Provide your own! Use the colors argument with a list of hex codes. If colors are unnamed, they will be assigned in order: bg (background), ellipsoid, centroid, tolerance (axis ranges), suitable_env (environment inside ellipsoid), and occ (occurrence records). Best practice is to use named values, for example:
 
-```{r}
+```{r, fig.width=11, fig.height=8}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -416,13 +406,13 @@ plot_e_space(
 
 ```
 
-Note: for 3D plotting is better to provide the HEX color codes! 
+**Note**: for 3D plotting is better to provide the HEX color codes! 
 
 Want to save your plot in high resolution, publication-ready format? Below is an example of how to save it as a TIFF with recommended sizing for 2D plots.
 
 ```{r echo=TRUE, eval=FALSE}
 
-tiff(filename = "NicheR_plot2D.png", width = 11, height = 8, 
+tiff(filename = "NicheR_plot2D.tiff", width = 11, height = 8, 
      units = "in", res = 300, compression = "lzw")
 
 plot_e_space(
@@ -440,9 +430,7 @@ plot_e_space(
 
 dev.off()
 
-
 ```
-
 
 
 ### Contributing 

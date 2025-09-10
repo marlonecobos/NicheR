@@ -1,31 +1,28 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# NicheR: Ecological Niche Modeling and Simulation in R
+# NicheR: An R package for ellipsoid-based virtual species and niche visualization in environmental (E-space) and geographic (G-space) space
 
 <!-- badges: start -->
 
 <!-- badges: end -->
 
-The goal of NicheR is to provide a robust set of tools for researchers
-and modelers to:
+The goal of **NicheR** is to provide a robust set of tools for
+researchers and modelers to:
 
-Construct and define virtual niches using ellipsoid geometries in 2D or
-3D environmental dimensions.
+- Construct and define virtual niches using ellipsoid geometries in 2D
+  or 3D environmental dimensions.  
+- Identify and extract suitable environmental areas from various data
+  sources (rasters, data frames).  
+- Simulate species occurrence points within suitable habitats using
+  flexible sampling strategies (random, center-biased, or
+  edge-biased).  
+- Visualize niche boundaries and simulated occurrences in both
+  environmental space (E-space) and geographic space (G-space).
 
-Identify and extract suitable environmental areas based on these defined
-niches from various environmental data sources (rasters, data frames).
-
-Simulate species occurrence points within suitable habitats, offering
-different sampling strategies (random, biased towards center, or biased
-towards edges).
-
-Visualize niche boundaries and simulated occurrences effectively in both
-environmental (E-space) and geographic (G-space).
-
-Inspired by the methodologies in NicheA and the virtualspecies R
-package, NicheR aims to streamline the process of niche
-conceptualization and data generation for ecological studies.
+Inspired by the methodologies of **NicheA** and the **virtualspecies** R
+package, **NicheR** streamlines niche conceptualization and data
+generation for ecological studies.
 
 ## Authors
 
@@ -35,18 +32,19 @@ Paanwaris Paansri
 
 Connor Hughes
 
-## Installation You can install the development version of NicheR from
+## Installation
 
-GitHub with pak or remotes:
+You can install the development version of NicheR from GitHub as
+follows:
 
 ``` r
 # 1. Install devtools if you don't have it yet
-# if (!require("devtools")) {
-#  install.packages("devtools")
-# }
+if (!require("devtools")) {
+ install.packages("devtools")
+}
 
 # 2. Install bean from GitHub
-# devtools::install_github("castanedaM/NicheR")
+devtools::install_github("castanedaM/NicheR")
 ```
 
 ## Dependencies NicheR relies on the following R packages, which will be
@@ -337,7 +335,7 @@ plot_e_space(
 
 <img src="man/figures/README-unnamed-chunk-15-1.png" width="100%" />
 
-Note: for 3D plotting is better to provide the HEX color codes!
+**Note**: for 3D plotting is better to provide the HEX color codes!
 
 Want to save your plot in high resolution, publication-ready format?
 Below is an example of how to save it as a TIFF with recommended sizing
@@ -345,7 +343,7 @@ for 2D plots.
 
 ``` r
 
-tiff(filename = "NicheR_plot2D.png", width = 11, height = 8, 
+tiff(filename = "NicheR_plot2D.tiff", width = 11, height = 8, 
      units = "in", res = 300, compression = "lzw")
 
 plot_e_space(
@@ -363,11 +361,6 @@ plot_e_space(
 
 dev.off()
 ```
-
-<figure>
-<img src="man/figures/NicheR_plot2D.png" alt="high res pic" />
-<figcaption aria-hidden="true">high res pic</figcaption>
-</figure>
 
 ### Contributing
 
