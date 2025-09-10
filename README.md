@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# NicheR: An R package for ellipsoid-based virtual species and niche visualization in environmental (E-space) and geographic (G-space) space
+# NicheR: An R package for ellipsoid-based virtual species and niche visualization
 
 <!-- badges: start -->
 
