@@ -181,7 +181,8 @@ suitable_g_space <- get_suitable_env(
 )
 
 # Plot the suitable area on a map
-plot(suitable_g_space, main = "Suitable Geographic Environment")
+plot(suitable_g_space, main = "Suitable Geographic Environment", 
+     col = rev(terrain.colors(10)))
 ```
 
 Now, let's sample some occurrences within this suitable area.
@@ -196,7 +197,8 @@ sampled_occ_center <- get_sample_occ(
   seed = 42
 )
 
-plot(suitable_g_space, main = "Suitable Geographic Environment")
+plot(suitable_g_space, main = "Suitable Geographic Environment", 
+     col = rev(terrain.colors(10)))
 # Overlay sampled points on the geographic suitable area map
 points(sampled_occ_center$x, sampled_occ_center$y,
        pch = 20, col = "red", cex = 0.6)
@@ -337,7 +339,7 @@ plot_e_space(
   show.pts.in = TRUE, # Highlight background points within niche
   occ_pts = sampled_occ_center,
   show.occ.density = TRUE,
-  palette = "default"# Show marginal density plots for occurrences
+  palette = "palette4"# Show marginal density plots for occurrences
 )
 
 plot_e_space(
@@ -351,8 +353,6 @@ plot_e_space(
   show.occ.density = TRUE,
   palette = "palette6"# Show marginal density plots for occurrences
 )
-
-
 
 ```
 
