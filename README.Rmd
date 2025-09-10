@@ -129,7 +129,7 @@ It can generate both static 2D pairwise plots and interactive 3D plots.
 
 #### 3.1. 2D Pairwise Plots
 
-```{r, fig.width=11, fig.height=8}
+```{r, fig.width=11, fig.height=8, dpi=300, dpi=300}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -193,7 +193,7 @@ plot(suitable_g_space, main = "Suitable Geographic Environment (G-space)",
 Simply toggle the argument `show.pts.in` in `plot_e_space()`, and the function will automatically calculate and plot the suitable environments.
 
 
-```{r, rgl=TRUE, fig.width=11, fig.height=8}
+```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -234,7 +234,7 @@ points(sampled_occ_center$x, sampled_occ_center$y,
 Visualize Sampled Occurrences in Environmental Space You can integrate
 these simulated occurrences back into your environmental space plots.
 
-```{r, rgl=TRUE, fig.width=11, fig.height=8}
+```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -251,7 +251,7 @@ plot_e_space(
 
 Finally, we visualize all objects in one visualization.
 
-```{r, rgl=TRUE, fig.width=11, fig.height=8}
+```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
   env_bg = env_df_plotting,
@@ -352,7 +352,7 @@ ggplot(df, aes(x = role, y = palette, fill = color)) +
 
 Example: Palette 4
 
-```{r echo = FALSE, fig.width=11, fig.height=8}
+```{r echo = FALSE, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -368,7 +368,7 @@ plot_e_space(
 
 Example: Palette 6 
 
-```{r, echo = FALSE, fig.width=11, fig.height=8}
+```{r, echo = FALSE, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
@@ -386,7 +386,7 @@ plot_e_space(
 
 Don’t like these palettes? Provide your own! Use the colors argument with a list of hex codes. If colors are unnamed, they will be assigned in order: bg (background), ellipsoid, centroid, tolerance (axis ranges), suitable_env (environment inside ellipsoid), and occ (occurrence records). Best practice is to use named values, for example:
 
-```{r, fig.width=11, fig.height=8}
+```{r, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
   env_bg = env_df_plotting,
   x = "mean_temp",
