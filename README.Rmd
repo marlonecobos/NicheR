@@ -91,14 +91,6 @@ names(env_stack) <- c("mean_temp", "temp_seasonality", "annual_precip")
 
 # Convert the raster stack to a data frame for E-space plotting
 env_df <- as.data.frame(env_stack, xy = TRUE, na.rm = TRUE)
-
-# Downsample for faster plotting if the background is very large
-if(nrow(env_df) > 20000){
-  set.seed(1234)
-  env_df_plotting <- env_df[sample(1:nrow(env_df), size = 20000, replace = FALSE), ]
-} else {
-  env_df_plotting <- env_df
-}
 ```
 
 ### 2. Build a 3D Ellipsoid Niche The build_ellipsoid() function creates
@@ -116,7 +108,7 @@ niche_angles <- c(0, 0, pi/12) # Small rotation around Z-axis
 my_niche <- build_ellps(
   center = niche_center,
   axes = niche_axes,
-  angles = niche_angles,
+  # angles = niche_angles,
   n_points = 50 # Resolution for surface points
 )
 ```
@@ -131,12 +123,13 @@ It can generate both static 2D pairwise plots and interactive 3D plots.
 
 ```{r, fig.width=11, fig.height=8, dpi=300, dpi=300}
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
   labels = c("Mean T (°C)", "Temp Seasonality", "Annual Prec (mm)"),
-  niche = my_niche
+  niche = my_niche, 
+  plot.3d = T
 )
 ```
 
@@ -150,7 +143,7 @@ The code will then generate an interactive **plotly** plot.
 ```{r, rgl=TRUE, eval = FALSE}
 
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -196,7 +189,7 @@ Simply toggle the argument `show.pts.in` in `plot_e_space()`, and the function w
 ```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -224,9 +217,9 @@ sampled_occ_center <- get_sample_occ(
 # Expand right margin so there's room for legend
 plot(suitable_g_space,
      main = "Suitable Geographic Environment (G-space)",
-     col = rev(terrain.colors(2)))
+     col = c("#F2F2F2", "#FED789FF"))
 points(sampled_occ_center$x, sampled_occ_center$y,
-       pch = 20, col = "tomato", cex = 0.6)
+       pch = 20, col = "#B4BF3AFF", cex = 0.6)
 
 
 ```
@@ -237,7 +230,7 @@ these simulated occurrences back into your environmental space plots.
 ```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -254,7 +247,7 @@ Finally, we visualize all objects in one visualization.
 ```{r, rgl=TRUE, fig.width=11, fig.height=8, dpi=300}
 # Plot in 2D
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -354,7 +347,7 @@ Example: Palette 4
 
 ```{r echo = FALSE, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -370,7 +363,7 @@ Example: Palette 6
 
 ```{r, echo = FALSE, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -388,7 +381,7 @@ Don’t like these palettes? Provide your own! Use the colors argument with a li
 
 ```{r, fig.width=11, fig.height=8, dpi=300}
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
@@ -416,7 +409,7 @@ tiff(filename = "NicheR_plot2D.tiff", width = 11, height = 8,
      units = "in", res = 300, compression = "lzw")
 
 plot_e_space(
-  env_bg = env_df_plotting,
+  env_bg = env_df,
   x = "mean_temp",
   y = "temp_seasonality",
   z = "annual_precip",
