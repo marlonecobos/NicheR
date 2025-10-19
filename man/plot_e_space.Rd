@@ -16,7 +16,9 @@ plot_e_space(
   occ_pts = NULL,
   rand_seed = 1234,
   show.occ.density = FALSE,
-  plot.3d = FALSE
+  plot.3d = FALSE,
+  colors = NULL,
+  palette = "default"
 )
 }
 \arguments{
@@ -77,5 +79,8 @@ This function is a powerful visualization tool for understanding the
 }
 \seealso{
 [validate_plot_e_space_args()], [build_ellps()], [get_suitable_env()]
+
+Other plotting functions: 
+\code{\link{plot_g_space}()}
 }
 \concept{plotting functions}

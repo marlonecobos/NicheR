@@ -176,8 +176,8 @@ suitable_g_space <- get_suitable_env(
 )
 
 # Plot the suitable area on a map
-plot(suitable_g_space, main = "Suitable Geographic Environment (G-space)", 
-     col = rev(terrain.colors(10)))
+plot_g_space(env_stack, show.suitable = TRUE)
+
 ```
 
 
