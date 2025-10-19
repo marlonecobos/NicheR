@@ -2,7 +2,10 @@
 #' Routes ... to build_ellps(), get_suitable_env(), and get_sample_occ()
 #' Returns an S3 object of class "NicheR_species"
 
-create_virtual_species <- function(..., verbose = TRUE) {
+create_virtual_species <- function(...,
+                                   out.file = FALSE,
+                                   out.file.name = NULL,
+                                   verbose = TRUE) {
   # capture all args once
   args <- list(...)
 
@@ -89,6 +92,31 @@ create_virtual_species <- function(..., verbose = TRUE) {
   )
 
   class(out) <- c("NicheR_species", class(out))
+
+
+  # ---- Saving logic ----
+  if (isTRUE(out.file)) {
+    # directory = current working directory
+    dir_path <- getwd()
+
+    # auto-generate file name if not provided
+    if (is.null(out.file.name) || out.file.name == "") {
+      timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+      out.file.name <- paste0("NicheR_vs_", timestamp)
+    }
+
+    # full save path
+    save_path <- file.path(dir_path, paste0(out.file.name, ".rds"))
+    saveRDS(out, save_path)
+
+    if (verbose) message("Virtual species saved to: ", normalizePath(save_path))
+
+    out$save_path <- save_path
+
+  } else if (verbose) {
+
+    message("`out.file = FALSE`: object not saved to disk.")
+  }
 
   return(out)
 }
