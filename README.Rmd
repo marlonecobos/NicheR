@@ -176,7 +176,7 @@ suitable_g_space <- get_suitable_env(
 )
 
 # Plot the suitable area on a map
-plot_g_space(env_stack, show.suitable = TRUE)
+plot_g_space(env_stack, show.suitable  = TRUE, niche = my_niche)
 
 ```
 
@@ -215,7 +215,7 @@ sampled_occ_center <- get_sample_occ(
 )
 
 # Expand right margin so there's room for legend
-plot_g_space(env_bg = env_stack,
+plot_g_space(env_bg = env_stack, niche = my_niche,
              show.suitable = FALSE,
              occ_pts = sampled_occ_center)
 
