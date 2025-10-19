@@ -12,7 +12,6 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom ggpubr ggarrange
 #' @importFrom plotly plot_ly add_trace add_markers layout
-#' @importFrom maps map_data
 #' @importFrom sf st_as_sf
 #' @importFrom terra ncell as.data.frame ext nlyr xmin xmax ymin ymax crop
 #' @importFrom raster ncell extent

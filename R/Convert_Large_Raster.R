@@ -55,9 +55,6 @@
 #'   \code{\link[terra]{as.data.frame}}, \code{\link[terra]{crop}},
 #'   \code{\link[terra]{ext}}
 #'
-#' @importFrom DBI dbConnect dbDisconnect dbWriteTable dbReadTable
-#' @importFrom RSQLite SQLite
-#' @importFrom terra nlyr xmin xmax ymin ext crop yFromRow as.data.frame
 #' @export
 convert_large_raster <- function(raster_stack,
                                  out_filename = "raster_db",

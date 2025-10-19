@@ -176,7 +176,7 @@ plot_g_space <- function(env_bg,
     legend_plot
   }
 
-  world <- map_data("world")
+  world <- ggplot2::map_data("world")
 
   return_plot <- ggplot( ) +
     geom_polygon(data = world,
