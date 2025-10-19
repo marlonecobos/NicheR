@@ -132,3 +132,30 @@ build_ellps <- function(center = c(x = 0, y = 0),
     class = "ellipsoid"
   )
 }
+
+#' @export
+print.ellipsoid <- function(x, digits = 3, ...) {
+  cat("Ellipsoid object\n")
+  cat("----------------\n")
+  cat(" Dimensions: ", x$dimen, "D\n", sep = "")
+  cat(" Center:     ", paste(round(x$center, digits), collapse = ", "), "\n", sep = "")
+  cat(" Axes:       ", paste(round(x$axes, digits), collapse = ", "), "\n", sep = "")
+  cat(" Angles:     ", paste(round(x$angles, digits), collapse = ", "), " radians\n", sep = "")
+
+  cat("\n Rotation matrix (R):\n")
+  print(round(x$R, digits))
+
+  cat("\n Covariance matrix (Sigma):\n")
+  print(round(x$Sigma, digits))
+
+  cat("\n Inverse covariance matrix (Sigma_inv):\n")
+  print(round(x$Sigma_inv, digits))
+
+  cat("\n Surface points: ", nrow(x$surface),
+      ifelse(x$dimen == 2, " (x, y)\n", " (x, y, z)\n"), sep = "")
+
+  invisible(x)
+}
+
+
+
