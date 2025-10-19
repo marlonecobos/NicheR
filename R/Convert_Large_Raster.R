@@ -1,7 +1,3 @@
-library(RSQLite)
-library(DBI)
-
-
 convert_large_raster <- function(raster_stack,
                                  out_filename = "raster_db",
                                  chunk_height = 500,
