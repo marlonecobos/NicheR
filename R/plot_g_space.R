@@ -1,6 +1,55 @@
+#' Plot Geographic Space with Optional Suitability/Distance and Occurrences
+#'
+#' Draws a world basemap and overlays (a) suitable environments as tiles
+#' derived from a niche ellipsoid, (b) a continuous distance-to-centroid
+#' surface, and/or (c) occurrence points. A compact custom legend is built
+#' to match the layers shown. If both `show.suitable` and `show.distance`
+#' are `TRUE`, the function disables `show.distance` and proceeds with
+#' `show.suitable = TRUE`.
+#'
+#' @param env_bg A background environment object used by
+#'   [get_suitable_env()]. Typically a `terra::SpatRaster` (or `raster::Raster*`)
+#'   providing the environmental layers and extent.
+#' @param n_bg Integer (currently unused; reserved for future downsampling of
+#'   the background grid).
+#' @param niche Optional object of class `"ellipsoid"` (from [build_ellps()]).
+#'   Required when `show.suitable = TRUE` or `show.distance = TRUE`.
+#' @param show.suitable Logical. If `TRUE`, fills suitable environments
+#'   (inside the ellipsoid) as tiles.
+#' @param show.distance Logical. If `TRUE`, fills tiles by squared distance to
+#'   the ellipsoid centroid (`dist_sq`). If both flags are `TRUE`, distance is
+#'   turned off and suitability is shown (with a message).
+#' @param occ_pts Optional `data.frame` of occurrences with columns `x`, `y`
+#'   (assumed longitude/latitude, WGS84). Plotted as points if supplied.
+#' @param show.occ.density Logical (currently unused; reserved for future
+#'   density panels).
+#' @param colors Optional named list to override aesthetics. Recognized names:
+#'   `bg` (basemap fill), `suitable_env` (suitable tiles), `occ_fill`,
+#'   `occ_stroke`, and `dist` (RColorBrewer palette name for distance tiles).
+#'   Example: `list(suitable_env = "#66CC99", dist = "YlOrRd")`.
+#' @param palette Character palette key (currently `"default"`; reserved for
+#'   future sets).
+#'
+#' @return A `ggpubr` object produced by [ggpubr::ggarrange()], containing the
+#'   map panel and a matching legend panel.
+#'
+#' @details
+#' The suitability/distance surface is obtained via
+#' `get_suitable_env(niche, env_bg, out = "data.frame", distances = TRUE)`,
+#' which returns columns `x`, `y`, and `dist_sq`. When `show.distance = TRUE`,
+#' a continuous legend is provided by `scale_fill_distiller()`. The custom
+#' legend on the right reflects only the discrete layers actually drawn
+#' (background, suitable, occurrences).
+#'
+#' @section Notes:
+#' - `niche` must be provided if either `show.suitable` or `show.distance` is `TRUE`.
+#' - If both `show.suitable` and `show.distance` are `TRUE`, the function sets
+#'   `show.distance <- FALSE` and informs the user.
+#' - `occ_pts` must include columns named `x` and `y`.
+#'
 #' @family plotting functions
 #' @seealso [build_ellps()], [get_suitable_env()]
-#' @import RColorBrewer ggplot2 dplyr
+#'
 #' @export
 plot_g_space <- function(env_bg,
                          n_bg = 10000,
