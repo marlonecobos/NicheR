@@ -215,12 +215,9 @@ sampled_occ_center <- get_sample_occ(
 )
 
 # Expand right margin so there's room for legend
-plot(suitable_g_space,
-     main = "Suitable Geographic Environment (G-space)",
-     col = c("#F2F2F2", "#FED789FF"))
-points(sampled_occ_center$x, sampled_occ_center$y,
-       pch = 20, col = "#B4BF3AFF", cex = 0.6)
-
+plot_g_space(env_bg = env_stack,
+             show.suitable = FALSE,
+             occ_pts = sampled_occ_center)
 
 ```
 

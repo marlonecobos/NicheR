@@ -130,5 +130,7 @@ plot_e_space(env_bg = env_df_db,
              x = "pr_sum",
              y = "tmmn_min",
              z = "tmmx_max",
-             niche = vs_1$niche)
+             niche = vs_1$niche,
+             show.pts.in = TRUE,
+             occ_pts = vs_1$occurrences)
 

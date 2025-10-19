@@ -9,15 +9,6 @@ plot_g_space <- function(env_bg,
                          palette = "default"){
 
 
-  # Dependencies
-  requireNamespace("ggplot2", quietly = TRUE)
-  requireNamespace("dplyr", quietly = TRUE)
-  requireNamespace("sf", quietly = TRUE)
-  requireNamespace("ggpubr", quietly = TRUE)
-
-  library(ggplot2)
-  library(dplyr)
-
   # Color / palette handling
   default_colors <- list(
     bg       = "#FED789FF",
