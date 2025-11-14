@@ -8,7 +8,8 @@ get_suitable_env(
   niche,
   env_bg,
   out = c("data.frame", "spatial", "both"),
-  distances = FALSE
+  distances = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{

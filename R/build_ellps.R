@@ -66,7 +66,7 @@ build_ellps <- function(center = c(x = 0, y = 0),
 
   # Warning when using a single vector
   if (length(angles) == 1) {
-    warning(sprintf("All axes will be applied the same angle specified: %s",
+    warning(sprintf("No angles specified. All axes will be applied the same angle specified: %s",
                     angles))
     angles <- rep(angles, dimen)  # repeat to match number of dimensions
   }

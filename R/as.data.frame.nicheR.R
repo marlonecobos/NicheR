@@ -174,5 +174,7 @@ as.data.frame.nicheR <- function(raster_stack,
   if (verbose) message("Updating NicheR temp cache: ", temp_cache_file)
   save(env_df, file = temp_cache_file)
 
+  gc()
+
   return(env_df)
 }

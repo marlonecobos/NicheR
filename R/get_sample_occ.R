@@ -101,7 +101,7 @@ get_sample_occ <- function(n_occ,
 
   # 1b) Accept tibble -> data.frame (keeps names and types)
   if (inherits(env_bg, "tbl_df")) {
-    env_bg <- as.data.frame(env_bg)
+    env_bg <- as.data.frame.nicheR(env_bg)
   }
 
   # 1c) Accept raster::Raster* by converting to terra::SpatRaster
@@ -118,7 +118,7 @@ get_sample_occ <- function(n_occ,
   if (inherits(env_bg, "SpatRaster")) {
 
     # Build a data.frame with XY and layer values for lookups later
-    env_bg_df <- terra::as.data.frame(env_bg, xy = TRUE, na.rm = FALSE)
+    env_bg_df <- as.data.frame.nicheR(env_bg)
 
     # Ensure XY names exist
     if (!all(c("x", "y") %in% names(env_bg_df))) {
@@ -138,7 +138,7 @@ get_sample_occ <- function(n_occ,
       stop("'env_bg' must be a matrix or data.frame.")
     }
 
-    env_bg_df <- as.data.frame(env_bg)
+    env_bg_df <- as.data.frame.nicheR(env_bg)
     niche_vars <- setdiff(names(env_bg_df), c("x", "y"))
 
     # Ensure XY names exist

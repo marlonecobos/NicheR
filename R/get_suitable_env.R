@@ -35,9 +35,12 @@
 get_suitable_env <- function(niche,
                              env_bg,
                              out = c("data.frame", "spatial", "both"),
-                             distances = FALSE) {
+                             distances = FALSE,
+                             verbose = TRUE) {
 
   out <- tolower(match.arg(out))
+
+  gc()
 
   # --- 1) Input validation and coercion ---
 
@@ -63,7 +66,7 @@ get_suitable_env <- function(niche,
 
   # 1b) Accept tibble -> data.frame (keeps names and types)
   if (inherits(env_bg, "tbl_df")) {
-    env_bg <- as.data.frame.nicheR(env_bg, verbose = FALSE, use_cache = TRUE)
+    env_bg <- as.data.frame.nicheR(env_bg, verbose = verbose, use_cache = TRUE)
   }
 
   # 1c) Accept raster::Raster* by converting to terra::SpatRaster
@@ -84,7 +87,7 @@ get_suitable_env <- function(niche,
     }
 
     # Build a data.frame with XY and layer values for lookups later
-    env_bg_df <- as.data.frame.nicheR(env_bg, verbose = FALSE, use_cache = TRUE)
+    env_bg_df <- as.data.frame.nicheR(env_bg, verbose = verbose, use_cache = TRUE)
 
     # Ensure XY names exist
     if (!all(c("x", "y") %in% names(env_bg_df))) {
@@ -102,10 +105,10 @@ get_suitable_env <- function(niche,
 
     if (inherits(env_bg, "SpatRaster")){
       # Build a data.frame with XY and layer values for lookups later
-      env_bg_df <- as.data.frame.nicheR(env_bg, verbose = FALSE, use_cache = TRUE)
+      env_bg_df <- as.data.frame.nicheR(env_bg, verbose = verbose, use_cache = TRUE)
 
     }else{
-      env_bg_df <- as.data.frame.nicheR(env_bg, verbose = FALSE, use_cache = TRUE)
+      env_bg_df <- as.data.frame.nicheR(env_bg, verbose = verbose, use_cache = TRUE)
     }
 
     niche_vars <- setdiff(names(env_bg_df), c("x", "y"))
@@ -201,6 +204,8 @@ get_suitable_env <- function(niche,
                   tmp
                 }
   )
+
+  gc()
 
   return(res)
 

@@ -27,6 +27,7 @@ validate_plot_e_space_args <- function(env_bg, x, y, z,
                                        labels, n_bg,
                                        niche, show.pts.in,
                                        occ_pts, show.occ.density) {
+
   if (!is.data.frame(env_bg)) stop("'env_bg' must be a data.frame.")
 
   # Helper: resolve a single spec (name or index) to a valid column name
