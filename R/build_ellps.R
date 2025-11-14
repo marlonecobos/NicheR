@@ -42,9 +42,9 @@
 #' @family ellipsoid functions
 #' @export
 build_ellps <- function(center = c(x = 0, y = 0),
-                            axes = c(1, 1),
-                            angles = 0,
-                            n_points = 100) {
+                        axes = c(1, 1),
+                        angles = 0,
+                        n_points = 100) {
 
   dimen <- length(center)
 

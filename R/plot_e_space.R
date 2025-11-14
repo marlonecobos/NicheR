@@ -157,9 +157,9 @@ plot_e_space <- function(env_bg,
   ## Toggle these on/off
   opts <- list(
     background_point = !is.null(n_bg),
-    trace_line       = TRUE,
-    centroid_point   = TRUE,
-    tolerance_range_line  = TRUE,
+    trace_line       = !is.null(niche),
+    centroid_point   = !is.null(niche),
+    tolerance_range_line  = !is.null(niche),
     suitable_point   = show.pts.in,
     occurrence_point = !is.null(occ_pts)
   )
