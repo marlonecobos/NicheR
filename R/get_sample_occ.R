@@ -1,172 +1,162 @@
-#' Sample Occurrence Points from a Suitable Environment
+#' Sample occurrence points from a suitable environment pool
 #'
-#' This function samples occurrence points from a background environmental
-#' dataset based on a defined ellipsoid niche. Sampling can be biased towards
-#' the center, the edge, or be purely random. Optionally, a sampling bias
-#' surface can be supplied to modulate the probability of selecting each
-#' suitable location.
+#' This function samples occurrence points from a precomputed pool of
+#' suitable environments. Sampling can be biased towards the center,
+#' the edge, or be purely random. Optionally, a 0–1 sampling bias
+#' surface can be supplied to modulate the probability of selecting
+#' each suitable location.
 #'
 #' @param n_occ Integer; the number of occurrence points to sample.
-#' @param env_bg Optional. A \code{terra::SpatRaster}, \code{data.frame}, or
-#'   \code{matrix} of environmental predictor variables. It must contain the
-#'   variables referenced by the \code{niche} object. If a \code{data.frame}
-#'   is used, it should also contain \code{x} and \code{y} columns for spatial
-#'   referencing. Required if \code{suitable_env} is not provided, or if
-#'   \code{bias_surface} is used and no explicit template is given.
-#' @param niche An object of class \code{ellipsoid} created by
-#'   \code{build_ellipsoid()}.
-#' @param method A character string specifying the sampling strategy. One of
-#'   \code{"random"}, \code{"center"}, or \code{"edge"}:
+#' @param suitable_env A precomputed suitability object describing the
+#'   suitable environment pool. May be:
 #'   \itemize{
-#'     \item \code{"random"}: Samples are drawn with uniform probability from
-#'       the suitable environmental space.
-#'     \item \code{"center"}: Sampling probability is inversely proportional to
-#'       the Mahalanobis distance, favoring points closer to the niche center.
-#'     \item \code{"edge"}: Sampling probability is proportional to the
-#'       Mahalanobis distance, favoring points closer to the niche boundary.
-#'   }
-#' @param bias_surface Optional. Either:
-#'   \itemize{
-#'     \item one or more bias layers (SpatRaster, SpatVector, path, or list)
-#'           that will be passed to \code{set_bias_surface()}, or
-#'     \item a precomputed \code{nicheR_bias_surface} object returned by
-#'           \code{set_bias_surface()}.
-#'   }
-#'   The resulting pooled bias surface is used to modulate sampling weights
-#'   over the suitable pool of environments.
-#' @param bias_dir Optional numeric values of \code{1} or \code{-1} passed
-#'   to \code{set_bias_surface()} when \code{bias_surface} is a raw bias
-#'   input. A length-1 value is recycled across layers.
-#' @param bias_template Optional \code{terra::SpatRaster} template to pass to
-#'   \code{set_bias_surface()} (overrides templates inferred from
-#'   \code{env_bg} or \code{suitable_env}).
-#' @param bias_res Optional numeric resolution to pass to
-#'   \code{set_bias_surface()} when building a template from \code{ext}.
-#' @param bias_ext Optional extent object (SpatRaster, SpatVector, or numeric
-#'   \code{c(xmin, xmax, ymin, ymax)}) passed to \code{set_bias_surface()}
-#'   when no template is provided.
-#' @param suitable_env Optional. A precomputed suitability object describing
-#'   the suitable environment pool. May be:
-#'   \itemize{
-#'     \item a \code{terra::SpatRaster} or \code{raster::Raster*} already
-#'           containing suitability and Mahalanobis distances, or
+#'     \item a \code{terra::SpatRaster} or \code{raster::Raster*} with
+#'           at least one layer containing squared distances
+#'           (\code{dist_sq}), or
 #'     \item a \code{data.frame} / \code{matrix} with columns \code{x},
-#'           \code{y}, and \code{dist_sq}, typically produced by
-#'           \code{get_suitable_env(..., out = "data.frame", distances = TRUE)}.
+#'           \code{y}, and (for non-random methods) \code{dist_sq},
+#'           typically produced by
+#'           \code{get_suitable_env(..., out.suit = "data.frame", distances = TRUE)}, or
+#'     \item a \code{suitable_env} object returned by
+#'           \code{get_suitable_env(..., out.suit = "both")}.
 #'   }
-#'   When supplied, \code{get_suitable_env()} is not called internally.
-#' @param seed An integer used to set the random number generator seed for
-#'   reproducible results.
+#' @param method Character; sampling strategy, one of:
+#'   \itemize{
+#'     \item \code{"random"}: uniform probability over the suitable pool.
+#'     \item \code{"center"}: probability inversely proportional to
+#'           Mahalanobis distance (higher near the niche center).
+#'     \item \code{"edge"}: probability proportional to Mahalanobis
+#'           distance (higher near the niche boundary).
+#'   }
+#' @param bias_surface Optional 1-layer \code{terra::SpatRaster} or
+#'   \code{raster::Raster*} describing sampling bias, scaled to [0, 1]
+#'   on the same grid/CRS as the suitability surface. Bias values are
+#'   extracted at suitable locations and multiplied with the method-
+#'   based weights. Cells with \code{NA} bias are treated as 0 (i.e.,
+#'   not sampled).
+#' @param seed Optional integer used to set the random number generator
+#'   seed for reproducible results.
+#' @param verbose Logical. If \code{TRUE}, print progress messages.
 #'
 #' @return A \code{data.frame} containing \code{n_occ} sampled rows from the
-#'   suitable environment pool, including the \code{x} and \code{y} coordinates
-#'   and the environmental predictor values.
+#'   suitable environment pool, including \code{x}, \code{y}, and any
+#'   environmental predictor columns. The \code{dist_sq} column is dropped
+#'   from the returned data.
 #'
 #' @details
-#' The function first obtains a pool of suitable environments either by:
+#' This function assumes that the suitability / distance calculations
+#' have already been performed (e.g. via \code{get_suitable_env()}).
+#' It only handles the sampling step:
 #' \enumerate{
-#'   \item calling \code{get_suitable_env()} on \code{env_bg}, or
-#'   \item using a user-supplied \code{suitable_env} object that already
-#'         contains suitability and Mahalanobis distances.
+#'   \item Coerce \code{suitable_env} to a data.frame with \code{x}, \code{y},
+#'         and (for non-random methods) \code{dist_sq}.
+#'   \item Compute method-specific weights.
+#'   \item Optionally multiply weights by a user-supplied 0–1 bias surface.
+#'   \item Draw \code{n_occ} samples with probability proportional to the
+#'         final weights.
 #' }
 #'
-#' It then applies a weighting scheme based on \code{method} and, if provided,
-#' a pooled bias surface (either raw layers via \code{set_bias_surface()} or a
-#' precomputed \code{nicheR_bias_surface}) to probabilistically select
-#' \code{n_occ} points from this suitable environment pool.
-#'
-#' @seealso \code{\link{build_ellipsoid}}, \code{\link{get_suitable_env}},
-#'   \code{\link{set_bias_surface}}
+#' @seealso \code{\link{get_suitable_env}}, \code{\link{set_bias_surface}}
 #'
 #' @export
 get_sample_occ <- function(n_occ,
-                           env_bg = NULL,
-                           niche,
+                           suitable_env,
                            method = c("random", "center", "edge"),
                            bias_surface = NULL,
-                           bias_dir = 1,
-                           bias_template = NULL,
-                           bias_res = NULL,
-                           bias_ext = NULL,
-                           suitable_env = NULL,
-                           seed = NULL) {
+                           seed = NULL,
+                           verbose = TRUE) {
 
   method <- tolower(match.arg(method))
 
-  # --- 1) Check niche structure ----------------------------------------------
+  # --- 1) Coerce suitable_env to data.frame with required columns -----------
 
-  if (!inherits(niche, "ellipsoid")) {
-    stop("'niche' must be an object of class 'ellipsoid' produced by build_ellipsoid().")
+  if (is.null(seed)) {
+    warning("Sampling seed not set, results will differ each time this function is run.",
+            call. = FALSE, immediate. = TRUE)
   }
 
-  need <- c("center", "Sigma_inv", "dimen")
-  miss <- setdiff(need, names(niche))
-  if (length(miss)) {
-    stop(sprintf("'niche' is missing required fields: %s", paste(miss, collapse = ", ")))
+  if (missing(suitable_env) || is.null(suitable_env)) {
+    stop("'suitable_env' must be provided.")
   }
 
-  if (!(is.numeric(niche$center) && length(niche$center) == niche$dimen)) {
-    stop("'niche$center' must be numeric with length equal to 'niche$dimen'.")
-  }
+  suitable_pool <- NULL
+  suitable_rast <- NULL
 
-  if (!is.matrix(niche$Sigma_inv) || any(!is.finite(niche$Sigma_inv))) {
-    stop("'niche$Sigma_inv' must be a finite numeric matrix.")
-  }
+  ## 1A) Handle 'suitable_env' objects returned by get_suitable_env(...)
+  if (inherits(suitable_env, "suitable_env") ||
+      (is.list(suitable_env) &&
+       any(c("suitable_env_df", "suitable_env_sp") %in% names(suitable_env)))) {
 
-  # --- 2) Ensure we have at least env_bg or suitable_env ---------------------
+    # Prefer the data.frame if present
+    if ("suitable_env_df" %in% names(suitable_env) &&
+        is.data.frame(suitable_env$suitable_env_df)) {
 
-  if (is.null(env_bg) && is.null(suitable_env)) {
-    stop("Either 'env_bg' or 'suitable_env' must be provided.")
-  }
+      suitable_pool <- suitable_env$suitable_env_df
 
-  # --- 3) Coerce env_bg if present -------------------------------------------
+    } else if ("suitable_env_sp" %in% names(suitable_env)) {
 
-  env_bg_rast <- NULL
-  if (!is.null(env_bg)) {
+      sp <- suitable_env$suitable_env_sp
 
-    if (inherits(env_bg, "tbl_df")) {
-      env_bg <- as.data.frame(env_bg)
-    }
+      # sp can be a SpatRaster or a list of SpatRaster objects
+      if (inherits(sp, "Raster")) {
+        sp <- terra::rast(sp)
+      }
 
-    if (inherits(env_bg, "Raster")) {
-      env_bg <- terra::rast(env_bg)
-    }
+      if (inherits(sp, "SpatRaster")) {
+        suitable_rast <- sp
+      } else if (is.list(sp) &&
+                 length(sp) > 0 &&
+                 all(vapply(sp, inherits, logical(1), "SpatRaster"))) {
 
-    if (!inherits(env_bg, c("SpatRaster", "data.frame", "matrix"))) {
-      stop("'env_bg' must be a terra::SpatRaster, data.frame, or matrix.")
-    }
+        # for out.suit = "both", this is usually a named list: list(suitable = ..., dist_sq = ...)
+        if (method == "random") {
+          # any raster is fine if we just need x,y; prefer "suitable" if named
+          if ("suitable" %in% names(sp)) {
+            suitable_rast <- sp[["suitable"]]
+          } else {
+            suitable_rast <- sp[[1]]
+          }
+        } else {
+          # center / edge → need dist_sq
+          if ("dist_sq" %in% names(sp)) {
+            suitable_rast <- sp[["dist_sq"]]
+          } else {
+            # try to find a layer named "dist_sq" inside any raster
+            idx_found <- NA_integer_
+            for (i in seq_along(sp)) {
+              ly_names <- names(sp[[i]])
+              if ("dist_sq" %in% ly_names) {
+                idx_found <- i
+                break
+              }
+            }
+            if (is.na(idx_found)) {
+              stop("For method = '", method,
+                   "', 'suitable_env' does not contain a 'dist_sq' raster.\n",
+                   "Run get_suitable_env(..., distances = TRUE) or pass a data.frame with 'dist_sq'.")
+            }
+            suitable_rast <- sp[[idx_found]]
+          }
+        }
 
-    if (inherits(env_bg, "SpatRaster")) {
-      env_bg_rast <- env_bg
+      } else {
+        stop(
+          "'suitable_env$suitable_env_sp' must be a SpatRaster or a list of SpatRaster objects."
+        )
+      }
 
-      if (terra::nlyr(env_bg_rast) < niche$dimen) {
-        stop("Raster has fewer predictor layers than 'niche$dimen'.")
+      # convert chosen raster to data.frame (x, y, layer values)
+      if (!is.null(suitable_rast)) {
+        suitable_pool <- as.data.frame.nicheR(suitable_rast)
       }
 
     } else {
-      env_bg <- as.data.frame(env_bg)
-      if (!all(c("x", "y") %in% names(env_bg))) {
-        stop("'env_bg' must include spatial columns 'x' and 'y' when supplied as a data.frame or matrix.")
-      }
-    }
-  }
-
-  # --- 4) Coerce suitable_env / build suitable_pool --------------------------
-
-  suitable_env_rast <- NULL
-  if (is.null(suitable_env)) {
-
-    if (is.null(env_bg)) {
-      stop("When 'suitable_env' is NULL, 'env_bg' must be provided.")
+      stop(
+        "'suitable_env' object must contain either 'suitable_env_df' or 'suitable_env_sp'."
+      )
     }
 
-    suitable_pool <- get_suitable_env(
-      niche     = niche,
-      env_bg    = env_bg,
-      out       = "data.frame",
-      distances = TRUE
-    )
-
+    ## 1B) Otherwise: raw SpatRaster / Raster* / data.frame / matrix ----------
   } else {
 
     if (inherits(suitable_env, "Raster")) {
@@ -174,119 +164,124 @@ get_sample_occ <- function(n_occ,
     }
 
     if (inherits(suitable_env, "SpatRaster")) {
-      suitable_env_rast <- suitable_env
-      suitable_pool <- as.data.frame.nicheR(suitable_env_rast)
+
+      suitable_rast <- suitable_env
+      suitable_pool <- as.data.frame.nicheR(suitable_rast)
+
     } else if (is.data.frame(suitable_env) || is.matrix(suitable_env)) {
+
       suitable_pool <- as.data.frame(suitable_env)
+
     } else {
       stop(
-        "'suitable_env' must be a terra::SpatRaster, raster::Raster*, ",
-        "data.frame, or matrix when provided directly."
-      )
-    }
-
-    required_cols <- c("x", "y", "dist_sq")
-    missing_cols  <- setdiff(required_cols, names(suitable_pool))
-    if (length(missing_cols) > 0) {
-      stop(
-        "'suitable_env' (after coercion) must contain columns: ",
-        paste(required_cols, collapse = ", "),
-        ". Missing: ", paste(missing_cols, collapse = ", "),
-        ". If needed, run get_suitable_env(..., distances = TRUE) first."
+        "'suitable_env' must be a 'suitable_env' object, a terra::SpatRaster, ",
+        "raster::Raster*, data.frame, or matrix."
       )
     }
   }
 
-  # --- 5) Check suitable pool size -------------------------------------------
+  # Need x, y always
+  required_xy <- c("x", "y")
+  missing_xy  <- setdiff(required_xy, names(suitable_pool))
+
+  if (length(missing_xy) > 0) {
+    stop(
+      "'suitable_env' (after coercion) must contain columns: ",
+      paste(required_xy, collapse = ", "),
+      ". Missing: ", paste(missing_xy, collapse = ", "), "."
+    )
+  }
+
+  # For center/edge methods, need dist_sq
+  if (method %in% c("center", "edge")) {
+    if (!"dist_sq" %in% names(suitable_pool)) {
+      stop(
+        "For method = '", method,
+        "', 'suitable_env' must contain a 'dist_sq' column.\n",
+        "If needed, run get_suitable_env(..., distances = TRUE)."
+      )
+    }
+  }
 
   if (nrow(suitable_pool) < 1) {
-    stop("No suitable environments were found in the provided niche space.")
+    stop("No suitable environments were found in 'suitable_env'.")
   }
 
-  # --- 6) Optional sampling bias ---------------------------------------------
+  # --- 2) Optional bias surface ---------------------------------------------
 
   bias_values <- NULL
 
   if (!is.null(bias_surface)) {
 
-    # Case 1: user already passed a nicheR_bias_surface object
-    if (inherits(bias_surface, "nicheR_bias_surface")) {
-
-      if (is.null(bias_surface$pooled_bias_sp)) {
-        stop("Provided 'nicheR_bias_surface' object does not contain 'pooled_bias_sp'.")
-      }
-
-      pooled_bias_sp <- bias_surface$pooled_bias_sp
-
-    } else {
-
-      # Case 2: raw bias layers, call set_bias_surface()
-      # Choose template automatically if user did not supply one
-      template_rast <- bias_template
-      if (is.null(template_rast)) {
-        template_rast <- if (!is.null(env_bg_rast)) {
-          env_bg_rast
-        } else {
-          suitable_env_rast
-        }
-      }
-
-      if (is.null(template_rast) && is.null(bias_ext)) {
-        stop(
-          "A 'bias_surface' was supplied, but no raster template (env_bg/suitable_env) ",
-          "or 'bias_ext' was available.\n",
-          "Provide 'env_bg' or 'suitable_env' as a SpatRaster, or specify ",
-          "'bias_template' or ('bias_ext' + 'bias_res')."
-        )
-      }
-
-      bias_res_obj <- set_bias_surface(
-        bias_surface = bias_surface,
-        bias_dir     = bias_dir,
-        template     = template_rast,
-        res          = bias_res,
-        ext          = bias_ext,
-        out          = "default",
-        verbose      = FALSE
-      )
-
-      pooled_bias_sp <- bias_res_obj$pooled_bias_sp
+    if (inherits(bias_surface, "Raster")) {
+      bias_surface <- terra::rast(bias_surface)
     }
 
-    # Extract bias values at the coordinates of the suitable pool
-    coords  <- cbind(suitable_pool$x, suitable_pool$y)
-    ext_df  <- terra::extract(pooled_bias_sp, coords)
+    if (!inherits(bias_surface, "SpatRaster")) {
+      stop("'bias_surface' must be a 1-layer terra::SpatRaster or raster::Raster*.")
+    }
 
-    # ext_df: first column is ID, second is 'pooled_bias'
-    bias_values <- ext_df[, 2]
+    if (terra::nlyr(bias_surface) != 1) {
+      stop("'bias_surface' must have exactly one layer (0–1 bias values).")
+    }
+
+    # Check values in [0, 1]
+    vals <- terra::values(bias_surface)
+    rng  <- range(vals, na.rm = TRUE)
+
+    if (rng[1] < 0 - 1e-6 || rng[2] > 1 + 1e-6) {
+      stop(
+        "'bias_surface' must be scaled to [0, 1]. ",
+        "Observed range: [", signif(rng[1], 3), ", ", signif(rng[2], 3), "]."
+      )
+    }
+
+    # Extract bias at suitable locations
+    coords <- cbind(suitable_pool$x, suitable_pool$y)
+    ext_df <- terra::extract(bias_surface, coords)
+
+    bias_values <- ext_df[, 1]
     bias_values[is.na(bias_values)] <- 0
+
+  } else if (verbose) {
+
+    message("No 'bias_surface' supplied; sampling based only on 'method'.")
   }
 
-  # --- 7) Sampling weights by method -----------------------------------------
+  # --- 3) Sampling weights ---------------------------------------------------
 
-  d <- sqrt(pmax(0, suitable_pool$dist_sq))
-  d <- pmin(d, 1)
+  # Base weights from method
+  if (method == "random") {
 
-  w <- switch(
-    method,
-    "random" = rep(1, nrow(suitable_pool)),
-    "center" = 1 - d,   # higher near center
-    "edge"   = d        # higher near boundary
-  )
+    w <- rep(1, nrow(suitable_pool))
 
-  w[!is.finite(w)] <- 0
+  } else {
 
+    d <- sqrt(pmax(0, suitable_pool$dist_sq))
+    # clamp distances to [0, 1] if they were normalized that way
+    d <- pmin(d, 1)
+
+    w <- switch(
+      method,
+      "center" = 1 - d,   # higher near center
+      "edge"   = d        # higher near boundary
+    )
+
+    w[!is.finite(w)] <- 0
+  }
+
+  # Apply bias if available
   if (!is.null(bias_values)) {
     w <- w * bias_values
   }
 
-  if (sum(w) == 0) {
+  if (sum(w, na.rm = TRUE) == 0) {
     warning("All sampling weights are zero; falling back to uniform sampling.",
             call. = FALSE)
     w <- rep(1, length(w))
   }
 
-  # --- 8) Sample indices ------------------------------------------------------
+  # --- 4) Draw samples -------------------------------------------------------
 
   if (!is.null(seed)) set.seed(seed)
   replace_flag <- n_occ > nrow(suitable_pool)
@@ -298,12 +293,13 @@ get_sample_occ <- function(n_occ,
     prob    = w
   )
 
-  # --- 9) Return sampled rows -------------------------------------------------
-
   occ <- suitable_pool[idx, , drop = FALSE]
   occ$dist_sq <- NULL
   rownames(occ) <- NULL
 
-  message(sprintf("Done sampling %d occurrences", n_occ))
+  if (verbose) {
+    message(sprintf("Done sampling %d occurrences.", n_occ))
+  }
+
   return(occ)
 }

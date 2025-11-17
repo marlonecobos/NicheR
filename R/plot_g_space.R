@@ -1,26 +1,27 @@
 #' Plot Geographic Space with Optional Suitability/Distance and Occurrences
 #'
-#' Draws a world basemap and overlays (a) suitable environments as tiles
-#' derived from a niche ellipsoid, (b) a continuous distance-to-centroid
-#' surface, and/or (c) occurrence points. A compact custom legend is built
-#' to match the layers shown. If both `show.suitable` and `show.distance`
-#' are `TRUE`, the function disables `show.distance` and proceeds with
-#' `show.suitable = TRUE`.
+#' Draws a world basemap and overlays (a) suitable environments as tiles,
+#' (b) an optional continuous distance-to-centroid surface, and/or (c)
+#' occurrence points. A compact custom legend is built to match the
+#' discrete layers shown.
 #'
-#' @param env_bg A background environment object used by
-#'   [get_suitable_env()]. Typically a `terra::SpatRaster` (or `raster::Raster*`)
-#'   providing the environmental layers and extent. If `vs` is supplied and
-#'   `env_bg` is `NULL`, the function will try to use `vs$call_args$env_bg`.
+#' @param env_bg Optional background environment object used when
+#'   `suitable_env` is not supplied and suitability must be computed.
+#'   Typically a `terra::SpatRaster` (or `raster::Raster*`).
 #' @param n_bg Integer (currently unused; reserved for future downsampling of
 #'   the background grid).
 #' @param niche Optional object of class `"ellipsoid"` (from [build_ellps()]).
-#'   Required when `show.suitable = TRUE` or `show.distance = TRUE`. If `vs`
-#'   is supplied and `niche` is `NULL`, the function will try to use `vs$niche`.
-#' @param show.suitable Logical. If `TRUE`, fills suitable environments
-#'   (inside the ellipsoid) as tiles.
-#' @param show.distance Logical. If `TRUE`, fills tiles by squared distance to
-#'   the ellipsoid centroid (`dist_sq`). If both flags are `TRUE`, distance is
-#'   turned off and suitability is shown (with a message).
+#'   Required when suitability is computed internally (i.e., when
+#'   `suitable_env` is `NULL`).
+#' @param suitable_env Optional precomputed suitable environment object. Can be:
+#'   \itemize{
+#'     \item a `data.frame` with columns `x`, `y`, and optionally `dist_sq`,
+#'     \item a `"suitable_env"` object returned by [get_suitable_env()]
+#'           with a `suitable_env_df` component.
+#'   }
+#'   If `dist_sq` is present, a distance panel is also drawn. If you only
+#'   want one surface (e.g., just suitability or just distance), supply only
+#'   that information in `suitable_env`.
 #' @param occ_pts Optional `data.frame` of occurrences with columns `x`, `y`
 #'   (assumed longitude/latitude, WGS84). Plotted as points if supplied. If
 #'   `vs` is supplied and `occ_pts` is `NULL`, the function will try to use
@@ -30,53 +31,29 @@
 #' @param colors Optional named list to override aesthetics. Recognized names:
 #'   `bg` (basemap fill), `suitable_env` (suitable tiles), `occ_fill`,
 #'   `occ_stroke`, and `dist` (RColorBrewer palette name for distance tiles).
-#'   Example: `list(suitable_env = "#66CC99", dist = "YlOrRd")`.
 #' @param palette Character palette key. One of `"default"`, `"palette2"`,
 #'   or `"palette3"`.
 #' @param vs Optional object of class `"NicheR_species"` created by
-#'   [create_virtual_species()]. When provided, any of `env_bg`, `niche`, and
-#'   `occ_pts` that are `NULL` will be filled from this object if possible.
+#'   [create_virtual_species()]. When provided, any of `env_bg`, `niche`,
+#'   `occ_pts`, or `suitable_env` that are `NULL` will be filled from this
+#'   object if possible.
 #'
-#' @return A `ggpubr` object produced by [ggpubr::ggarrange()], containing the
-#'   map panel and a matching legend panel.
-#'
-#' @details
-#' The suitability/distance surface is obtained via
-#' `get_suitable_env(niche, env_bg, out = "data.frame", distances = TRUE)`,
-#' which returns columns `x`, `y`, and `dist_sq`. When `show.distance = TRUE`,
-#' a continuous legend is provided by `scale_fill_distiller()`. The custom
-#' legend on the right reflects only the discrete layers actually drawn
-#' (background, suitable, occurrences).
-#'
-#' If a `NicheR_species` object is provided via `vs`, the function:
-#' \itemize{
-#'   \item uses `vs$call_args$env_bg` as `env_bg` when `env_bg` is `NULL`,
-#'   \item uses `vs$niche` as `niche` when `niche` is `NULL`,
-#'   \item uses `vs$occurrences` as `occ_pts` when `occ_pts` is `NULL`.
-#' }
-#' Explicit arguments always take precedence over values inferred from `vs`.
-#'
-#' @section Notes:
-#' - `niche` must be provided (directly or via `vs`) if either `show.suitable`
-#'   or `show.distance` is `TRUE`.
-#' - If both `show.suitable` and `show.distance` are `TRUE`, the function sets
-#'   `show.distance <- FALSE` and informs the user.
-#' - `occ_pts` must include columns named `x` and `y`.
+#' @return A `ggpubr` object produced by [ggpubr::ggarrange()], containing
+#'   one or two map panels plus a matching legend panel.
 #'
 #' @family plotting functions
 #' @seealso [build_ellps()], [get_suitable_env()], [create_virtual_species()]
 #'
 #' @export
-plot_g_space <- function(env_bg,
+plot_g_space <- function(env_bg = NULL,
                          n_bg = 10000,
-                         niche = NULL,
-                         show.suitable = FALSE,
-                         show.distance = FALSE,
+                         suitable_env = NULL,
                          occ_pts = NULL,
                          show.occ.density = FALSE,
                          colors = NULL,
                          palette = "default",
-                         vs = NULL) {
+                         vs = NULL,
+                         niche = NULL) {
 
   # ---- 0. Pull components from NicheR_species if provided -----------------
   if (!is.null(vs)) {
@@ -84,21 +61,17 @@ plot_g_space <- function(env_bg,
       stop("'vs' must be an object of class 'NicheR_species' created by create_virtual_species().")
     }
 
-    # env_bg: try call_args$env_bg if user didn't pass env_bg explicitly
-    if (missing(env_bg) || is.null(env_bg)) {
-      if (!is.null(vs$call_args) && "env_bg" %in% names(vs$call_args)) {
-        env_bg <- vs$call_args$env_bg
-      }
+    if (is.null(env_bg) && !is.null(vs$call_args) && "env_bg" %in% names(vs$call_args)) {
+      env_bg <- vs$call_args$env_bg
     }
-
-    # niche: use vs$niche if not supplied explicitly
     if (is.null(niche) && !is.null(vs$niche)) {
       niche <- vs$niche
     }
-
-    # occ_pts: use vs$occurrences if not supplied explicitly
     if (is.null(occ_pts) && !is.null(vs$occurrences)) {
       occ_pts <- vs$occurrences
+    }
+    if (is.null(suitable_env) && !is.null(vs$suitability)) {
+      suitable_env <- vs$suitability
     }
   }
 
@@ -137,7 +110,6 @@ plot_g_space <- function(env_bg,
   if (is.null(colors)) {
     default_colors <- base_colors
   } else {
-    # Allow unnamed list/vector: assign in base_colors order
     if (is.null(names(colors))) {
       names(colors) <- names(base_colors)[seq_along(colors)]
       if (!is.list(colors)) colors <- as.list(colors)
@@ -149,48 +121,124 @@ plot_g_space <- function(env_bg,
       )
     }
     if (!is.list(colors)) colors <- as.list(colors)
-    default_colors <- modifyList(base_colors, colors)
+    default_colors <- utils::modifyList(base_colors, colors)
   }
 
-  # ---- 2. Input validation & auto-fixes -----------------------------------
+  # ---- 2. Occurrence points validation ------------------------------------
 
-  if (missing(env_bg) || is.null(env_bg)) {
-    stop("`env_bg` must be provided (directly or via `vs`) to set extent / background.")
+  if (!is.null(occ_pts) && !all(c("x", "y") %in% names(occ_pts))) {
+    stop("`occ_pts` must have columns named 'x' and 'y'.")
   }
+  # ---- 3. Standardize suitable_env into a data.frame ----------------------
 
-  # If both TRUE, turn distance off
-  if (isTRUE(show.suitable) && isTRUE(show.distance)) {
-    show.distance <- FALSE
-    message("Both `show.suitable` and `show.distance` were TRUE. ",
-            "Setting `show.distance = FALSE` to avoid conflicts.")
-  }
+  suitable_df <- NULL
 
-  # If either suitable or distance is requested, need a niche object
-  if ((isTRUE(show.suitable) || isTRUE(show.distance)) && is.null(niche)) {
-    stop("`niche` must not be NULL when `show.suitable` or `show.distance` is TRUE ",
-         "(provide it directly or via `vs`).")
-  }
+  if (!is.null(suitable_env)) {
 
-  # Occurrence points validation
-  if (!is.null(occ_pts)) {
-    if (!all(c("x", "y") %in% names(occ_pts))) {
-      stop("`occ_pts` must have columns named 'x' and 'y'.")
+    if (is.data.frame(suitable_env)) {
+
+      # Case 1: plain data.frame
+      suitable_df <- suitable_env
+
+    } else if (is.list(suitable_env) &&
+               "suitable_env_df" %in% names(suitable_env)) {
+
+      # Case 2: full suitable_env object with a df component
+      suitable_df <- suitable_env$suitable_env_df
+
+    } else {
+
+      # Cases where suitability is stored as rasters
+      rast_stack <- NULL
+
+      # 2a) suitable_env is a full suitable_env object with only rasters
+      if (is.list(suitable_env) &&
+          "suitable" %in% names(suitable_env)) {
+
+        sp <- suitable_env
+
+        if (inherits(sp, "SpatRaster")) {
+          rast_stack <- sp
+        } else if (is.list(sp) &&
+                   length(sp) > 0 &&
+                   all(vapply(sp, inherits, logical(1), "SpatRaster"))) {
+
+          # list of rasters (e.g. suitable, dist_sq) → stack
+          rast_stack <- rast(sp)
+
+        } else {
+          stop(
+            "'suitable_env$suitable_env_sp' must be a SpatRaster or a list of SpatRasters ",
+            "when no 'suitable_env_df' is present."
+          )
+        }
+
+      } else if (inherits(suitable_env, "SpatRaster")) {
+
+        # 2b) single SpatRaster stack
+        rast_stack <- suitable_env
+
+      } else if (is.list(suitable_env) &&
+                 length(suitable_env) > 0 &&
+                 all(vapply(suitable_env, inherits, logical(1), "SpatRaster"))) {
+
+        # 2c) list of SpatRasters directly
+        rast_stack <- rast(sp)
+
+      } else {
+        stop(
+          "`suitable_env` must be either:\n",
+          "  * a data.frame with columns 'x', 'y' (and optionally 'dist_sq'), or\n",
+          "  * a 'suitable_env' object with 'suitable_env_df' or 'suitable_env_sp', or\n",
+          "  * a SpatRaster / list of SpatRasters.\n"
+        )
+      }
+
+      # convert stack to data.frame
+      suitable_df <- as.data.frame.nicheR(rast_stack)
+    }
+
+    # sanity check for coordinates
+    if (!all(c("x", "y") %in% names(suitable_df))) {
+      stop("`suitable_env` (after coercion) must contain 'x' and 'y' columns.")
+    }
+
+  } else {
+    # no suitable_env provided; fall back to internal computation if possible
+    if (!is.null(niche) && !is.null(env_bg)) {
+      suitable_df <- get_suitable_env(
+        niche     = niche,
+        env_bg    = env_bg,
+        out.suit  = "data.frame",
+        distances = TRUE,
+        verbose   = FALSE
+      )
+      message(
+        "Suitability was not supplied; computed internally via get_suitable_env().\n",
+        "For repeated plots, consider calling get_suitable_env() once and passing ",
+        "the result to `suitable_env`."
+      )
+    } else {
+      suitable_df <- NULL
     }
   }
 
-  # ---- 3. Legend configuration --------------------------------------------
+  has_suitable <- !is.null(suitable_df)
+  has_distance <- has_suitable && ("dist_sq" %in% names(suitable_df))
+
+  # ---- 4. Legend configuration --------------------------------------------
 
   opts <- list(
     background_point = TRUE,
-    suitable_point   = show.suitable,
+    suitable_point   = has_suitable,
     occurrence_point = !is.null(occ_pts)
   )
 
   legend_items <- data.frame(
-    id       = c("background_point","suitable_point","occurrence_point"),
-    type     = c("point","point","point"),
-    label    = c("Background environments","Suitable environments","Occurrence"),
-    color    = c(
+    id    = c("background_point","suitable_point","occurrence_point"),
+    type  = c("point","point","point"),
+    label = c("Background environments","Suitable environments","Occurrence"),
+    color = c(
       default_colors[["bg"]],
       default_colors[["suitable_env"]],
       default_colors[["occ_fill"]]
@@ -238,11 +286,11 @@ plot_g_space <- function(env_bg,
       ggplot2::scale_colour_identity()
   }
 
-  # ---- 4. Basemap ----------------------------------------------------------
+  # ---- 5. Basemap ----------------------------------------------------------
 
   world <- ggplot2::map_data("world")
 
-  return_plot <- ggplot2::ggplot() +
+  base_map <- ggplot2::ggplot() +
     ggplot2::geom_polygon(
       data = world,
       ggplot2::aes(x = long, y = lat, group = group),
@@ -252,8 +300,9 @@ plot_g_space <- function(env_bg,
     ggplot2::ylab("Latitude") +
     ggplot2::theme_bw()
 
-  # ---- 5. Occurrence points (convert to sf) --------------------------------
+  # ---- 6. Occurrence points (convert to sf) --------------------------------
 
+  occ_pts_sp <- NULL
   if (!is.null(occ_pts)) {
     occ_pts_sp <- sf::st_as_sf(
       occ_pts[, c("x", "y")],
@@ -262,53 +311,81 @@ plot_g_space <- function(env_bg,
     )
   }
 
-  # ---- 6. Suitable / distance surfaces ------------------------------------
-
-  if (isTRUE(show.suitable) || isTRUE(show.distance)) {
-    # env_bg can be Raster* or SpatRaster; get_suitable_env handles both
-    suitable_g_space <- get_suitable_env(
-      niche     = niche,
-      env_bg    = env_bg,
-      out       = "data.frame",
-      distances = TRUE
-    )
+  add_occ <- function(p) {
+    if (!is.null(occ_pts_sp)) {
+      p <- p +
+        ggplot2::geom_sf(
+          data  = occ_pts_sp,
+          ggplot2::aes(geometry = geometry),
+          color = default_colors[["occ_stroke"]],
+          fill  = default_colors[["occ_fill"]],
+          pch   = 21,
+          size  = 0.75
+        )
+    }
+    p
   }
 
-  if (isTRUE(show.distance)) {
-    return_plot <- return_plot +
+  # ---- 7. Build one or two map panels -------------------------------------
+
+  map_list <- list()
+
+  if (has_suitable) {
+    # Panel 1: binary suitable (presence-only tiles)
+    p_suit <- base_map +
       ggplot2::geom_tile(
-        data = suitable_g_space,
+        data = suitable_df,
+        ggplot2::aes(x = x, y = y),
+        fill = default_colors[["suitable_env"]]
+      ) +
+      ggplot2::ggtitle("Suitable Environments")
+
+    p_suit <- add_occ(p_suit)
+    map_list[["suitable"]] <- p_suit
+  }
+
+  if (has_distance) {
+    # Panel 2: distance surface
+    p_dist <- base_map +
+      ggplot2::geom_tile(
+        data = suitable_df,
         ggplot2::aes(x = x, y = y, fill = dist_sq)
       ) +
       ggplot2::scale_fill_distiller(
         name    = "Distance to centroid",
         palette = default_colors[["dist"]]
       ) +
-      ggplot2::theme(
-        legend.position = "bottom"
-      )
+      ggplot2::ggtitle("Distance surface") +
+      ggplot2::theme(legend.position = "bottom")
+
+    p_dist <- add_occ(p_dist)
+    map_list[["dist_sq"]] <- p_dist
   }
 
-  if (isTRUE(show.suitable)) {
-    return_plot <- return_plot +
-      ggplot2::geom_tile(
-        data = suitable_g_space,
-        ggplot2::aes(x = x, y = y),
-        fill = default_colors[["suitable_env"]]
-      )
+  # If no suitability at all, just show basemap + occurrences
+  if (length(map_list) == 0L) {
+    p_base <- add_occ(base_map)
+    return(ggpubr::ggarrange(p_base, legend_plot, widths = c(0.7, 0.3)))
   }
 
-  if (!is.null(occ_pts)) {
-    return_plot <- return_plot +
-      ggplot2::geom_sf(
-        data  = occ_pts_sp,
-        ggplot2::aes(geometry = geometry),
-        color = default_colors[["occ_stroke"]],
-        fill  = default_colors[["occ_fill"]],
-        pch   = 21,
-        size  = 0.75
-      )
+  # ---- 8. Arrange panels + legend -----------------------------------------
+
+  if (length(map_list) == 1L) {
+    main_panel <- map_list[[1]]
+  } else {
+    main_panel <- ggpubr::ggarrange(
+      plotlist = map_list,
+      nrow     = length(map_list),
+      labels   = NULL,
+      heights = c(0.45, 0.55)
+    )
   }
 
-  ggpubr::ggarrange(return_plot, legend_plot, widths = c(0.7, 0.3))
+  ggpubr::ggarrange(
+    main_panel,
+    legend_plot,
+    ncol    = 1,
+    heights  = c(0.7, 0.3)
+  )
+
 }

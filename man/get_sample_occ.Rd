@@ -10,6 +10,10 @@ get_sample_occ(
   niche,
   method = c("random", "center", "edge"),
   bias_surface = NULL,
+  bias_dir = 1,
+  bias_template = NULL,
+  bias_res = NULL,
+  bias_ext = NULL,
   suitable_env = NULL,
   seed = NULL
 )
@@ -22,7 +26,7 @@ get_sample_occ(
 variables referenced by the \code{niche} object. If a \code{data.frame}
 is used, it should also contain \code{x} and \code{y} columns for spatial
 referencing. Required if \code{suitable_env} is not provided, or if
-\code{bias_surface} is used.}
+\code{bias_surface} is used and no explicit template is given.}
 
 \item{niche}{An object of class \code{ellipsoid} created by
 \code{build_ellipsoid()}.}
@@ -38,18 +42,30 @@ referencing. Required if \code{suitable_env} is not provided, or if
     Mahalanobis distance, favoring points closer to the niche boundary.
 }}
 
-\item{bias_surface}{Optional. One or more bias layers describing sampling
-bias. Passed to \code{set_bias_surface()} using either \code{env_bg} or
-\code{suitable_env} as the raster template. Can be:
+\item{bias_surface}{Optional. Either:
 \itemize{
-  \item a \code{terra::SpatRaster} (single or multi layer),
-  \item a \code{terra::SpatVector},
-  \item a character path to a raster or vector file,
-  \item a \code{list} of any of the above.
+  \item one or more bias layers (SpatRaster, SpatVector, path, or list)
+        that will be passed to \code{set_bias_surface()}, or
+  \item a precomputed \code{nicheR_bias_surface} object returned by
+        \code{set_bias_surface()}.
 }
 The resulting pooled bias surface is used to modulate sampling weights
-over the suitable pool of environments. Only supported when at least one
-of \code{env_bg} or \code{suitable_env} is a raster object.}
+over the suitable pool of environments.}
+
+\item{bias_dir}{Optional numeric values of \code{1} or \code{-1} passed
+to \code{set_bias_surface()} when \code{bias_surface} is a raw bias
+input. A length-1 value is recycled across layers.}
+
+\item{bias_template}{Optional \code{terra::SpatRaster} template to pass to
+\code{set_bias_surface()} (overrides templates inferred from
+\code{env_bg} or \code{suitable_env}).}
+
+\item{bias_res}{Optional numeric resolution to pass to
+\code{set_bias_surface()} when building a template from \code{ext}.}
+
+\item{bias_ext}{Optional extent object (SpatRaster, SpatVector, or numeric
+\code{c(xmin, xmax, ymin, ymax)}) passed to \code{set_bias_surface()}
+when no template is provided.}
 
 \item{suitable_env}{Optional. A precomputed suitability object describing
 the suitable environment pool. May be:
@@ -86,8 +102,9 @@ The function first obtains a pool of suitable environments either by:
 }
 
 It then applies a weighting scheme based on \code{method} and, if provided,
-a pooled bias surface from \code{set_bias_surface()} to probabilistically
-select \code{n_occ} points from this suitable environment pool.
+a pooled bias surface (either raw layers via \code{set_bias_surface()} or a
+precomputed \code{nicheR_bias_surface}) to probabilistically select
+\code{n_occ} points from this suitable environment pool.
 }
 \seealso{
 \code{\link{build_ellipsoid}}, \code{\link{get_suitable_env}},

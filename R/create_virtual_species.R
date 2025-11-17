@@ -1,16 +1,17 @@
 #' Create a virtual species end to end
 #'
 #' Orchestrates the full NicheR workflow by routing `...` to
-#' [build_ellps()], [get_suitable_env()], [set_bias_surface()], and
-#' [get_sample_occ()]. Returns an S3 object of class **NicheR_species**
-#' containing the niche object, suitability, (optional) bias surface,
-#' and sampled occurrences.
+#' [build_ellps()], [get_suitable_env()], optionally [set_bias_surface()],
+#' and [get_sample_occ()]. Returns an S3 object of class **NicheR_species**
+#' containing the niche object, suitability, (optional) bias surface, and
+#' sampled occurrences.
 #'
 #' @section Workflow:
 #' 1. Calls [build_ellps()] to define the ellipsoid in E-space.
 #' 2. Calls [get_suitable_env()] to compute suitability in G-space.
 #' 3. Optionally calls [set_bias_surface()] to build a pooled bias raster
-#'    when bias arguments are supplied.
+#'    when bias-construction arguments are supplied (e.g., `bias_dir`,
+#'    `template`, `res`, `ext`, `out.bias`).
 #' 4. Calls [get_sample_occ()] to sample occurrences from the suitable
 #'    (and optionally biased) environment.
 #'
@@ -18,6 +19,14 @@
 #'   Arguments are routed by name to the matching formal parameters of
 #'   [build_ellps()], [get_suitable_env()], [set_bias_surface()], and
 #'   [get_sample_occ()]. Unknown names are ignored with a warning.
+#'   \itemize{
+#'     \item \strong{build_ellps()}: e.g. `center`, `axes`, `angles`, etc.
+#'     \item \strong{get_suitable_env()}: e.g. `env_bg`, `out`, `distances`.
+#'     \item \strong{set_bias_surface()}: e.g. `bias_surface`, `bias_dir`,
+#'           `template`, `res`, `ext`, `out.bias`.
+#'     \item \strong{get_sample_occ()}: e.g. `n_occ`, `method`,
+#'           `bias_surface`, `suitable_env`, `seed`.
+#'   }
 #' @param out.file Logical. If `TRUE`, save the returned object to an `.rds`
 #'   file in the working directory.
 #' @param out.file.name Optional base name (without extension) for the saved
@@ -25,23 +34,33 @@
 #' @param verbose Logical. If `TRUE`, print progress messages.
 #'
 #' @details
-#' If any component function requires `env_bg` and it is supplied only at the
-#' top level, it is forwarded to that function automatically. If a required
-#' argument (such as `env_bg`) is missing for a component, the function stops
-#' with an informative error.
+#' If `env_bg` is supplied only at the top level, it is forwarded to both
+#' [get_suitable_env()] and [get_sample_occ()] (if those functions accept an
+#' `env_bg` argument). If a required argument (such as `env_bg`) is missing
+#' for a component, the function stops with an informative error.
 #'
-#' If bias-related arguments (e.g. `bias_surface`, `bias_dir`, `bias_template`,
-#' `bias_res`, `bias_ext`) are provided, a pooled bias surface is built via
-#' [set_bias_surface()] and stored in the output. This precomputed bias object
-#' is also passed into [get_sample_occ()] so that bias is not recomputed.
+#' \strong{Bias handling:}
+#' \itemize{
+#'   \item If the user passes only `bias_surface` (and no `bias_dir`,
+#'         `template`, `res`, `ext`, or `out.bias`), it is assumed to be a
+#'         \emph{precomputed single-layer raster} and is passed directly to
+#'         [get_sample_occ()] (which expects a 0–1 layer).
+#'   \item If the user passes `bias_surface` \emph{plus} any of the bias
+#'         construction arguments (`bias_dir`, `template`, `res`, `ext`,
+#'         `out.bias`), then [set_bias_surface()] is called once, and its
+#'         pooled bias raster is passed to [get_sample_occ()] as
+#'         `bias_surface`. The full bias object is stored in the output
+#'         as `bias_surface`.
+#' }
 #'
 #' @return
 #' A list of class **NicheR_species** with elements:
 #' \itemize{
 #'   \item \code{niche}: the ellipsoid object returned by [build_ellps()].
-#'   \item \code{suitability}: suitability surface from [get_suitable_env()].
-#'   \item \code{bias_surface}: optional \code{nicheR_bias_surface} object
-#'         returned by [set_bias_surface()] (or \code{NULL} if no bias was used).
+#'   \item \code{suitability}: suitability object from [get_suitable_env()].
+#'   \item \code{bias_surface}: either `NULL`, a \code{nicheR_bias_surface}
+#'         object (if [set_bias_surface()] was used), or a user-supplied
+#'         single-layer bias raster.
 #'   \item \code{occurrences}: sampled occurrences from [get_sample_occ()].
 #'   \item \code{call_args}: the original `...` captured as a named list.
 #'   \item \code{routed_args}: a list showing which args went to each function.
@@ -73,15 +92,12 @@ create_virtual_species <- function(...,
   # pull formals for routing
   f_build <- names(formals(build_ellps))
   f_suit  <- names(formals(get_suitable_env))
-  f_bias  <- names(formals(set_bias_surface))
+  f_bias  <- names(formals(set_bias_surface))   # includes out.bias
   f_occ   <- names(formals(get_sample_occ))
 
   # split args by target function
   args_build <- args[names(args) %in% f_build]
   args_suit  <- args[names(args) %in% f_suit]
-  # bias is special – we mostly care about its arguments, but
-  # we won't call set_bias_surface() purely from these; instead
-  # we use them together with env_bg.
   args_bias  <- args[names(args) %in% f_bias]
   args_occ   <- args[names(args) %in% f_occ]
 
@@ -100,7 +116,9 @@ create_virtual_species <- function(...,
     stop("env_bg is required by get_suitable_env but was not supplied.")
   }
 
-  # build ellipsoid niche
+  # ---------------------------------------------------------------------------
+  # 1) build ellipsoid niche
+  # ---------------------------------------------------------------------------
   niche_obj <- tryCatch(
     do.call(build_ellps, args_build),
     error = function(e) stop("build_ellps failed: ", e$message)
@@ -108,7 +126,9 @@ create_virtual_species <- function(...,
 
   if (verbose) message("Built niche object.")
 
-  # suitability in G space
+  # ---------------------------------------------------------------------------
+  # 2) suitability in G space
+  # ---------------------------------------------------------------------------
   suit_env <- tryCatch(
     do.call(get_suitable_env, c(list(niche = niche_obj), args_suit)),
     error = function(e) stop("get_suitable_env failed: ", e$message)
@@ -116,72 +136,86 @@ create_virtual_species <- function(...,
 
   if (verbose) message("Computed suitable environments.")
 
-  # Optionally build bias surface once, if bias args were supplied -----------
+  # ---------------------------------------------------------------------------
+  # 3) Optional bias construction
+  # ---------------------------------------------------------------------------
   bias_obj <- NULL
 
-  # We treat presence of 'bias_surface' in either args_bias or args_occ as the signal
-  # that the user wants a bias surface.
-  has_bias_surface <- "bias_surface" %in% c(names(args_bias), names(args_occ))
+  # Does the user supply ANY bias argument at all?
+  has_any_bias_arg <- "bias_surface" %in% names(args) ||
+    any(c("bias_dir", "template", "res", "ext", "out.bias") %in% names(args))
 
-  if (has_bias_surface) {
+  if (has_any_bias_arg) {
 
-    # Reconstruct a bias call using the shared arguments:
-    # priority: explicit args_bias first, then fall back to args_occ
-    combined_bias_args <- list()
-    for (nm in f_bias) {
-      if (nm %in% names(args_bias)) {
-        combined_bias_args[[nm]] <- args_bias[[nm]]
-      } else if (nm %in% names(args_occ)) {
-        # map get_sample_occ names to set_bias_surface names where appropriate
-        if (nm == "bias_surface") {
-          combined_bias_args[[nm]] <- args_occ[["bias_surface"]]
-        } else if (nm == "bias_dir" && "bias_dir" %in% names(args_occ)) {
-          combined_bias_args[[nm]] <- args_occ[["bias_dir"]]
-        } else if (nm == "template" && "bias_template" %in% names(args_occ)) {
-          combined_bias_args[[nm]] <- args_occ[["bias_template"]]
-        } else if (nm == "res" && "bias_res" %in% names(args_occ)) {
-          combined_bias_args[[nm]] <- args_occ[["bias_res"]]
-        } else if (nm == "ext" && "bias_ext" %in% names(args_occ)) {
-          combined_bias_args[[nm]] <- args_occ[["bias_ext"]]
+    # Decide if we should CALL set_bias_surface() or just forward bias_surface.
+    # We call set_bias_surface() only if at least one "construction" arg
+    # is present in args_bias (beyond bias_surface/verbose/out.bias).
+    bias_construction_args <- setdiff(names(args_bias),
+                                      c("bias_surface", "verbose", "out.bias"))
+
+    wants_bias_build <- length(bias_construction_args) > 0
+
+    if (wants_bias_build) {
+      # We will build a bias surface with set_bias_surface()
+
+      # assemble bias args
+      bias_call_args <- args_bias
+
+      # If no template given, try to infer from env_bg (used in get_suitable_env)
+      if (!("template" %in% names(bias_call_args)) ||
+          is.null(bias_call_args$template)) {
+
+        if ("env_bg" %in% names(args_suit) &&
+            inherits(args_suit$env_bg, c("SpatRaster", "Raster"))) {
+
+          bias_call_args$template <- if (inherits(args_suit$env_bg, "Raster")) {
+            terra::rast(args_suit$env_bg)
+          } else {
+            args_suit$env_bg
+          }
         }
       }
-    }
 
-    # If no explicit template/res/ext are supplied, try to infer from env_bg
-    if (!("template" %in% names(combined_bias_args)) ||
-        is.null(combined_bias_args$template)) {
+      if (!"bias_surface" %in% names(bias_call_args) ||
+          is.null(bias_call_args$bias_surface)) {
+        warning("Bias-construction arguments were detected but 'bias_surface' is missing; ",
+                "skipping bias surface construction.", call. = FALSE)
+      } else {
 
-      if ("env_bg" %in% names(args_suit) &&
-          inherits(args_suit$env_bg, c("SpatRaster", "Raster"))) {
+        bias_obj <- tryCatch(
+          do.call(set_bias_surface, bias_call_args),
+          error = function(e) stop("set_bias_surface failed: ", e$message)
+        )
 
-        combined_bias_args$template <- if (inherits(args_suit$env_bg, "Raster")) {
-          terra::rast(args_suit$env_bg)
+        if (verbose) message("Constructed pooled bias surface via set_bias_surface().")
+
+        # get_sample_occ() expects a single-layer bias raster;
+        # pass the pooled layer.
+        if (!is.null(bias_obj$pooled_bias_sp)) {
+          args_occ$bias_surface <- bias_obj$pooled_bias_sp
         } else {
-          args_suit$env_bg
+          warning("set_bias_surface() returned no 'pooled_bias_sp'; ",
+                  "bias will not be applied in get_sample_occ().",
+                  call. = FALSE)
         }
-
       }
-    }
 
-    if (!"bias_surface" %in% names(combined_bias_args) ||
-        is.null(combined_bias_args$bias_surface)) {
-      warning("Bias arguments were detected but 'bias_surface' is missing; ",
-              "skipping bias surface construction.", call. = FALSE)
     } else {
-
-      bias_obj <- tryCatch(
-        do.call(set_bias_surface, combined_bias_args),
-        error = function(e) stop("set_bias_surface failed: ", e$message)
-      )
-
-      if (verbose) message("Constructed pooled bias surface.")
-
-      # Now, ensure get_sample_occ uses this precomputed bias object
-      args_occ$bias_surface <- bias_obj
+      # No construction args: assume the user passed a precomputed 1-layer raster
+      # as 'bias_surface' that should go straight into get_sample_occ().
+      if ("bias_surface" %in% names(args)) {
+        args_occ$bias_surface <- args$bias_surface
+        bias_obj <- args$bias_surface  # store in output for transparency
+        if (verbose) {
+          message("Using user-supplied 'bias_surface' directly in get_sample_occ().")
+        }
+      }
     }
   }
 
-  # sample occurrences --------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 4) sample occurrences
+  # ---------------------------------------------------------------------------
   occ <- tryCatch(
     do.call(get_sample_occ, c(list(niche = niche_obj), args_occ)),
     error = function(e) stop("get_sample_occ failed: ", e$message)
@@ -189,7 +223,9 @@ create_virtual_species <- function(...,
 
   if (verbose) message("Sampled occurrences.")
 
-  # warn on unused args
+  # ---------------------------------------------------------------------------
+  # 5) warn on unused args
+  # ---------------------------------------------------------------------------
   used_names <- union(
     names(args_build),
     union(names(args_suit), union(names(args_occ), names(args_bias)))
@@ -200,7 +236,9 @@ create_virtual_species <- function(...,
             paste(unused, collapse = ", "))
   }
 
-  # assemble S3 object
+  # ---------------------------------------------------------------------------
+  # 6) assemble S3 object
+  # ---------------------------------------------------------------------------
   out <- list(
     niche        = niche_obj,
     suitability  = suit_env,
@@ -253,8 +291,9 @@ print.NicheR_species <- function(x, ...) {
   cat("NicheR virtual species components:\n")
   cat("  niche:        ", paste(class(x$niche), collapse = "/"), "\n", sep = "")
   cat("  suitability:  ", paste(class(x$suitability), collapse = "/"), "\n", sep = "")
-  cat("  bias_surface: ", if (is.null(x$bias_surface)) "NULL" else
-    paste(class(x$bias_surface), collapse = "/"), "\n", sep = "")
+  cat("  bias_surface: ",
+      if (is.null(x$bias_surface)) "NULL" else paste(class(x$bias_surface), collapse = "/"),
+      "\n", sep = "")
   cat("  occurrences:  ", paste(class(x$occurrences), collapse = "/"), "\n", sep = "")
   invisible(x)
 }

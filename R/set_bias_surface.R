@@ -10,176 +10,200 @@
 #' }
 #'
 #' The resulting pooled bias raster can then be used elsewhere in NicheR to
-#' modulate sampling or suitability, but this function itself only handles
-#' combination of bias layers.
+#' modulate sampling or suitability. Optionally, the function can also return
+#' the standardized bias layers as a raster stack.
 #'
-#' @param bias_surface One or more bias layers which may be:
+#' @param bias_surface One or more bias layers which must be:
 #'   \itemize{
-#'     \item a \code{terra::SpatRaster} (single layer or multi-layer),
-#'     \item a \code{terra::SpatVector} (rasterized to a template grid),
-#'     \item a character path to a raster or vector file,
-#'     \item a \code{list} of any of the above.
+#'     \item a \code{terra::SpatRaster} (single or multi-layer), or
+#'     \item a \code{list} of \code{terra::SpatRaster} objects.
 #'   }
+#'   Any multi-layer \code{SpatRaster} is internally split into single-layer
+#'   rasters before standardization.
 #' @param bias_dir Numeric values of \code{1} or \code{-1} controlling
 #'   directionality. A length 1 value is recycled across all layers. A value
 #'   of \code{-1} applies \code{1 - layer} after scaling to \eqn{[0, 1]}.
-#' @param template Optional \code{terra::SpatRaster} used as the template grid
-#'   (resolution, extent, and CRS) to which all bias layers will be aligned.
-#'   If \code{NULL}, the template is inferred from the first layer in
-#'   \code{bias_surface} (see Details).
-#' @param res Optional numeric resolution used to build a template raster when
-#'   no \code{template} is provided and only vector inputs are available, or
-#'   when \code{ext} is provided. Ignored if \code{template} is supplied.
-#' @param ext Optional spatial extent defining the template grid when no
-#'   \code{template} is provided. Can be:
+#' @param suitable_env Optional \code{terra::SpatRaster} used as a mask and
+#'   template. Typically this is a binary or continuous suitability raster.
+#'   Masking is applied after standardization so that bias is only defined
+#'   where the species is suitable. Required when \code{out.bias} is
+#'   \code{"biased"} or \code{"both"}.
+#' @param out.bias Character, one of \code{"biased"}, \code{"standardized"},
+#'   or \code{"both"}:
 #'   \itemize{
-#'     \item a \code{terra::SpatRaster} or \code{terra::SpatVector}, in which
-#'           case \code{terra::ext()} is used, or
-#'     \item a numeric vector \code{c(xmin, xmax, ymin, ymax)}.
+#'     \item \code{"standardized"}: returns only the standardized,
+#'       direction-adjusted bias stack.
+#'     \item \code{"biased"}: returns only the pooled bias surface, masked by
+#'       \code{suitable_env}. Requires \code{suitable_env}.
+#'     \item \code{"both"}: returns both the pooled bias surface and the
+#'       standardized stack. Requires \code{suitable_env}.
 #'   }
-#'   Must be used together with \code{res} if no \code{template} is given.
-#' @param out Character, one of \code{"default"} or \code{"both"}, determining
-#'   whether to return only the pooled bias surface (\code{"default"}) or also
-#'   the individual standardized, direction-adjusted bias layers
-#'   (\code{"both"}).
-#' @param verbose Logical. If \code{TRUE}, prints progress messages before and
-#'   after major processing steps.
+#' @param verbose Logical. If \code{TRUE}, prints progress messages.
 #'
-#' @return A list of class \code{"nicheR_bias_surface"} containing:
-#'   \item{pooled_bias_sp}{Pooled bias raster (scaled 0–1; \code{SpatRaster}).}
-#'   \item{directional_bias_stack}{(If \code{out = "both"}) stack of all
-#'         standardized, direction-corrected bias layers (\code{SpatRaster}).}
+#' @return A list of class \code{"nicheR_bias_surface"} containing some or all
+#'   of:
+#'   \item{pooled_bias_sp}{Pooled bias raster (scaled 0–1; \code{SpatRaster}),
+#'         masked by \code{suitable_env} when supplied. Present only when
+#'         \code{out.bias} is \code{"biased"} or \code{"both"}.}
+#'   \item{directional_bias_stack}{Stack of standardized, direction-corrected
+#'         bias layers (\code{SpatRaster}). Present only when
+#'         \code{out.bias} is \code{"standardized"} or \code{"both"}.}
 #'   \item{combination_formula}{String describing how layers were combined
-#'         (e.g., \code{"Bias layers were combined: bias_1 * (1-bias_2)"}).}
+#'         (e.g., \code{"bias_1 * (1-bias_2)"}).}
 #'
-#' @details
-#' Template selection follows this order:
-#' \enumerate{
-#'   \item If \code{template} is provided, it is used directly.
-#'   \item Otherwise, if \code{ext} and \code{res} are provided, a new template
-#'         raster is created from these.
-#'   \item Otherwise, the first element of \code{bias_surface} is used:
-#'     \itemize{
-#'       \item If it is a \code{SpatRaster}, that raster becomes the template.
-#'       \item If it is a \code{SpatVector}, a template is created from its
-#'             extent and \code{res}. In this case, \code{res} must not be
-#'             \code{NULL}.
-#'     }
-#' }
-#'
-#' All subsequent bias layers are resampled or rasterized to match this
-#' template grid.
-#'
-#' @importFrom terra rast vect resample values rasterize app nlyr as.list ext res xmin xmax ymin ymax
+#' @importFrom terra rast resample values app nlyr as.list ext res mask
 #' @export
 set_bias_surface <- function(bias_surface,
                              bias_dir = 1,
-                             template = NULL,
-                             res = NULL,
-                             ext = NULL,
-                             out = c("default", "both"),
+                             suitable_env = NULL,
+                             out.bias = c("biased", "standardized", "both"),
                              verbose = TRUE) {
 
   gc()
+  out.bias <- match.arg(out.bias)
 
-  out <- match.arg(out)
-
-  # Basic checks ---------------------------------------------------------------
+  # ---- 0. Basic checks ------------------------------------------------------
 
   if (missing(bias_surface) || is.null(bias_surface)) {
-    stop("'bias_surface' is required (SpatRaster, SpatVector, path, or list).")
+    stop("'bias_surface' is required and must be a SpatRaster or a list of SpatRasters.")
   }
 
-  # Normalize bias_surface into a list -----------------------------------------
-
-  if (inherits(bias_surface, "list")) {
-    bias_list <- bias_surface
-  } else if (inherits(bias_surface, "SpatRaster")) {
-    if (terra::nlyr(bias_surface) > 1) {
-      bias_list <- terra::as.list(bias_surface)
-    } else {
-      bias_list <- list(bias_surface)
-    }
-  } else if (inherits(bias_surface, c("SpatVector", "character"))) {
-    bias_list <- list(bias_surface)
+  # Enforce raster inputs -----------------------------------------------------
+  if (inherits(bias_surface, "SpatRaster")) {
+    # split multi-layer rasters into single-layer list
+    bias_list <- terra::as.list(bias_surface)
+  } else if (is.list(bias_surface) &&
+             length(bias_surface) > 0 &&
+             all(vapply(bias_surface, inherits, logical(1), "SpatRaster"))) {
+    # flatten list of SpatRasters into single-layer rasters
+    bias_list <- unlist(lapply(bias_surface, terra::as.list), recursive = FALSE)
   } else {
-    stop("'bias_surface' must be a SpatRaster, SpatVector, path, or a list of these.")
+    stop(
+      "'bias_surface' must be either:\n",
+      "  * a terra::SpatRaster (single or multi-layer), or\n",
+      "  * a list of terra::SpatRaster objects."
+    )
   }
 
   if (length(bias_list) == 0) {
     stop("No bias layers provided.")
   }
 
-  # ---------------------------------------------------------------------------
-  # Determine template raster
-  # ---------------------------------------------------------------------------
+  # Suitable env / mask checks -----------------------------------------------
 
-  if (!is.null(template)) {
-    if (!inherits(template, "SpatRaster")) {
-      stop("'template' must be a terra::SpatRaster if provided.")
+  if (out.bias %in% c("biased", "both") && is.null(suitable_env)) {
+    stop(
+      "out.bias = '", out.bias, "' requires 'suitable_env' (SpatRaster) ",
+      "to be provided so it can be used as a mask."
+    )
+  }
+
+  mask_ras <- NULL
+  if (!is.null(suitable_env)) {
+
+    # Helper: extract first SpatRaster found inside a variety of objects
+    get_first_raster <- function(obj) {
+      # Direct SpatRaster
+      if (inherits(obj, "SpatRaster")) {
+        return(obj[[1]])
+      }
+
+      # "suitable_env" object from get_suitable_env(out.suit = "both")
+      if (inherits(obj, "suitable_env") && "suitable_env_sp" %in% names(obj)) {
+        return(get_first_raster(obj$suitable_env_sp)) #tiny recursive
+      }
+
+      # List: look for first SpatRaster in elements
+      if (is.list(obj)) {
+        # If named, try "suitable" first
+        if (!is.null(names(obj)) && "suitable" %in% names(obj)) {
+          if (inherits(obj[["suitable"]], "SpatRaster")) {
+            return(obj[["suitable"]][[1]])
+          }
+        }
+        # Otherwise, scan through elements
+        for (el in obj) {
+          if (inherits(el, "SpatRaster")) {
+            return(el[[1]])
+          }
+        }
+      }
+
+      # Nothing usable found
+      NULL
     }
-    template_raster <- template
+
+    mask_ras <- get_first_raster(suitable_env)
+
+    if (is.null(mask_ras)) {
+      stop(
+        "'suitable_env' must contain at least one terra::SpatRaster to be used as a mask.\n",
+        "Examples:\n",
+        "  - a SpatRaster directly (e.g. suitable_ras),\n",
+        "  - a 'suitable_env' object from get_suitable_env(out.suit = 'both'),\n",
+        "  - a list with a 'suitable' SpatRaster element (e.g. suitable_env$suitable_env_sp$suitable)."
+      )
+    }
 
     if (verbose) {
-      message("Using user-supplied template raster.")
+      message("Using a raster extracted from 'suitable_env' as template and mask.")
     }
+  }
 
-  } else if (!is.null(ext) && !is.null(res)) {
+  # Template raster: use mask if available, else the first bias layer --------
 
-    # ext can be SpatRaster, SpatVector, or numeric vector
-    if (inherits(ext, c("SpatRaster", "SpatVector"))) {
-      ext_obj <- terra::ext(ext)
-    } else if (is.numeric(ext) && length(ext) == 4) {
-      ext_obj <- terra::ext(ext[1], ext[2], ext[3], ext[4])
-    } else {
-      stop("'ext' must be a SpatRaster, SpatVector, or numeric c(xmin, xmax, ymin, ymax).")
-    }
+  if (!is.null(mask_ras)) {
 
-    template_raster <- terra::rast(ext = ext_obj, resolution = res)
-
+    # If mask is present, it becomes the template
+    template_raster <- mask_ras
     if (verbose) {
-      message("Created template raster from provided extent and resolution.")
+      message("Using 'suitable_env' as template and mask.")
     }
 
   } else {
-    # Infer template from first bias layer
-    first_bias_obj <- bias_list[[1]]
 
-    if (inherits(first_bias_obj, "character")) {
-      first_bias_obj <- tryCatch(
-        terra::rast(first_bias_obj),
+    # Safely load the first bias layer as a raster — it may be a path or vector
+    first_bias <- bias_list[[1]]
+
+    # Convert first bias to SpatRaster if needed
+    if (inherits(first_bias, "character")) {
+      # Try raster → fallback to vector
+      first_bias <- tryCatch(
+        terra::rast(first_bias),
         error = function(e) {
           tryCatch(
-            terra::vect(first_bias_obj),
-            error = function(e2) {
-              stop("Could not load first bias layer to infer template: ", e2$message)
-            }
+            terra::vect(first_bias),
+            error = function(e2) stop("Could not load first bias layer: ", e2$message)
           )
         }
       )
     }
 
-    if (inherits(first_bias_obj, "SpatRaster")) {
-      template_raster <- first_bias_obj
+    if (inherits(first_bias, "SpatVector")) {
+      if (is.null(res)) {
+        stop("First bias layer is a SpatVector but no 'res' was provided. ",
+             "Provide 'res' or supply a raster template.")
+      }
+      ext_obj <- terra::ext(first_bias)
+      template_raster <- terra::rast(ext = ext_obj, resolution = res)
+
+      if (verbose) {
+        message("Using extent of first SpatVector bias layer as template (created from 'res').")
+      }
+
+    } else if (inherits(first_bias, "SpatRaster")) {
+      template_raster <- first_bias
       if (verbose) {
         message("Using first bias raster as template.")
       }
-    } else if (inherits(first_bias_obj, "SpatVector")) {
-      if (is.null(res)) {
-        stop("First bias layer is a SpatVector and no 'res' was provided. ",
-             "Please supply 'res' (resolution) or an explicit 'template'.")
-      }
-      ext_obj <- terra::ext(first_bias_obj)
-      template_raster <- terra::rast(ext = ext_obj, resolution = res)
-      if (verbose) {
-        message("First bias layer is a vector; created template from its extent and 'res'.")
-      }
+
     } else {
-      stop("Could not determine template from first bias layer.")
+      stop("First bias layer cannot be used to infer a template (not a raster or vector).")
     }
   }
 
-  # Validate bias_dir ----------------------------------------------------------
+
+  # Validate bias_dir ---------------------------------------------------------
 
   if (length(bias_dir) == 1) {
     bias_dir <- rep(bias_dir, length(bias_list))
@@ -192,7 +216,7 @@ set_bias_surface <- function(bias_surface,
     stop("'bias_dir' must only contain values of 1 or -1.")
   }
 
-  # Process, align, and standardize each bias layer ----------------------------
+  # ---- 1. Process, align, and standardize each bias layer -------------------
 
   if (verbose) {
     message("Processing and standardizing ", length(bias_list),
@@ -204,50 +228,15 @@ set_bias_surface <- function(bias_surface,
 
   for (i in seq_along(bias_list)) {
 
-    bias_obj <- bias_list[[i]]
-    this_dir <- bias_dir[i]
+    bias_raster_raw <- bias_list[[i]]
+    this_dir        <- bias_dir[i]
 
     # Try to derive a readable name
-    layer_name <- names(bias_list[[i]])
+    layer_name <- names(bias_raster_raw)
     if (is.null(layer_name) || length(layer_name) == 0 || layer_name == "") {
       layer_name <- paste0("bias_", i)
-    }
-
-    # Load from path if needed
-    if (inherits(bias_obj, "character")) {
-      bias_obj <- tryCatch(
-        terra::rast(bias_obj),
-        error = function(e) {
-          tryCatch(
-            terra::vect(bias_obj),
-            error = function(e2) {
-              stop("Error loading bias layer ", i, ": ", e2$message)
-            }
-          )
-        }
-      )
-    }
-
-    # Convert SpatVector → SpatRaster using template
-    if (inherits(bias_obj, "SpatVector")) {
-      flds <- names(bias_obj)
-      field_to_use <- if (length(flds) == 0) 1 else flds[1]
-      if (length(flds) == 0) {
-        warning("Bias layer ", i,
-                " (SpatVector) has no attributes. Rasterizing as binary (1 = presence).",
-                call. = FALSE)
-      }
-      bias_raster_raw <- terra::rasterize(
-        bias_obj,
-        template_raster,
-        fun        = "max",
-        background = NA,
-        field      = field_to_use
-      )
-    } else if (inherits(bias_obj, "SpatRaster")) {
-      bias_raster_raw <- bias_obj
     } else {
-      stop("Bias layer ", i, " must be a SpatRaster, SpatVector, or a valid path.")
+      layer_name <- layer_name[1]
     }
 
     # Align resolution + extent to template
@@ -262,7 +251,7 @@ set_bias_surface <- function(bias_surface,
       bias_raster_aligned <- bias_raster_raw
     }
 
-    # Normalize to [0, 1]
+    # Normalize to [0, 1] (preserving NA)
     vals      <- terra::values(bias_raster_aligned)
     min_val   <- min(vals, na.rm = TRUE)
     max_val   <- max(vals, na.rm = TRUE)
@@ -287,8 +276,8 @@ set_bias_surface <- function(bias_surface,
       dir_message_parts[i] <- layer_name
     }
 
-    names(directional_layer)      <- layer_name
-    directional_bias_list[[i]]    <- directional_layer
+    names(directional_layer)   <- layer_name
+    directional_bias_list[[i]] <- directional_layer
   }
 
   if (verbose) {
@@ -303,48 +292,65 @@ set_bias_surface <- function(bias_surface,
     do.call(c, directional_bias_list)
   }
 
-  # Pool bias layers -----------------------------------------------------------
+  # ---- 2. Pool bias layers into a single surface ----------------------------
 
-  if (verbose) {
-    message("Pooling ", terra::nlyr(directional_bias_stack),
-            " bias layer(s) into a single surface...")
-  }
+  pooled_bias_sp <- NULL
 
-  if (terra::nlyr(directional_bias_stack) > 1) {
-    pooled_bias_sp <- terra::app(
-      directional_bias_stack,
-      fun = function(x) {
-        if (all(is.na(x))) {
-          NA_real_           # keep fully-missing cells as NA
-        } else {
-          prod(x, na.rm = TRUE)
+  if (out.bias %in% c("biased", "both")) {
+
+    if (verbose) {
+      message("Pooling ", terra::nlyr(directional_bias_stack),
+              " bias layer(s) into a single surface...")
+    }
+
+    if (terra::nlyr(directional_bias_stack) > 1) {
+      pooled_bias_sp <- terra::app(
+        directional_bias_stack,
+        fun = function(x) {
+          if (all(is.na(x))) {
+            NA_real_           # keep fully-missing cells as NA
+          } else {
+            prod(x, na.rm = TRUE)
+          }
         }
-      }
-    )
-  } else {
-    pooled_bias_sp <- directional_bias_stack
+      )
+    } else {
+      pooled_bias_sp <- directional_bias_stack
+    }
+
+    names(pooled_bias_sp) <- "pooled_bias"
+
+    # Mask to suitable area if provided
+    if (!is.null(mask_ras)) {
+      pooled_bias_sp <- terra::mask(pooled_bias_sp, mask_ras)
+    }
+
+    if (verbose) {
+      message("Finished pooling bias layers.")
+    }
   }
 
+  # Also mask the standardized stack if a mask was provided -------------------
 
-  names(pooled_bias_sp) <- "pooled_bias"
-
-  combination_formula <- paste0(
-    "Bias layers were combined: ",
-    paste(dir_message_parts, collapse = " * ")
-  )
-
-  if (verbose) {
-    message("Finished pooling bias layers.")
+  if (!is.null(mask_ras)) {
+    directional_bias_stack <- terra::mask(directional_bias_stack, mask_ras)
   }
 
-  # Build result object --------------------------------------------------------
+  combination_formula <- paste(dir_message_parts, collapse = " * ")
+
+  # ---- 3. Build result object -----------------------------------------------
 
   res <- list(
-    pooled_bias_sp      = pooled_bias_sp,
-    combination_formula = combination_formula
+    pooled_bias_sp         = NULL,
+    directional_bias_stack = NULL,
+    combination_formula    = combination_formula
   )
 
-  if (identical(tolower(out), "both")) {
+  if (out.bias %in% c("biased", "both")) {
+    res$pooled_bias_sp <- pooled_bias_sp
+  }
+
+  if (out.bias %in% c("standardized", "both")) {
     res$directional_bias_stack <- directional_bias_stack
   }
 
@@ -361,16 +367,33 @@ set_bias_surface <- function(bias_surface,
 
 #' @export
 print.nicheR_bias_surface <- function(x, ...) {
+
+  cat("NicheR bias surface object\n")
+
+  # Combination formula (how layers were combined)
   if (!is.null(x$combination_formula)) {
-    cat(x$combination_formula, "\n")
+    cat("  Combination:\n")
+    cat("    ", x$combination_formula, "\n\n")
   }
 
-  if (!is.null(x$pooled_bias_sp)) {
-    cat("Pooled bias surface available as a terra::SpatRaster (pooled_bias_sp).\n")
+  # pooled_bias_sp summary
+  if (!is.null(x$pooled_bias_sp) && inherits(x$pooled_bias_sp, "SpatRaster")) {
+    r <- x$pooled_bias_sp
+    cat("  pooled_bias_sp (terra::SpatRaster)\n")
+    cat("    layers :", terra::nlyr(r), "\n")
+    cat("    names  :", paste(names(r), collapse = ", "), "\n\n")
+  } else {
+    cat("  pooled_bias_sp : NULL\n\n")
   }
 
-  if (!is.null(x$directional_bias_stack)) {
-    cat("Directional (standardized, direction-adjusted) bias stack is also stored.\n")
+  # directional_bias_stack summary (if present)
+  if (!is.null(x$directional_bias_stack) &&
+      inherits(x$directional_bias_stack, "SpatRaster")) {
+
+    r <- x$directional_bias_stack
+    cat("  directional_bias_stack (terra::SpatRaster)\n")
+    cat("    layers :", terra::nlyr(r), "\n")
+    cat("    names  :", paste(names(r), collapse = ", "), "\n")
   }
 
   invisible(x)
