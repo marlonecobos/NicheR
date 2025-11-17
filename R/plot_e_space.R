@@ -295,17 +295,16 @@ plot_e_space <- function(env_bg,
   # I’ll show one 2D and one 3D example and leave the rest as-is.
   # -----------------------------------------------------------------------
 
+
   if (isTRUE(plot.3d)) {
-    return_plot <- plotly::plot_ly(
-      data = env_bg,
-      x = env_bg[[x_col]],
-      y = env_bg[[y_col]],
-      z = env_bg[[z_col]],
-      type = "scatter3d",
-      mode = "markers",
-      marker = list(color = "lightgrey", size = 2),
-      name = "Background Environments"
-    ) %>%
+    return_plot <- plotly::plot_ly(data = env_bg,
+                                   x = env_bg[[x_col]],
+                                   y = env_bg[[y_col]],
+                                   z = env_bg[[z_col]],
+                                   type = "scatter3d",
+                                   mode = "markers",
+                                   marker = list(color = "lightgrey", size = 2),
+                                   name = "Background Environments") %>%
       plotly::layout(
         title = list(text = "Background Environments (E-space)"),
         scene = list(
@@ -316,54 +315,288 @@ plot_e_space <- function(env_bg,
         legend = list(x = 0.05, y = 0.95)
       )
 
-    # ... (your existing 3D niche / occ overlay logic goes here,
-    #      just swap to x_col, y_col, z_col where needed)
-
   } else {
-    p_main_y_x <- ggplot2::ggplot(
-      env_bg,
-      ggplot2::aes(x = .data[[y_col]], y = .data[[x_col]])
-    ) +
-      ggplot2::geom_point(alpha = 0.5, color = colors[["bg"]], pch = ".") +
-      ggplot2::theme_bw() +
-      ggplot2::theme(axis.title = ggplot2::element_blank())
 
-    p_main_z_x <- ggplot2::ggplot(
-      env_bg,
-      ggplot2::aes(x = .data[[z_col]], y = .data[[x_col]])
-    ) +
-      ggplot2::geom_point(alpha = 0.5, color = colors[["bg"]], pch = ".") +
-      ggplot2::theme_bw() +
-      ggplot2::theme(axis.title = ggplot2::element_blank())
+      # Use .data pronoun inside aes as you had; validator already resolved names
+      p_main_y_x <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[y_col]],
+                                                         y = .data[[x_col]])) +
+        ggplot2::geom_point(alpha = 0.5, color = colors[["bg"]], pch = ".") +
+        ggplot2::theme_bw() +
+        ggplot2::theme(axis.title = ggplot2::element_blank())
 
-    p_main_z_y <- ggplot2::ggplot(
-      env_bg,
-      ggplot2::aes(x = .data[[z_col]], y = .data[[y_col]])
-    ) +
-      ggplot2::geom_point(alpha = 0.5, color = colors[["bg"]], pch = ".") +
-      ggplot2::theme_bw() +
-      ggplot2::theme(axis.title = ggplot2::element_blank())
+      p_main_z_x <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[z_col]],
+                                                         y = .data[[x_col]])) +
+        ggplot2::geom_point(alpha = 0.5, color =  colors[["bg"]], pch = ".") +
+        ggplot2::theme_bw() +
+        ggplot2::theme(axis.title = ggplot2::element_blank())
 
-    x_name <- ggplot2::ggplot() + ggplot2::theme_void() +
-      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[1]), fontface = "bold")
-    y_name <- ggplot2::ggplot() + ggplot2::theme_void() +
-      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[2]), fontface = "bold")
-    z_name <- ggplot2::ggplot() + ggplot2::theme_void() +
-      ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[3]), fontface = "bold")
+      p_main_z_y <- ggplot2::ggplot(env_bg, ggplot2::aes(x = .data[[z_col]],
+                                                         y = .data[[y_col]])) +
+        ggplot2::geom_point(alpha = 0.5, color =  colors[["bg"]], pch = ".") +
+        ggplot2::theme_bw() +
+        ggplot2::theme(axis.title = ggplot2::element_blank())
 
-    return_plot <- ggpubr::ggarrange(
-      x_name, p_main_y_x, p_main_z_x,
-      legend_plot,   y_name,    p_main_z_y,
-      NULL,   NULL,      z_name,
-      ncol = 3, nrow = 3,
-      widths = c(0.15, 0.425, 0.425),
-      heights = c(0.45, 0.45, 0.15)
-    )
+      x_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[1]),
+                           fontface = "bold")
+      y_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[2]),
+                           fontface = "bold")
+      z_name <- ggplot2::ggplot() + ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0, 0, label = labels[3]),
+                           fontface = "bold")
 
-    # ... keep your existing ellipsoid overlays / density logic,
-    #     just swap `[[ if (is.numeric(x)) ... ]]` with `[[x_col]]`,
-    #     etc.
-  }
+      return_plot <- ggpubr::ggarrange(
+        x_name, p_main_y_x, p_main_z_x,
+        legend_plot,   y_name,    p_main_z_y,
+        NULL,   NULL,      z_name,
+        ncol = 3, nrow = 3,
+        widths = c(0.15, 0.425, 0.425),
+        heights = c(0.45, 0.45, 0.15)
+      )
+    }
 
-  return(return_plot)
+    # --- 2. Ellipsoid overlays and extras ---
+    if (!is.null(niche)) {
+      if(isTRUE(plot.3d)){
+
+        return_plot <- return_plot %>%
+          add_trace(data = niche$surface,
+                    x = niche$surface[[names(niche$surface)[1]]],
+                    y = niche$surface[[names(niche$surface)[2]]],
+                    z = niche$surface[[names(niche$surface)[3]]],
+                    type ="scatter3d", mode="lines",
+                    line =list(color= colors[["ellipsoid"]]),
+                    name ="Niche Boundary", inherit = FALSE) %>%
+          add_markers(x = niche$center[1], y = niche$center[2], z = niche$center[3],
+                      marker = list(color =  colors[["centroid"]], size = 5),
+                      name = "Niche Centroid") %>%
+          plotly::layout(
+            title = "Virtual Niche Boundary in E-space",
+            legend = list(x = 0.05, y = 0.95)
+          )
+
+        if (isTRUE(show.pts.in)) {
+          # Use base subsetting with resolved names from validator
+          pts_in <- get_suitable_env(niche = niche,
+                                     env_bg = env_bg[, v$col_names, drop = FALSE],
+                                     out = "data.frame")
+
+          return_plot <- return_plot %>%
+            add_markers(data = pts_in,
+                        x = pts_in[[names(pts_in)[1]]],
+                        y = pts_in[[names(pts_in)[2]]],
+                        z = pts_in[[names(pts_in)[3]]],
+                        marker = list(color= colors[["suitable_env"]], size = 3),
+                        name = "Suitable Environments", inherit = FALSE) %>%
+            plotly::layout(
+              title = "Virtual Niche Suitable Environment in E-space",
+              legend = list(x = 0.05, y = 0.95)
+            )
+        }
+
+        if (!is.null(occ_pts)) {
+
+          return_plot <- return_plot %>%
+            add_markers(data = occ_pts,
+                        x = occ_pts[[if (is.numeric(x)) names(occ_pts)[x] else x]],
+                        y = occ_pts[[if (is.numeric(y)) names(occ_pts)[y] else y]],
+                        z = occ_pts[[if (is.numeric(z)) names(occ_pts)[z] else z]],
+                        marker = list(color= colors[["occ"]], size = 3),
+                        name = "Sampled Occurrences", inherit = FALSE) %>%
+            plotly::layout(
+              title = "Virtual Niche and Sampled Occurrences in E-space",
+              legend = list(x = 0.05, y = 0.95)
+            )
+        }
+
+
+      } else{ # 2D plots
+
+        center_y_x <- c(niche$center[2], niche$center[1])
+        axes_y_x   <- c(niche$axes[2],   niche$axes[1])
+        angle_y_x <- c(niche$angles[2], niche$angles[1])
+
+        center_z_x <- c(niche$center[3], niche$center[1])
+        axes_z_x   <- c(niche$axes[3],   niche$axes[1])
+        angle_z_x <- c(niche$angles[3], niche$angles[1])
+
+        center_z_y <- c(niche$center[3], niche$center[2])
+        axes_z_y   <- c(niche$axes[3],   niche$axes[2])
+        angle_z_y <- c(niche$angles[3], niche$angles[2])
+
+        ell2d_y_x <- build_ellps(center = center_y_x, axes = axes_y_x, angles = angle_y_x)
+        ell2d_z_x <- build_ellps(center = center_z_x, axes = axes_z_x, angles = angle_z_x)
+        ell2d_z_y <- build_ellps(center = center_z_y, axes = axes_z_y, angles = angle_z_y)
+
+        ell_y_x <- p_main_y_x
+        ell_z_x <- p_main_z_x
+        ell_z_y <- p_main_z_y
+
+
+        if (any(niche$angles != 0)) {
+          angle_warn <- ggplot2::ggplot() + ggplot2::theme_void() +
+            ggplot2::geom_text(ggplot2::aes(0, 0,
+                                            label = "Note: The ellipsoid is angled, its shape may appear distorted and some points may fall outside due to dimensionality."),
+                               size = 2)
+        } else {
+          angle_warn <- NULL
+        }
+
+        if (isTRUE(show.pts.in)) {
+          # Use base subsetting with resolved names from validator
+          pts_in <- get_suitable_env(niche = niche,
+                                     env_bg = env_bg[, v$col_names, drop = FALSE],
+                                     out = "data.frame")
+
+          ell_y_x <- ell_y_x +
+            ggplot2::geom_point(data = pts_in,
+                                ggplot2::aes(x = .data[[y_col]],
+                                             y = .data[[x_col]]),
+                                color = colors[["suitable_env"]], size = 0.5)
+          ell_z_x <- ell_z_x +
+            ggplot2::geom_point(data = pts_in,
+                                ggplot2::aes(x = .data[[z_col]],
+                                             y = .data[[x_col]]),
+                                color = colors[["suitable_env"]], size = 0.5)
+          ell_z_y <- ell_z_y +
+            ggplot2::geom_point(data = pts_in,
+                                ggplot2::aes(x = .data[[z_col]],
+                                             y = .data[[y_col]]),
+                                color = colors[["suitable_env"]], size = 0.5)
+
+        }
+
+
+        if (!is.null(occ_pts)) {
+          ell_y_x <- ell_y_x +
+            ggplot2::geom_point(data = occ_pts, ggplot2::aes(x = .data[[y]], y = .data[[x]]),
+                                color =  colors[["occ"]], size = 0.5)
+          ell_z_x <- ell_z_x +
+            ggplot2::geom_point(data = occ_pts, ggplot2::aes(x = .data[[z]], y = .data[[x]]),
+                                color =  colors[["occ"]], size = 0.5)
+          ell_z_y <- ell_z_y +
+            ggplot2::geom_point(data = occ_pts, ggplot2::aes(x = .data[[z]], y = .data[[y]]),
+                                color =  colors[["occ"]], size = 0.5)
+        }
+
+
+        ell_y_x <- ell_y_x +
+          ggplot2::geom_path(data = ell2d_y_x$surface, aes(x, y), color =  colors[["ellipsoid"]], linewidth = 0.5) +
+          ggplot2::annotate("segment",
+                            x = ell2d_y_x$center[1] - ell2d_y_x$axes[1],
+                            xend = ell2d_y_x$center[1] + ell2d_y_x$axes[1],
+                            y = ell2d_y_x$center[2], yend = ell2d_y_x$center[2],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("segment",
+                            y = ell2d_y_x$center[2] - ell2d_y_x$axes[2],
+                            yend = ell2d_y_x$center[2] + ell2d_y_x$axes[2],
+                            x = ell2d_y_x$center[1], xend = ell2d_y_x$center[1],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("point", x = ell2d_y_x$center[1], y = ell2d_y_x$center[2],
+                            color =  colors[["centroid"]], size = 2)
+
+        ell_z_x <- ell_z_x +
+          ggplot2::geom_path(data = ell2d_z_x$surface, aes(x, y), color =  colors[["ellipsoid"]], linewidth = 0.5) +
+          ggplot2::annotate("segment",
+                            x = ell2d_z_x$center[1] - ell2d_z_x$axes[1],
+                            xend = ell2d_z_x$center[1] + ell2d_z_x$axes[1],
+                            y = ell2d_z_x$center[2], yend = ell2d_z_x$center[2],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("segment",
+                            y = ell2d_z_x$center[2] - ell2d_z_x$axes[2],
+                            yend = ell2d_z_x$center[2] + ell2d_z_x$axes[2],
+                            x = ell2d_z_x$center[1], xend = ell2d_z_x$center[1],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("point", x = ell2d_z_x$center[1], y = ell2d_z_x$center[2],
+                            color =  colors[["centroid"]], size = 2)
+
+        ell_z_y <- ell_z_y +
+          ggplot2::geom_path(data = ell2d_z_y$surface, aes(x, y), color =  colors[["ellipsoid"]], linewidth = 0.5) +
+          ggplot2::annotate("segment",
+                            x = ell2d_z_y$center[1] - ell2d_z_y$axes[1],
+                            xend = ell2d_z_y$center[1] + ell2d_z_y$axes[1],
+                            y = ell2d_z_y$center[2], yend = ell2d_z_y$center[2],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("segment",
+                            y = ell2d_z_y$center[2] - ell2d_z_y$axes[2],
+                            yend = ell2d_z_y$center[2] + ell2d_z_y$axes[2],
+                            x = ell2d_z_y$center[1], xend = ell2d_z_y$center[1],
+                            color =  colors[["tolerance"]], linetype = "dashed") +
+          ggplot2::annotate("point", x = ell2d_z_y$center[1], y = ell2d_z_y$center[2],
+                            color =  colors[["centroid"]], size = 2)
+
+
+        return_plot <- ggpubr::ggarrange(x_name,        ell_y_x,   ell_z_x,
+                                         legend_plot,   y_name,    ell_z_y,
+                                         NULL,          angle_warn,      z_name,
+                                         ncol = 3, nrow = 3,
+                                         widths = c(0.15, 0.425, 0.425),
+                                         heights = c(0.45, 0.45, 0.15))
+
+        if (isTRUE(show.occ.density)) {
+          if (!is.null(occ_pts)) {
+            # Use base range() to avoid tidyselect here
+            # Use base range() to avoid tidyselect here
+            rng_z <- range(env_bg[[ if (is.numeric(z)) names(env_bg)[z] else z ]], na.rm = TRUE)
+            rng_y <- range(env_bg[[ if (is.numeric(y)) names(env_bg)[y] else y ]], na.rm = TRUE)
+            rng_x <- range(env_bg[[ if (is.numeric(x)) names(env_bg)[x] else x ]], na.rm = TRUE)
+
+            env_z_top <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[z_col]])) +
+              ggplot2::geom_density(fill =  colors[["occ"]], alpha = 0.6) +
+              ggplot2::scale_x_continuous(limits = rng_z) +
+              ggplot2::scale_y_continuous(n.breaks = 3) +
+              ggplot2::theme_minimal() +
+              ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+                             axis.title.x = ggplot2::element_blank(),
+                             axis.title.y = ggplot2::element_blank(),
+                             axis.text.y = ggplot2::element_text(size = 5))
+
+            env_y_top <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[y_col]])) +
+              ggplot2::geom_density(fill =  colors[["occ"]], alpha = 0.6) +
+              ggplot2::scale_x_continuous(limits = rng_y) +
+              ggplot2::scale_y_continuous(n.breaks = 3) +
+              ggplot2::theme_minimal() +
+              ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+                             axis.title.x = ggplot2::element_blank(),
+                             axis.title.y = ggplot2::element_blank(),
+                             axis.text.y = ggplot2::element_text(size = 5))
+
+            env_x_right <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[x_col]])) +
+              ggplot2::geom_density(fill =  colors[["occ"]], alpha = 0.6) +
+              ggplot2::scale_x_continuous(limits = rng_x) +
+              ggplot2::coord_flip() +
+              ggplot2::scale_y_continuous(n.breaks = 3) +
+              ggplot2::theme_minimal() +
+              ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                             axis.title.y = ggplot2::element_blank(),
+                             axis.title.x = ggplot2::element_blank(),
+                             axis.text.x = ggplot2::element_text(size = 5))
+
+            env_y_right <- ggplot2::ggplot(occ_pts, ggplot2::aes(x = .data[[y_col]])) +
+              ggplot2::geom_density(fill =  colors[["occ"]], alpha = 0.6) +
+              ggplot2::scale_x_continuous(limits = rng_y) +
+              ggplot2::coord_flip() +
+              ggplot2::scale_y_continuous(n.breaks = 3) +
+              ggplot2::theme_minimal() +
+              ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                             axis.title.y = ggplot2::element_blank(),
+                             axis.title.x = ggplot2::element_blank(),
+                             axis.text.x = ggplot2::element_text(size = 5))
+
+            return_plot <- ggpubr::ggarrange(
+              NULL, env_y_top, env_z_top, NULL,
+              x_name, ell_y_x, ell_z_x, env_x_right,
+              legend_plot, y_name, ell_z_y, env_y_right,
+              NULL, angle_warn, z_name, NULL,
+              ncol = 4, nrow = 4,
+              widths = c(0.1, 0.4, 0.4, 0.1),
+              heights = c(0.1, 0.4, 0.4, 0.1)
+            )
+          }
+        }
+      }
+    }
+
+    return(return_plot)
 }
