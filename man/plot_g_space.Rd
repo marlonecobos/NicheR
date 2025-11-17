@@ -13,19 +13,22 @@ plot_g_space(
   occ_pts = NULL,
   show.occ.density = FALSE,
   colors = NULL,
-  palette = "default"
+  palette = "default",
+  vs = NULL
 )
 }
 \arguments{
 \item{env_bg}{A background environment object used by
 [get_suitable_env()]. Typically a `terra::SpatRaster` (or `raster::Raster*`)
-providing the environmental layers and extent.}
+providing the environmental layers and extent. If `vs` is supplied and
+`env_bg` is `NULL`, the function will try to use `vs$call_args$env_bg`.}
 
 \item{n_bg}{Integer (currently unused; reserved for future downsampling of
 the background grid).}
 
 \item{niche}{Optional object of class `"ellipsoid"` (from [build_ellps()]).
-Required when `show.suitable = TRUE` or `show.distance = TRUE`.}
+Required when `show.suitable = TRUE` or `show.distance = TRUE`. If `vs`
+is supplied and `niche` is `NULL`, the function will try to use `vs$niche`.}
 
 \item{show.suitable}{Logical. If `TRUE`, fills suitable environments
 (inside the ellipsoid) as tiles.}
@@ -35,7 +38,9 @@ the ellipsoid centroid (`dist_sq`). If both flags are `TRUE`, distance is
 turned off and suitability is shown (with a message).}
 
 \item{occ_pts}{Optional `data.frame` of occurrences with columns `x`, `y`
-(assumed longitude/latitude, WGS84). Plotted as points if supplied.}
+(assumed longitude/latitude, WGS84). Plotted as points if supplied. If
+`vs` is supplied and `occ_pts` is `NULL`, the function will try to use
+`vs$occurrences`.}
 
 \item{show.occ.density}{Logical (currently unused; reserved for future
 density panels).}
@@ -45,8 +50,12 @@ density panels).}
 `occ_stroke`, and `dist` (RColorBrewer palette name for distance tiles).
 Example: `list(suitable_env = "#66CC99", dist = "YlOrRd")`.}
 
-\item{palette}{Character palette key (currently `"default"`; reserved for
-future sets).}
+\item{palette}{Character palette key. One of `"default"`, `"palette2"`,
+or `"palette3"`.}
+
+\item{vs}{Optional object of class `"NicheR_species"` created by
+[create_virtual_species()]. When provided, any of `env_bg`, `niche`, and
+`occ_pts` that are `NULL` will be filled from this object if possible.}
 }
 \value{
 A `ggpubr` object produced by [ggpubr::ggarrange()], containing the
@@ -67,17 +76,26 @@ which returns columns `x`, `y`, and `dist_sq`. When `show.distance = TRUE`,
 a continuous legend is provided by `scale_fill_distiller()`. The custom
 legend on the right reflects only the discrete layers actually drawn
 (background, suitable, occurrences).
+
+If a `NicheR_species` object is provided via `vs`, the function:
+\itemize{
+  \item uses `vs$call_args$env_bg` as `env_bg` when `env_bg` is `NULL`,
+  \item uses `vs$niche` as `niche` when `niche` is `NULL`,
+  \item uses `vs$occurrences` as `occ_pts` when `occ_pts` is `NULL`.
+}
+Explicit arguments always take precedence over values inferred from `vs`.
 }
 \section{Notes}{
 
-- `niche` must be provided if either `show.suitable` or `show.distance` is `TRUE`.
+- `niche` must be provided (directly or via `vs`) if either `show.suitable`
+  or `show.distance` is `TRUE`.
 - If both `show.suitable` and `show.distance` are `TRUE`, the function sets
   `show.distance <- FALSE` and informs the user.
 - `occ_pts` must include columns named `x` and `y`.
 }
 
 \seealso{
-[build_ellps()], [get_suitable_env()]
+[build_ellps()], [get_suitable_env()], [create_virtual_species()]
 
 Other plotting functions: 
 \code{\link{plot_e_space}()}

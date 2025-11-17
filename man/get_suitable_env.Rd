@@ -13,41 +13,46 @@ get_suitable_env(
 )
 }
 \arguments{
-\item{niche}{An object of class `ellipsoid` created by `build_ellipsoid()`.}
+\item{niche}{An object of class \code{ellipsoid} created by
+\code{build_ellipsoid()}.}
 
-\item{env_bg}{A `terra::SpatRaster`, `data.frame`, or `matrix` of
-environmental predictor variables. It must contain the variables
-referenced by the `niche` object.}
+\item{env_bg}{A \code{terra::SpatRaster}, \code{data.frame}, or \code{matrix}
+of environmental predictor variables. It must contain the variables
+referenced by the \code{niche} object. If a \code{data.frame} is used and
+spatial output is requested, it should also contain \code{x} and \code{y}
+columns for spatial referencing.}
 
-\item{out}{A character string specifying the desired output format. Can be
-`"data.frame"`, `"spatial"`, or `"both"`.
+\item{out}{A character string specifying the desired output format. One of
+\code{"data.frame"}, \code{"spatial"}, or \code{"both"}:
 \itemize{
-  \item `"data.frame"`: Returns a data frame of all suitable points.
-  \item `"spatial"`: Returns a `terra::SpatRaster` where suitable cells
-    are marked with 1 and unsuitable with 0. Requires `env_bg` to be a
-    `terra::SpatRaster`.
-  \item `"both"`: Returns a list containing both the spatial raster and
+  \item \code{"data.frame"}: Returns a data frame of all suitable points.
+  \item \code{"spatial"}: Returns a \code{terra::SpatRaster} where suitable
+    cells are marked with 1 and unsuitable with 0. Requires \code{env_bg}
+    to be a \code{terra::SpatRaster}.
+  \item \code{"both"}: Returns a list containing both the spatial raster and
     the data frame of suitable points.
 }}
 
-\item{distances}{Logical; if `TRUE`, an additional column named `dist_sq`
-is added to the output data frame containing the squared Mahalanobis
-distance for each suitable point.}
+\item{distances}{Logical; if \code{TRUE}, an additional column named
+\code{dist_sq} is added to the output data frame containing the squared
+Mahalanobis distance for each suitable point.}
+
+\item{verbose}{Logical; if \code{TRUE}, prints basic progress messages.}
 }
 \value{
-The suitable environmental area in the specified format, which can be
-  a `data.frame`, a `terra::SpatRaster`, or a list containing both.
+The suitable environmental area in the specified format: a
+  \code{data.frame}, a \code{terra::SpatRaster}, or a list containing both.
 }
 \description{
-This function identifies and extracts all environmental grid cells or data
+This function identifies and extracts environmental grid cells or data
 points that fall within a defined ellipsoid niche based on Mahalanobis distance.
 }
 \details{
-The function converts `env_bg` to a data frame, calculates the
-  squared Mahalanobis distance for each point, and then filters for points
-  where this distance is less than or equal to 1. This method efficiently
-  identifies all locations within the niche's boundary.
+The function converts \code{env_bg} (if needed) to a data frame, calculates
+the squared Mahalanobis distance for each point, and then filters for points
+where this distance is less than or equal to 1. This identifies all locations
+that fall within the ellipsoid niche boundary.
 }
 \seealso{
-[build_ellipsoid()], [get_sample_occ()]
+\code{\link{build_ellipsoid}}, \code{\link{get_sample_occ}}
 }

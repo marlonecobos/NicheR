@@ -2,24 +2,23 @@
 % Please edit documentation in R/set_bias_surface.R
 \name{set_bias_surface}
 \alias{set_bias_surface}
-\title{Apply one or more bias surfaces to a suitability raster}
+\title{Combine one or more bias surfaces into a pooled bias raster}
 \usage{
 set_bias_surface(
-  suitable_env,
   bias_surface,
   bias_dir = 1,
-  out = c("default", "both")
+  template = NULL,
+  res = NULL,
+  ext = NULL,
+  out = c("default", "both"),
+  verbose = TRUE
 )
 }
 \arguments{
-\item{suitable_env}{A required \code{terra::SpatRaster} representing the
-ecological suitability surface (values typically 0–1).}
-
 \item{bias_surface}{One or more bias layers which may be:
 \itemize{
   \item a \code{terra::SpatRaster} (single layer or multi-layer),
-  \item a \code{terra::SpatVector} (rasterized to match
-        \code{suitable_env}),
+  \item a \code{terra::SpatVector} (rasterized to a template grid),
   \item a character path to a raster or vector file,
   \item a \code{list} of any of the above.
 }}
@@ -28,47 +27,70 @@ ecological suitability surface (values typically 0–1).}
 directionality. A length 1 value is recycled across all layers. A value
 of \code{-1} applies \code{1 - layer} after scaling to \eqn{[0, 1]}.}
 
+\item{template}{Optional \code{terra::SpatRaster} used as the template grid
+(resolution, extent, and CRS) to which all bias layers will be aligned.
+If \code{NULL}, the template is inferred from the first layer in
+\code{bias_surface} (see Details).}
+
+\item{res}{Optional numeric resolution used to build a template raster when
+no \code{template} is provided and only vector inputs are available, or
+when \code{ext} is provided. Ignored if \code{template} is supplied.}
+
+\item{ext}{Optional spatial extent defining the template grid when no
+\code{template} is provided. Can be:
+\itemize{
+  \item a \code{terra::SpatRaster} or \code{terra::SpatVector}, in which
+        case \code{terra::ext()} is used, or
+  \item a numeric vector \code{c(xmin, xmax, ymin, ymax)}.
+}
+Must be used together with \code{res} if no \code{template} is given.}
+
 \item{out}{Character, one of \code{"default"} or \code{"both"}, determining
-whether to return only the pooled bias and final suitability
-(\code{"default"}) or also the individual standardized, direction-adjusted
-bias layers (\code{"both"}).}
+whether to return only the pooled bias surface (\code{"default"}) or also
+the individual standardized, direction-adjusted bias layers
+(\code{"both"}).}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress messages before and
+after major processing steps.}
 }
 \value{
-A list of class \code{"biased_suitable_env"} containing:
+A list of class \code{"nicheR_bias_surface"} containing:
   \item{pooled_bias_sp}{Pooled bias raster (scaled 0–1; \code{SpatRaster}).}
-  \item{pooled_bias_df}{Data frame version of pooled bias (non-zero cells).}
-  \item{final_suitability_sp}{Suitability * pooled bias (\code{SpatRaster}).}
-  \item{final_suitability_df}{Data frame version of final suitability
-        (non-zero cells).}
   \item{directional_bias_stack}{(If \code{out = "both"}) stack of all
         standardized, direction-corrected bias layers (\code{SpatRaster}).}
-  \item{directional_bias_df}{(If \code{out = "both"}) data frame version of
-        the directional stack (rows where at least one bias layer > 0).}
   \item{combination_formula}{String describing how layers were combined
         (e.g., \code{"Bias layers were combined: bias_1 * (1-bias_2)"}).}
-  \item{is_niche_applied}{Logical, always \code{TRUE} for this function
-        (reserved for potential future use).}
 }
 \description{
-This function combines one or more bias layers (sampling probability
-surfaces) and applies them to a suitability raster. Each bias layer is:
+This helper function combines one or more sampling bias layers into a single
+pooled bias surface. Each bias layer is:
 \itemize{
-  \item aligned to the suitability raster,
+  \item aligned to a common template grid,
   \item scaled to \eqn{[0, 1]},
   \item optionally reversed via \eqn{1 - x},
   \item multiplied with other bias layers to form a pooled bias surface.
 }
-The pooled bias is then multiplied with the ecological suitability raster to
-obtain a biased suitability surface.
 }
 \details{
-This function currently expects \code{suitable_env} to be a
-\code{terra::SpatRaster}. If you are working with suitability in data.frame
-form, you can:
+The resulting pooled bias raster can then be used elsewhere in NicheR to
+modulate sampling or suitability, but this function itself only handles
+combination of bias layers.
+
+
+Template selection follows this order:
 \enumerate{
-  \item convert the suitability to a raster before calling,
-  \item or use the returned \code{pooled_bias_df} to merge back into your
-        data.frame by coordinates.
+  \item If \code{template} is provided, it is used directly.
+  \item Otherwise, if \code{ext} and \code{res} are provided, a new template
+        raster is created from these.
+  \item Otherwise, the first element of \code{bias_surface} is used:
+    \itemize{
+      \item If it is a \code{SpatRaster}, that raster becomes the template.
+      \item If it is a \code{SpatVector}, a template is created from its
+            extent and \code{res}. In this case, \code{res} must not be
+            \code{NULL}.
+    }
 }
+
+All subsequent bias layers are resampled or rasterized to match this
+template grid.
 }
-\concept{niche functions}

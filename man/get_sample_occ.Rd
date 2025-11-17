@@ -6,86 +6,90 @@
 \usage{
 get_sample_occ(
   n_occ,
-  env_bg,
+  env_bg = NULL,
   niche,
   method = c("random", "center", "edge"),
+  bias_surface = NULL,
+  suitable_env = NULL,
   seed = NULL
 )
 }
 \arguments{
 \item{n_occ}{Integer; the number of occurrence points to sample.}
 
-\item{env_bg}{A `terra::SpatRaster`, `data.frame`, or `matrix` of
-environmental predictor variables. It must contain the variables
-referenced by the `niche` object. If a `data.frame` is used, it should also
-contain 'x' and 'y' columns for spatial referencing.}
+\item{env_bg}{Optional. A \code{terra::SpatRaster}, \code{data.frame}, or
+\code{matrix} of environmental predictor variables. It must contain the
+variables referenced by the \code{niche} object. If a \code{data.frame}
+is used, it should also contain \code{x} and \code{y} columns for spatial
+referencing. Required if \code{suitable_env} is not provided, or if
+\code{bias_surface} is used.}
 
-\item{niche}{An object of class `ellipsoid` created by `build_ellipsoid()`.}
+\item{niche}{An object of class \code{ellipsoid} created by
+\code{build_ellipsoid()}.}
 
-\item{method}{A character string specifying the sampling strategy. Can be
-one of `"random"`, `"center"`, or `"edge"`.
+\item{method}{A character string specifying the sampling strategy. One of
+\code{"random"}, \code{"center"}, or \code{"edge"}:
 \itemize{
-  \item `"random"`: Samples are drawn with uniform probability from the
-    suitable environmental space.
-  \item `"center"`: Sampling probability is inversely proportional to
+  \item \code{"random"}: Samples are drawn with uniform probability from
+    the suitable environmental space.
+  \item \code{"center"}: Sampling probability is inversely proportional to
     the Mahalanobis distance, favoring points closer to the niche center.
-  \item `"edge"`: Sampling probability is proportional to the Mahalanobis
-    distance, favoring points closer to the niche boundary.
+  \item \code{"edge"}: Sampling probability is proportional to the
+    Mahalanobis distance, favoring points closer to the niche boundary.
 }}
+
+\item{bias_surface}{Optional. One or more bias layers describing sampling
+bias. Passed to \code{set_bias_surface()} using either \code{env_bg} or
+\code{suitable_env} as the raster template. Can be:
+\itemize{
+  \item a \code{terra::SpatRaster} (single or multi layer),
+  \item a \code{terra::SpatVector},
+  \item a character path to a raster or vector file,
+  \item a \code{list} of any of the above.
+}
+The resulting pooled bias surface is used to modulate sampling weights
+over the suitable pool of environments. Only supported when at least one
+of \code{env_bg} or \code{suitable_env} is a raster object.}
+
+\item{suitable_env}{Optional. A precomputed suitability object describing
+the suitable environment pool. May be:
+\itemize{
+  \item a \code{terra::SpatRaster} or \code{raster::Raster*} already
+        containing suitability and Mahalanobis distances, or
+  \item a \code{data.frame} / \code{matrix} with columns \code{x},
+        \code{y}, and \code{dist_sq}, typically produced by
+        \code{get_suitable_env(..., out = "data.frame", distances = TRUE)}.
+}
+When supplied, \code{get_suitable_env()} is not called internally.}
 
 \item{seed}{An integer used to set the random number generator seed for
 reproducible results.}
 }
 \value{
-A `data.frame` containing `n_occ` sampled rows from `env_bg`,
-  including the 'x' and 'y' coordinates and the environmental predictor values.
+A \code{data.frame} containing \code{n_occ} sampled rows from the
+  suitable environment pool, including the \code{x} and \code{y} coordinates
+  and the environmental predictor values.
 }
 \description{
 This function samples occurrence points from a background environmental
 dataset based on a defined ellipsoid niche. Sampling can be biased towards
-the center, the edge, or be purely random.
+the center, the edge, or be purely random. Optionally, a sampling bias
+surface can be supplied to modulate the probability of selecting each
+suitable location.
 }
 \details{
-The function first identifies all points within the ellipsoid niche
-  using the Mahalanobis distance. It then applies a weighting scheme based on
-  the `method` argument to probabilistically select `n_occ` points from this
-  suitable environment pool.
-  The Mahalanobis distance squared is defined as:
-  \deqn{(x - \mu)^T \Sigma^{-1} (x - \mu)}{ (x - mu)^T Sigma^-1 (x - mu) }
-  where \eqn{x} is a point in environmental space, \eqn{\mu} is the niche center, and
-  \eqn{\Sigma^{-1}} is the inverse covariance matrix. Points with a distance
-  \eqn{\le 1} are considered suitable.
+The function first obtains a pool of suitable environments either by:
+\enumerate{
+  \item calling \code{get_suitable_env()} on \code{env_bg}, or
+  \item using a user-supplied \code{suitable_env} object that already
+        contains suitability and Mahalanobis distances.
 }
-\examples{
-\dontrun{
-# Assuming `build_ellipsoid` and `get_suitable_env` are available
-# Define a 3D niche
-my_niche <- build_ellipsoid(center = c(10, 50, 20),
-                            axes = c(5, 15, 8),
-                            angles = c(0, 0.5, 0.2))
 
-# Create a sample environmental background dataset
-set.seed(123)
-env_data <- data.frame(
-  x = runif(50000), y = runif(50000),
-  Var1 = rnorm(50000, 10, 10),
-  Var2 = rnorm(50000, 50, 10),
-  Var3 = rnorm(50000, 20, 10)
-)
-
-# Sample 1000 random occurrences from the suitable area
-occ_random <- get_sample_occ(n_occ = 1000,
-                             env_bg = env_data,
-                             niche = my_niche,
-                             method = "random")
-
-# Sample 1000 occurrences biased towards the center
-occ_center <- get_sample_occ(n_occ = 1000,
-                             env_bg = env_data,
-                             niche = my_niche,
-                             method = "center")
-}
+It then applies a weighting scheme based on \code{method} and, if provided,
+a pooled bias surface from \code{set_bias_surface()} to probabilistically
+select \code{n_occ} points from this suitable environment pool.
 }
 \seealso{
-[build_ellipsoid()], [get_suitable_env()]
+\code{\link{build_ellipsoid}}, \code{\link{get_suitable_env}},
+  \code{\link{set_bias_surface}}
 }

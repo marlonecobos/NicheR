@@ -14,63 +14,89 @@ create_virtual_species(
 \arguments{
 \item{...}{Named arguments passed to the component functions.
 Arguments are routed by name to the matching formal parameters of
-[build_ellps()], [get_suitable_env()], and [get_sample_occ()].
-Unknown names are ignored with a warning.}
+\code{build_ellps()}, \code{get_suitable_env()}, and
+\code{get_sample_occ()}. Unknown names are ignored with a warning.}
 
-\item{out.file}{Logical. If `TRUE`, save the returned object to an `.rds`
-file in the working directory.}
+\item{out.file}{Logical. If \code{TRUE}, save the returned object to an
+\code{.rds} file in the working directory.}
 
 \item{out.file.name}{Optional base name (without extension) for the saved
-file. If `NULL` or empty, a timestamped name is used.}
+file. If \code{NULL} or empty, a timestamped name is used.}
 
-\item{verbose}{Logical. If `TRUE`, print progress messages.}
+\item{verbose}{Logical. If \code{TRUE}, print progress messages.}
 }
 \value{
-A list of class **NicheR_species** with elements:
+A list of class \code{"NicheR_species"} with elements:
 \itemize{
-  \item \code{niche}: the ellipsoid object returned by [build_ellps()].
-  \item \code{suitability}: suitability surface from [get_suitable_env()].
-  \item \code{occurrences}: sampled occurrences from [get_sample_occ()].
-  \item \code{call_args}: the original `...` captured as a named list.
+  \item \code{niche}: the ellipsoid object returned by \code{build_ellps()}.
+  \item \code{suitability}: the object returned by \code{get_suitable_env()}
+        (data.frame, SpatRaster, or \code{"suitable_env"} list depending
+        on \code{out}).
+  \item \code{occurrences}: sampled occurrences returned by
+        \code{get_sample_occ()}.
+  \item \code{call_args}: the original \code{...} captured as a named list.
   \item \code{routed_args}: a list showing which args went to each function.
-  \item \code{save_path}: file path if \code{out.file = TRUE}, otherwise `NULL`.
+  \item \code{save_path}: file path if \code{out.file = TRUE}, otherwise
+        \code{NULL}.
 }
 }
 \description{
-Orchestrates the full NicheR workflow by routing `...` to
-[build_ellps()], [get_suitable_env()], and [get_sample_occ()].
-Returns an S3 object of class **NicheR_species** containing the
-niche object, suitability raster, and sampled occurrences.
+Orchestrates the full NicheR workflow by routing \code{...} to
+\code{\link{build_ellps}}, \code{\link{get_suitable_env}}, and
+\code{\link{get_sample_occ}}. Returns an S3 object of class
+\code{"NicheR_species"} containing the niche object, suitability, and
+sampled occurrences.
 }
 \details{
-If any component function requires `env_bg` and it is supplied only at the
-top level, it is forwarded to that function automatically. If a required
-argument (such as `env_bg`) is missing for a component, the function stops
-with an informative error.
+Each low-level function (\code{build_ellps()}, \code{get_suitable_env()},
+\code{get_sample_occ()}) can be used independently. This wrapper function
+simply wires them together and standardizes a few details:
+\itemize{
+  \item \code{get_suitable_env()} is always called with
+        \code{distances = TRUE}.
+  \item If \code{out} is not supplied for \code{get_suitable_env()}, it
+        defaults to \code{"both"} so that both a raster and a data.frame
+        are available.
+  \item The resulting suitable environment data.frame is passed to
+        \code{get_sample_occ()} as \code{suitable_env} if the user did not
+        already supply one.
+  \item If \code{env_bg} is supplied only at the top level, it is forwarded
+        to \code{get_suitable_env()} (and to \code{get_sample_occ()}
+        only if the user routed it explicitly).
+}
 }
 \section{Workflow}{
 
-1. Calls [build_ellps()] to define the ellipsoid in E-space.
-2. Calls [get_suitable_env()] to compute suitability in G-space.
-3. Calls [get_sample_occ()] to sample occurrences from the constrained surface.
+\enumerate{
+  \item Calls \code{build_ellps()} to define the ellipsoid in E-space.
+  \item Calls \code{get_suitable_env()} to compute the suitable environment
+        in G-space (always requesting distances and a data.frame output).
+  \item Calls \code{get_sample_occ()} to sample occurrences from the
+        suitable environment pool, passing \code{suitable_env} automatically
+        unless the user has supplied it explicitly.
+}
 }
 
 \examples{
 \dontrun{
 vs <- create_virtual_species(
   # build_ellps() args
-  centroid = c(temp = 20, precip = 140, seas = 25),
-  axes     = c(8, 45, 6.5),
+  center = c(temp = 20, precip = 140, seas = 25),
+  axes   = c(8, 45, 6.5),
+
   # get_suitable_env() args
-  env_bg   = my_env_spatraster,
-  bias     = my_bias_raster,
+  env_bg = my_env_spatraster,   # SpatRaster of predictors
+
   # get_sample_occ() args
-  n_points = 500
+  n_occ        = 500,
+  method       = "center",
+  bias_surface = my_bias_raster  # optional
 )
 print(vs)
 }
 
 }
 \seealso{
-[build_ellps()], [get_suitable_env()], [get_sample_occ()]
+\code{\link{build_ellps}}, \code{\link{get_suitable_env}},
+  \code{\link{get_sample_occ}}
 }

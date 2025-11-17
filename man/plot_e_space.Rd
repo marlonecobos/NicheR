@@ -18,13 +18,16 @@ plot_e_space(
   show.occ.density = FALSE,
   plot.3d = FALSE,
   colors = NULL,
-  palette = "default"
+  palette = "default",
+  vs = NULL
 )
 }
 \arguments{
 \item{env_bg}{A `data.frame` of background environments with at least three
 numeric predictor columns. These columns must contain the variables
-referenced by `x`, `y`, and `z`.}
+referenced by `x`, `y`, and `z`. If `NULL`, a `NicheR_species` object
+supplied via `vs` can be used to infer `env_bg` from its `suitability`
+slot (either a data.frame or a SpatRaster that will be converted).}
 
 \item{x, y, z}{Column specifications for the three predictors to display. Each may
 be a single column name (character string) or a single 1-based integer index
@@ -39,15 +42,16 @@ drawn. Using a large `n_bg` may slow plotting.}
 
 \item{niche}{Optional object of class `ellipsoid` describing the niche. If
 provided, its boundary and center will be plotted. For 2D plots, the
-object must contain `niche$angles`.}
+object must contain `niche$angles`. If `NULL` and a `NicheR_species` object
+is supplied via `vs`, `niche` is filled from `vs$niche`.}
 
 \item{show.pts.in}{Logical. If `TRUE` and `niche` is provided, points from
-`env_bg` that fall inside the ellipsoid are highlighted. A warning is
-issued if `niche` is not provided.}
+`env_bg` that fall inside the ellipsoid are highlighted.}
 
 \item{occ_pts}{Optional `data.frame` of occurrence points that includes the
 same predictor columns used for `x`, `y`, and `z`. These are overplotted
-if supplied.}
+if supplied. If `NULL` and a `NicheR_species` object is supplied via `vs`,
+this is filled from `vs$occurrences` when available.}
 
 \item{rand_seed}{Integer used to set the random number generator seed for
 reproducible background downsampling.}
@@ -58,6 +62,17 @@ adds marginal density panels for each variable. This is only supported in
 
 \item{plot.3d}{Logical. If `TRUE`, returns an interactive `plotly` 3D scatter
 plot. If `FALSE` (the default), returns a static `ggpubr` grid of 2D panels.}
+
+\item{colors}{Optional named list of colors to override the default palette.
+Valid names are: `bg`, `ellipsoid`, `centroid`, `tolerance`,
+`suitable_env`, `occ`.}
+
+\item{palette}{Character name of the internal palette to use.
+One of `"default"`, `"palette2"`, ..., `"palette6"`.}
+
+\item{vs}{Optional `NicheR_species` object returned by
+[create_virtual_species()]. If provided, `niche`, `occ_pts`, and `env_bg`
+are auto-filled from this object when they are not supplied explicitly.}
 }
 \value{
 - If `plot.3d = TRUE`: A `plotly` object.
@@ -70,15 +85,14 @@ of pairwise scatterplots with projected ellipse boundaries. In 3D mode, it
 returns an interactive `plotly` scatterplot.
 }
 \details{
-This function is a powerful visualization tool for understanding the
+This function is a visualization tool for understanding the
   relationship between a species' niche, its occurrences, and the available
-  environmental space. The 2D views are especially useful for publication-quality
-  figures, while the 3D interactive plot is great for data exploration. Note that
-  in 2D plots, points from a 3D space may appear to fall outside the projected
-  2D ellipse boundary. This is expected and does not indicate an error.
+  environmental space. The 2D views are especially useful for publication-
+  quality figures, while the 3D interactive plot is useful for exploration.
 }
 \seealso{
-[validate_plot_e_space_args()], [build_ellps()], [get_suitable_env()]
+[validate_plot_e_space_args()], [build_ellps()],
+  [get_suitable_env()], [create_virtual_species()]
 
 Other plotting functions: 
 \code{\link{plot_g_space}()}
