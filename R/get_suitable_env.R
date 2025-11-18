@@ -70,6 +70,10 @@ get_suitable_env <- function(niche,
   gc()
   out.suit <- tolower(match.arg(out.suit))
 
+  if (isTRUE(verbose)) {
+    message("Starting get_suitable_env()...")
+  }
+
   # --- 1) Check niche structure ----------------------------------------------
 
   if (!inherits(niche, "ellipsoid")) {
@@ -100,6 +104,10 @@ get_suitable_env <- function(niche,
 
   # --- 2) Coerce env_bg and build env_bg_df ----------------------------------
 
+  if (isTRUE(verbose)) {
+    message("Preparing environmental background...")
+  }
+
   # tibble -> data.frame
   if (inherits(env_bg, "tbl_df")) {
     env_bg <- as.data.frame(env_bg)
@@ -118,12 +126,14 @@ get_suitable_env <- function(niche,
   }
 
   if (env_is_raster) {
-    # size check: approximate memory if fully converted to df
+    if (isTRUE(verbose)) {
+      message("env_bg is a SpatRaster. Estimating size for data.frame conversion...")
+    }
+
     ncell <- terra::ncell(env_bg)
     nlyr  <- terra::nlyr(env_bg)
     est_mb <- (ncell * nlyr * 8) / 1024^2  # 8 bytes per numeric
 
-    # you can tweak this threshold
     size_threshold_mb <- 5000
 
     if (est_mb > size_threshold_mb) {
@@ -137,11 +147,18 @@ get_suitable_env <- function(niche,
       )
     }
 
+    if (isTRUE(verbose)) {
+      message("Estimated size ~", round(est_mb, 1),
+              " MB. Converting raster to data.frame with as.data.frame.nicheR()...")
+    }
+
     env_bg_rast <- env_bg
-    # Use your helper for memory-aware conversion
     env_bg_df <- as.data.frame.nicheR(env_bg_rast, verbose = verbose, use_cache = TRUE)
 
   } else {
+    if (isTRUE(verbose)) {
+      message("env_bg provided as data.frame or matrix. Coercing to data.frame...")
+    }
     env_bg_df <- as.data.frame(env_bg)
   }
 
@@ -157,11 +174,37 @@ get_suitable_env <- function(niche,
     stop("The number of predictor columns in 'env_bg' is less than 'niche$dimen'.")
   }
 
-  # --- 4) Compute Mahalanobis distance and filter inside ---------------------
+  if (isTRUE(verbose)) {
+    message("Using ", length(niche_vars), " predictor columns for the ellipsoid.")
+  }
+
+  # --- 4) Subset to bounding box and compute Mahalanobis distance ------------
+
+  if (isTRUE(verbose)) {
+    message("Subsetting to the ellipsoid bounding box in E space...")
+  }
+
+  nrow_in <- nrow(env_bg_df)
+
+  env_bg_df <- subset_env_to_niche_box(env_df = env_bg_df,
+                                       niche  = niche,
+                                       vars   = niche_vars,
+                                       expand = 0.1)
+
+  nrow_out <- nrow(env_bg_df)
+
+  if (isTRUE(verbose)) {
+    message("Bounding box subsetting reduced data from ",
+            nrow_in, " to ", nrow_out, " rows.")
+  }
 
   cc <- stats::complete.cases(env_bg_df[, niche_vars, drop = FALSE])
   if (!any(cc)) {
     stop("All candidate rows contain NA in predictor columns. Provide complete predictors or impute values.")
+  }
+
+  if (isTRUE(verbose)) {
+    message(sum(cc), " rows have complete predictor values. Computing Mahalanobis distances...")
   }
 
   env_bg_df_cc <- env_bg_df[cc, , drop = FALSE]
@@ -178,6 +221,10 @@ get_suitable_env <- function(niche,
 
   inside_rows <- which(cc)[is_inside_cc]
 
+  if (isTRUE(verbose)) {
+    message(sum(is_inside_cc), " points fall inside the ellipsoid.")
+  }
+
   return_df <- env_bg_df[inside_rows, , drop = FALSE]
   if (isTRUE(distances)) {
     return_df$dist_sq <- m_sq[is_inside_cc]
@@ -189,23 +236,27 @@ get_suitable_env <- function(niche,
 
   if (out.suit %in% c("spatial", "both")) {
 
+    if (isTRUE(verbose)) {
+      message("Building spatial output...")
+    }
+
     if (!all(c("x", "y") %in% names(env_bg_df))) {
       stop("For spatial output, 'env_bg' (or its data.frame representation) must contain 'x' and 'y' columns.")
     }
 
-    # we will always build *two separate rasters* when distances = TRUE,
-    # and a single raster when distances = FALSE.
-
     if (env_is_raster && !is.null(env_bg_rast)) {
-      # Case A: small raster – use it as template, avoid re-building from xyz
+      # Case A: small raster – use it as template
 
-      # 5A.1 suitable raster (0/1)
+      if (isTRUE(verbose)) {
+        message("Using original SpatRaster as template for spatial output.")
+      }
+
+      # suitable raster (0/1)
       suitable_ras <- env_bg_rast[[1]]
       vals <- terra::values(suitable_ras)
       vals[!is.na(vals)] <- NA_real_
       terra::values(suitable_ras) <- vals
 
-      # coordinates for all "inside" rows
       xy_all <- env_bg_df[inside_rows, c("x", "y"), drop = FALSE]
       ok_xy  <- stats::complete.cases(xy_all)
 
@@ -224,14 +275,16 @@ get_suitable_env <- function(niche,
 
       suitable_sp_list <- list(suitable = suitable_ras)
 
-      # 5A.2 distance raster (only if requested)
       if (isTRUE(distances)) {
+        if (isTRUE(verbose)) {
+          message("Also creating distance raster (dist_sq).")
+        }
+
         dist_ras <- env_bg_rast[[1]]
         vals_d <- terra::values(dist_ras)
         vals_d[] <- NA_real_
         terra::values(dist_ras) <- vals_d
 
-        # m_sq[is_inside_cc] is aligned with inside_rows and xy_all
         m_sq_inside <- m_sq[is_inside_cc]
         dist_vals   <- m_sq_inside[ok_xy]
 
@@ -250,21 +303,22 @@ get_suitable_env <- function(niche,
 
         suitable_sp_list$dist_sq <- dist_ras
       }
+
     } else {
       # Case B: env_bg was provided as data.frame / matrix
-      # Build rasters from full env_bg_df grid using xyz representation
+
+      if (isTRUE(verbose)) {
+        message("env_bg is not a SpatRaster. Reconstructing rasters from xyz.")
+      }
 
       if (!all(c("x", "y") %in% names(env_bg_df))) {
         stop("For spatial output from data.frame 'env_bg', columns 'x' and 'y' are required.")
       }
 
-      # track inside_rows indices into env_bg_df
-      # Build binary suitable column on full grid
       env_xy <- env_bg_df[, c("x", "y"), drop = FALSE]
       env_xy$suitable <- NA_real_
       env_xy$suitable[inside_rows] <- 1
 
-      # suitable raster
       suitable_ras <- terra::rast(env_xy[, c("x", "y", "suitable")],
                                   type = "xyz")
       names(suitable_ras) <- "suitable"
@@ -272,6 +326,10 @@ get_suitable_env <- function(niche,
       suitable_sp_list <- list(suitable = suitable_ras)
 
       if (isTRUE(distances)) {
+        if (isTRUE(verbose)) {
+          message("Also creating distance raster (dist_sq) from xyz grid.")
+        }
+
         env_xy$dist_sq <- NA_real_
         env_xy$dist_sq[inside_rows] <- m_sq[is_inside_cc]
 
@@ -300,9 +358,14 @@ get_suitable_env <- function(niche,
     }
   )
 
+  if (isTRUE(verbose)) {
+    message("Finished get_suitable_env().")
+  }
+
   gc()
   return(res)
 }
+
 
 #' @export
 print.suitable_env <- function(x, ...) {

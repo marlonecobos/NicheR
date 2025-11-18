@@ -66,12 +66,25 @@ get_sample_occ <- function(n_occ,
                            seed = NULL,
                            verbose = TRUE) {
 
+  gc()
   method <- tolower(match.arg(method))
 
-  # --- 1) Coerce suitable_env to data.frame with required columns -----------
+  if (isTRUE(verbose)) {
+    message("Starting get_sample_occ()...")
+  }
 
-  if (is.null(seed)) {
-    warning("Sampling seed not set, results will differ each time this function is run.",
+  # --- 0) Basic checks -------------------------------------------------------
+
+  if (missing(n_occ) || length(n_occ) != 1 || !is.numeric(n_occ)) {
+    stop("'n_occ' must be a single numeric value.")
+  }
+  n_occ <- as.integer(n_occ)
+  if (!is.finite(n_occ) || n_occ <= 0) {
+    stop("'n_occ' must be a positive integer.")
+  }
+
+  if (is.null(seed) && isTRUE(verbose)) {
+    warning("Sampling seed not set; results will differ each time this function is run.",
             call. = FALSE, immediate. = TRUE)
   }
 
@@ -81,6 +94,12 @@ get_sample_occ <- function(n_occ,
 
   suitable_pool <- NULL
   suitable_rast <- NULL
+
+  if (isTRUE(verbose)) {
+    message("Coercing 'suitable_env' to a data.frame of candidate environments...")
+  }
+
+  # --- 1) Coerce suitable_env to data.frame with required columns -----------
 
   ## 1A) Handle 'suitable_env' objects returned by get_suitable_env(...)
   if (inherits(suitable_env, "suitable_env") ||
@@ -207,6 +226,10 @@ get_sample_occ <- function(n_occ,
     stop("No suitable environments were found in 'suitable_env'.")
   }
 
+  if (isTRUE(verbose)) {
+    message("Suitable pool contains ", nrow(suitable_pool), " candidate environments.")
+  }
+
   # --- 2) Optional bias surface ---------------------------------------------
 
   bias_values <- NULL
@@ -223,6 +246,10 @@ get_sample_occ <- function(n_occ,
 
     if (terra::nlyr(bias_surface) != 1) {
       stop("'bias_surface' must have exactly one layer (0–1 bias values).")
+    }
+
+    if (isTRUE(verbose)) {
+      message("Extracting bias values at suitable locations...")
     }
 
     # Check values in [0, 1]
@@ -243,12 +270,16 @@ get_sample_occ <- function(n_occ,
     bias_values <- ext_df[, 1]
     bias_values[is.na(bias_values)] <- 0
 
-  } else if (verbose) {
+  } else if (isTRUE(verbose)) {
 
     message("No 'bias_surface' supplied; sampling based only on 'method'.")
   }
 
   # --- 3) Sampling weights ---------------------------------------------------
+
+  if (isTRUE(verbose)) {
+    message("Computing sampling weights using method = '", method, "'...")
+  }
 
   # Base weights from method
   if (method == "random") {
@@ -272,6 +303,9 @@ get_sample_occ <- function(n_occ,
 
   # Apply bias if available
   if (!is.null(bias_values)) {
+    if (isTRUE(verbose)) {
+      message("Applying bias surface to sampling weights...")
+    }
     w <- w * bias_values
   }
 
@@ -283,7 +317,15 @@ get_sample_occ <- function(n_occ,
 
   # --- 4) Draw samples -------------------------------------------------------
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    if (isTRUE(verbose)) {
+      message("Setting seed to ", seed, " and drawing ", n_occ, " samples...")
+    }
+    set.seed(seed)
+  } else if (isTRUE(verbose)) {
+    message("Drawing ", n_occ, " samples without a fixed seed...")
+  }
+
   replace_flag <- n_occ > nrow(suitable_pool)
 
   idx <- sample.int(
@@ -297,9 +339,10 @@ get_sample_occ <- function(n_occ,
   occ$dist_sq <- NULL
   rownames(occ) <- NULL
 
-  if (verbose) {
-    message(sprintf("Done sampling %d occurrences.", n_occ))
+  if (isTRUE(verbose)) {
+    message("Finished get_sample_occ(): sampled ", n_occ, " occurrences.")
   }
 
+  gc()
   return(occ)
 }
