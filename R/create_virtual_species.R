@@ -10,8 +10,8 @@
 #' 1. Calls [build_ellps()] to define the ellipsoid in E-space.
 #' 2. Calls [get_suitable_env()] to compute suitability in G-space.
 #' 3. Optionally calls [set_bias_surface()] to build a pooled bias raster
-#'    when bias-construction arguments are supplied (e.g., `bias_dir`,
-#'    `template`, `res`, `ext`, `out.bias`).
+#'    when bias-construction arguments are supplied (e.g., `bias_surface`,
+#'    `bias_dir`, `suitable_env`, `out.bias`).
 #' 4. Calls [get_sample_occ()] to sample occurrences from the suitable
 #'    (and optionally biased) environment.
 #'
@@ -21,11 +21,12 @@
 #'   [get_sample_occ()]. Unknown names are ignored with a warning.
 #'   \itemize{
 #'     \item \strong{build_ellps()}: e.g. `center`, `axes`, `angles`, etc.
-#'     \item \strong{get_suitable_env()}: e.g. `env_bg`, `out`, `distances`.
+#'     \item \strong{get_suitable_env()}: e.g. `env_bg`, `out.suit`,
+#'           `distances`, `var_names`.
 #'     \item \strong{set_bias_surface()}: e.g. `bias_surface`, `bias_dir`,
-#'           `template`, `res`, `ext`, `out.bias`.
+#'           `suitable_env`, `out.bias`.
 #'     \item \strong{get_sample_occ()}: e.g. `n_occ`, `method`,
-#'           `bias_surface`, `suitable_env`, `seed`.
+#'           `bias_surface`, `suitable_env`, `seed`, `verbose`.
 #'   }
 #' @param out.file Logical. If `TRUE`, save the returned object to an `.rds`
 #'   file in the working directory.
@@ -39,18 +40,34 @@
 #' `env_bg` argument). If a required argument (such as `env_bg`) is missing
 #' for a component, the function stops with an informative error.
 #'
+#' When available in [get_suitable_env()]'s formals and not explicitly set
+#' by the user, `create_virtual_species()` sets:
+#' \itemize{
+#'   \item `out.suit = "both"` so that both raster and data.frame outputs are
+#'         available for plotting and downstream use.
+#'   \item `distances = TRUE` so that distance-to-centroid information is
+#'         computed and can be used in geographic plots.
+#' }
+#'
+#' If [get_sample_occ()] has a `suitable_env` argument and the user does not
+#' supply it, the suitability object returned by [get_suitable_env()] is
+#' automatically forwarded as `suitable_env`.
+#'
 #' \strong{Bias handling:}
 #' \itemize{
-#'   \item If the user passes only `bias_surface` (and no `bias_dir`,
-#'         `template`, `res`, `ext`, or `out.bias`), it is assumed to be a
-#'         \emph{precomputed single-layer raster} and is passed directly to
-#'         [get_sample_occ()] (which expects a 0–1 layer).
-#'   \item If the user passes `bias_surface` \emph{plus} any of the bias
-#'         construction arguments (`bias_dir`, `template`, `res`, `ext`,
+#'   \item If the user passes only `bias_surface` (and no additional
+#'         [set_bias_surface()] arguments), it is assumed to be a
+#'         \emph{precomputed single-layer raster} scaled to \eqn{[0, 1]} and
+#'         is passed directly to [get_sample_occ()] (which expects a 0–1 layer).
+#'   \item If the user passes `bias_surface` \emph{plus} any
+#'         [set_bias_surface()] arguments (e.g. `bias_dir`, `suitable_env`,
 #'         `out.bias`), then [set_bias_surface()] is called once, and its
 #'         pooled bias raster is passed to [get_sample_occ()] as
 #'         `bias_surface`. The full bias object is stored in the output
 #'         as `bias_surface`.
+#'   \item When [set_bias_surface()] is invoked and `suitable_env` is not
+#'         provided to it explicitly, the suitability object from
+#'         [get_suitable_env()] is used as the mask/template.
 #' }
 #'
 #' @return
@@ -82,6 +99,7 @@ create_virtual_species <- function(...,
   # ensure required functions exist
   needed_funs <- c("build_ellps", "get_suitable_env",
                    "set_bias_surface", "get_sample_occ")
+
   missing_funs <- needed_funs[!vapply(needed_funs, exists, logical(1), mode = "function")]
 
   if (length(missing_funs)) {
@@ -92,7 +110,7 @@ create_virtual_species <- function(...,
   # pull formals for routing
   f_build <- names(formals(build_ellps))
   f_suit  <- names(formals(get_suitable_env))
-  f_bias  <- names(formals(set_bias_surface))   # includes out.bias
+  f_bias  <- names(formals(set_bias_surface))
   f_occ   <- names(formals(get_sample_occ))
 
   # split args by target function
@@ -111,9 +129,23 @@ create_virtual_species <- function(...,
     }
   }
 
-  # check that env_bg will be available when needed for suitability
+  # ensure env_bg will be available when needed for suitability
   if (("env_bg" %in% f_suit) && !("env_bg" %in% names(args_suit))) {
     stop("env_bg is required by get_suitable_env but was not supplied.")
+  }
+
+  # set sensible defaults for get_suitable_env behavior
+  if ("out.suit" %in% f_suit && !("out.suit" %in% names(args_suit))) {
+    args_suit$out.suit <- "both"
+    if (isTRUE(verbose)) {
+      message("get_suitable_env(): 'out.suit' not supplied; using 'both'.")
+    }
+  }
+  if ("distances" %in% f_suit && !("distances" %in% names(args_suit))) {
+    args_suit$distances <- TRUE
+    if (isTRUE(verbose)) {
+      message("get_suitable_env(): 'distances' not supplied; computing distances = TRUE.")
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -136,73 +168,63 @@ create_virtual_species <- function(...,
 
   if (verbose) message("Computed suitable environments.")
 
+  # If get_sample_occ has a 'suitable_env' arg and user didn't set it,
+  # wire through the suitability object from get_suitable_env().
+  if ("suitable_env" %in% f_occ && !("suitable_env" %in% names(args_occ))) {
+    args_occ$suitable_env <- suit_env
+  }
+
   # ---------------------------------------------------------------------------
   # 3) Optional bias construction
   # ---------------------------------------------------------------------------
   bias_obj <- NULL
 
-  # Does the user supply ANY bias argument at all?
-  has_any_bias_arg <- "bias_surface" %in% names(args) ||
-    any(c("bias_dir", "template", "res", "ext", "out.bias") %in% names(args))
+  # We treat bias as "in play" if user provided bias_surface at all
+  has_any_bias_arg <- "bias_surface" %in% names(args)
 
   if (has_any_bias_arg) {
 
     # Decide if we should CALL set_bias_surface() or just forward bias_surface.
-    # We call set_bias_surface() only if at least one "construction" arg
-    # is present in args_bias (beyond bias_surface/verbose/out.bias).
+    # We call set_bias_surface() if any set_bias_surface-specific args
+    # beyond 'bias_surface' and 'verbose' are present (e.g., bias_dir,
+    # suitable_env, out.bias).
     bias_construction_args <- setdiff(names(args_bias),
-                                      c("bias_surface", "verbose", "out.bias"))
+                                      c("bias_surface", "verbose"))
 
     wants_bias_build <- length(bias_construction_args) > 0
 
     if (wants_bias_build) {
       # We will build a bias surface with set_bias_surface()
 
-      # assemble bias args
       bias_call_args <- args_bias
 
-      # If no template given, try to infer from env_bg (used in get_suitable_env)
-      if (!("template" %in% names(bias_call_args)) ||
-          is.null(bias_call_args$template)) {
-
-        if ("env_bg" %in% names(args_suit) &&
-            inherits(args_suit$env_bg, c("SpatRaster", "Raster"))) {
-
-          bias_call_args$template <- if (inherits(args_suit$env_bg, "Raster")) {
-            terra::rast(args_suit$env_bg)
-          } else {
-            args_suit$env_bg
-          }
-        }
+      # If no suitable_env given to set_bias_surface, use the suitability
+      # object from get_suitable_env() as mask/template.
+      if (!("suitable_env" %in% names(bias_call_args))) {
+        bias_call_args$suitable_env <- suit_env
       }
 
-      if (!"bias_surface" %in% names(bias_call_args) ||
-          is.null(bias_call_args$bias_surface)) {
-        warning("Bias-construction arguments were detected but 'bias_surface' is missing; ",
-                "skipping bias surface construction.", call. = FALSE)
+      bias_obj <- tryCatch(
+        do.call(set_bias_surface, bias_call_args),
+        error = function(e) stop("set_bias_surface failed: ", e$message)
+      )
+
+      if (verbose) message("Constructed pooled bias surface via set_bias_surface().")
+
+      # get_sample_occ() expects a single-layer bias raster;
+      # pass the pooled layer if present.
+      if (!is.null(bias_obj$pooled_bias_sp)) {
+        args_occ$bias_surface <- bias_obj$pooled_bias_sp
       } else {
-
-        bias_obj <- tryCatch(
-          do.call(set_bias_surface, bias_call_args),
-          error = function(e) stop("set_bias_surface failed: ", e$message)
-        )
-
-        if (verbose) message("Constructed pooled bias surface via set_bias_surface().")
-
-        # get_sample_occ() expects a single-layer bias raster;
-        # pass the pooled layer.
-        if (!is.null(bias_obj$pooled_bias_sp)) {
-          args_occ$bias_surface <- bias_obj$pooled_bias_sp
-        } else {
-          warning("set_bias_surface() returned no 'pooled_bias_sp'; ",
-                  "bias will not be applied in get_sample_occ().",
-                  call. = FALSE)
-        }
+        warning("set_bias_surface() returned no 'pooled_bias_sp'; ",
+                "bias will not be applied in get_sample_occ().",
+                call. = FALSE)
       }
 
     } else {
-      # No construction args: assume the user passed a precomputed 1-layer raster
-      # as 'bias_surface' that should go straight into get_sample_occ().
+      # No extra set_bias_surface args: assume the user passed a precomputed
+      # 0–1 bias raster as 'bias_surface' that should go straight into
+      # get_sample_occ().
       if ("bias_surface" %in% names(args)) {
         args_occ$bias_surface <- args$bias_surface
         bias_obj <- args$bias_surface  # store in output for transparency
@@ -217,7 +239,7 @@ create_virtual_species <- function(...,
   # 4) sample occurrences
   # ---------------------------------------------------------------------------
   occ <- tryCatch(
-    do.call(get_sample_occ, c(list(niche = niche_obj), args_occ)),
+    do.call(get_sample_occ, args_occ),
     error = function(e) stop("get_sample_occ failed: ", e$message)
   )
 

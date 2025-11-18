@@ -146,7 +146,7 @@ plot_e_space <- function(env_bg,
       )
     }
 
-    env_bg <- as.data.frame.nicheR(env_bg_rast, verbose = verbose, use_cache = TRUE)
+    env_bg <- as.data.frame.nicheR(env_bg)
 
   }
   if (!is.data.frame(env_bg)) {
@@ -261,6 +261,13 @@ plot_e_space <- function(env_bg,
         )
         pts_in <- NULL
       }
+
+      if (nrow(pts_in) > n_bg) {
+        message(sprintf("Sampling %d of %d rows from 'suitable_env' for plotting.", n_bg, nrow(pts_in)))
+        set.seed(rand_seed)
+        pts_in <- pts_in[sample.int(nrow(pts_in), size = n_bg, replace = FALSE), ]
+      }
+
     }
   }
 
@@ -610,7 +617,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_x]]
           ),
           color = colors[["suitable_env"]],
-          size  = 0.5
+          pch = "."
         )
 
       ell_z_x <- ell_z_x +
@@ -621,7 +628,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_x]]
           ),
           color = colors[["suitable_env"]],
-          size  = 0.5
+          pch = "."
         )
 
       ell_z_y <- ell_z_y +
@@ -632,7 +639,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_y]]
           ),
           color = colors[["suitable_env"]],
-          size  = 0.5
+          pch = "."
         )
     }
 
@@ -646,7 +653,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_x]]
           ),
           color = colors[["occ"]],
-          size  = 0.5
+          pch = "."
         )
 
       ell_z_x <- ell_z_x +
@@ -657,7 +664,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_x]]
           ),
           color = colors[["occ"]],
-          size  = 0.5
+          pch = "."
         )
 
       ell_z_y <- ell_z_y +
@@ -668,7 +675,7 @@ plot_e_space <- function(env_bg,
             y = .data[[col_y]]
           ),
           color = colors[["occ"]],
-          size  = 0.5
+          pch = "."
         )
     }
 

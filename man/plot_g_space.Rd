@@ -6,70 +6,79 @@
 \usage{
 plot_g_space(
   env_bg = NULL,
-  n_bg = 10000,
   suitable_env = NULL,
   occ_pts = NULL,
   show.occ.density = FALSE,
   colors = NULL,
   palette = "default",
+  surface = c("both", "suit", "dist"),
   vs = NULL,
   niche = NULL
 )
 }
 \arguments{
 \item{env_bg}{Optional background environment object used when
-`suitable_env` is not supplied and suitability must be computed.
-Typically a `terra::SpatRaster` (or `raster::Raster*`).}
-
-\item{n_bg}{Integer (currently unused; reserved for future downsampling of
-the background grid).}
+\code{suitable_env} is not supplied and suitability must be computed.
+Typically a \code{terra::SpatRaster} (or \code{raster::Raster*}).}
 
 \item{suitable_env}{Optional precomputed suitable environment object. Can be:
 \itemize{
-  \item a `data.frame` with columns `x`, `y`, and optionally `dist_sq`,
-  \item a `"suitable_env"` object returned by [get_suitable_env()]
-        with a `suitable_env_df` component.
+  \item a \code{data.frame} with columns \code{x}, \code{y}, and optionally \code{dist_sq},
+  \item a \code{"suitable_env"} object returned by \code{\link{get_suitable_env}}
+        with a \code{suitable_env_df} or \code{suitable_env_sp} component,
+  \item a \code{terra::SpatRaster} or a list of \code{terra::SpatRaster} objects.
 }
-If `dist_sq` is present, a distance panel is also drawn. If you only
-want one surface (e.g., just suitability or just distance), supply only
-that information in `suitable_env`.}
+When a data.frame is used, it is assumed that each row corresponds to a
+suitable cell (i.e. presence-only). When \code{dist_sq} is present, a
+distance panel can also be drawn.}
 
-\item{occ_pts}{Optional `data.frame` of occurrences with columns `x`, `y`
-(assumed longitude/latitude, WGS84). Plotted as points if supplied. If
-`vs` is supplied and `occ_pts` is `NULL`, the function will try to use
-`vs$occurrences`.}
+\item{occ_pts}{Optional \code{data.frame} of occurrences with columns
+\code{x}, \code{y} (assumed longitude/latitude, WGS84). Plotted as points
+if supplied. If \code{vs} is supplied and \code{occ_pts} is \code{NULL},
+the function will try to use \code{vs$occurrences}.}
 
 \item{show.occ.density}{Logical (currently unused; reserved for future
 density panels).}
 
 \item{colors}{Optional named list to override aesthetics. Recognized names:
-`bg` (basemap fill), `suitable_env` (suitable tiles), `occ_fill`,
-`occ_stroke`, and `dist` (RColorBrewer palette name for distance tiles).}
+\code{bg} (basemap fill), \code{suitable_env} (suitable tiles),
+\code{occ_fill}, \code{occ_stroke}, and \code{dist} (RColorBrewer palette
+name for distance tiles).}
 
-\item{palette}{Character palette key. One of `"default"`, `"palette2"`,
-or `"palette3"`.}
+\item{palette}{Character palette key. One of \code{"default"},
+\code{"palette2"}, or \code{"palette3"}.}
 
-\item{vs}{Optional object of class `"NicheR_species"` created by
-[create_virtual_species()]. When provided, any of `env_bg`, `niche`,
-`occ_pts`, or `suitable_env` that are `NULL` will be filled from this
-object if possible.}
+\item{surface}{Character; which surface(s) to plot. One of:
+\itemize{
+  \item \code{"both"}: show suitability tiles and (if available) distance tiles,
+  \item \code{"suit"}: show only suitability tiles,
+  \item \code{"dist"}: show only the distance-to-centroid surface
+        (requires a \code{dist_sq} column).
+}}
 
-\item{niche}{Optional object of class `"ellipsoid"` (from [build_ellps()]).
-Required when suitability is computed internally (i.e., when
-`suitable_env` is `NULL`).}
+\item{vs}{Optional object of class \code{"NicheR_species"} created by
+\code{\link{create_virtual_species}}. When provided, any of
+\code{env_bg}, \code{niche}, \code{occ_pts}, or \code{suitable_env} that
+are \code{NULL} will be filled from this object if possible.}
+
+\item{niche}{Optional object of class \code{"ellipsoid"} (from
+\code{\link{build_ellps}}). Required when suitability is computed internally
+(i.e., when \code{suitable_env} is \code{NULL}).}
 }
 \value{
-A `ggpubr` object produced by [ggpubr::ggarrange()], containing
-  one or two map panels plus a matching legend panel.
+A \code{ggpubr} object produced by \code{\link[ggpubr]{ggarrange}},
+  containing one or two map panels plus a matching legend panel.
 }
 \description{
-Draws a world basemap and overlays (a) suitable environments as tiles,
+Draws a basemap and overlays (a) suitable environments as tiles,
 (b) an optional continuous distance-to-centroid surface, and/or (c)
-occurrence points. A compact custom legend is built to match the
-discrete layers shown.
+occurrence points. The map extent is primarily inferred from \code{env_bg}
+(if available), otherwise from the coordinates in \code{suitable_env} and
+finally from \code{occ_pts}, always with a small buffer where needed.
 }
 \seealso{
-[build_ellps()], [get_suitable_env()], [create_virtual_species()]
+\code{\link{build_ellps}}, \code{\link{get_suitable_env}},
+  \code{\link{create_virtual_species}}
 
 Other plotting functions: 
 \code{\link{plot_e_space}()}

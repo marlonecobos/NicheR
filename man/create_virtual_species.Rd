@@ -18,11 +18,12 @@ Arguments are routed by name to the matching formal parameters of
 [get_sample_occ()]. Unknown names are ignored with a warning.
 \itemize{
   \item \strong{build_ellps()}: e.g. `center`, `axes`, `angles`, etc.
-  \item \strong{get_suitable_env()}: e.g. `env_bg`, `out`, `distances`.
+  \item \strong{get_suitable_env()}: e.g. `env_bg`, `out.suit`,
+        `distances`, `var_names`.
   \item \strong{set_bias_surface()}: e.g. `bias_surface`, `bias_dir`,
-        `template`, `res`, `ext`, `out.bias`.
+        `suitable_env`, `out.bias`.
   \item \strong{get_sample_occ()}: e.g. `n_occ`, `method`,
-        `bias_surface`, `suitable_env`, `seed`.
+        `bias_surface`, `suitable_env`, `seed`, `verbose`.
 }}
 
 \item{out.file}{Logical. If `TRUE`, save the returned object to an `.rds`
@@ -60,18 +61,34 @@ If `env_bg` is supplied only at the top level, it is forwarded to both
 `env_bg` argument). If a required argument (such as `env_bg`) is missing
 for a component, the function stops with an informative error.
 
+When available in [get_suitable_env()]'s formals and not explicitly set
+by the user, `create_virtual_species()` sets:
+\itemize{
+  \item `out.suit = "both"` so that both raster and data.frame outputs are
+        available for plotting and downstream use.
+  \item `distances = TRUE` so that distance-to-centroid information is
+        computed and can be used in geographic plots.
+}
+
+If [get_sample_occ()] has a `suitable_env` argument and the user does not
+supply it, the suitability object returned by [get_suitable_env()] is
+automatically forwarded as `suitable_env`.
+
 \strong{Bias handling:}
 \itemize{
-  \item If the user passes only `bias_surface` (and no `bias_dir`,
-        `template`, `res`, `ext`, or `out.bias`), it is assumed to be a
-        \emph{precomputed single-layer raster} and is passed directly to
-        [get_sample_occ()] (which expects a 0–1 layer).
-  \item If the user passes `bias_surface` \emph{plus} any of the bias
-        construction arguments (`bias_dir`, `template`, `res`, `ext`,
+  \item If the user passes only `bias_surface` (and no additional
+        [set_bias_surface()] arguments), it is assumed to be a
+        \emph{precomputed single-layer raster} scaled to \eqn{[0, 1]} and
+        is passed directly to [get_sample_occ()] (which expects a 0–1 layer).
+  \item If the user passes `bias_surface` \emph{plus} any
+        [set_bias_surface()] arguments (e.g. `bias_dir`, `suitable_env`,
         `out.bias`), then [set_bias_surface()] is called once, and its
         pooled bias raster is passed to [get_sample_occ()] as
         `bias_surface`. The full bias object is stored in the output
         as `bias_surface`.
+  \item When [set_bias_surface()] is invoked and `suitable_env` is not
+        provided to it explicitly, the suitability object from
+        [get_suitable_env()] is used as the mask/template.
 }
 }
 \section{Workflow}{
@@ -79,8 +96,8 @@ for a component, the function stops with an informative error.
 1. Calls [build_ellps()] to define the ellipsoid in E-space.
 2. Calls [get_suitable_env()] to compute suitability in G-space.
 3. Optionally calls [set_bias_surface()] to build a pooled bias raster
-   when bias-construction arguments are supplied (e.g., `bias_dir`,
-   `template`, `res`, `ext`, `out.bias`).
+   when bias-construction arguments are supplied (e.g., `bias_surface`,
+   `bias_dir`, `suitable_env`, `out.bias`).
 4. Calls [get_sample_occ()] to sample occurrences from the suitable
    (and optionally biased) environment.
 }
