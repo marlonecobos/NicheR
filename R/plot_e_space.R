@@ -128,7 +128,26 @@ plot_e_space <- function(env_bg,
     env_bg <- terra::rast(env_bg)
   }
   if (inherits(env_bg, "SpatRaster")) {
-    env_bg <- as.data.frame.nicheR(env_bg)
+
+    ncell <- terra::ncell(env_bg)
+    nlyr  <- terra::nlyr(env_bg)
+    est_mb <- (ncell * nlyr * 8) / 1024^2  # 8 bytes per numeric
+
+    size_threshold_mb <- 5000
+
+    if (est_mb > size_threshold_mb) {
+      stop(
+        "The provided 'env_bg' raster stack is large (estimated ~",
+        round(est_mb, 1),
+        " MB if converted to a full data.frame).\n",
+        "For memory safety, please convert it to a data.frame yourself, e.g. using\n",
+        "  as.data.frame.nicheR(env_bg, use_cache = TRUE)\n",
+        "and then pass that data.frame as 'env_bg'."
+      )
+    }
+
+    env_bg <- as.data.frame.nicheR(env_bg_rast, verbose = verbose, use_cache = TRUE)
+
   }
   if (!is.data.frame(env_bg)) {
     stop("'env_bg' must be a data.frame or coercible to one.")
