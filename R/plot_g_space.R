@@ -230,7 +230,7 @@ plot_g_space <- function(env_bg = NULL,
         niche     = niche,
         env_bg    = env_bg,
         out.suit  = "data.frame",
-        distances = TRUE,
+        distances = FALSE,
         verbose   = FALSE
       )
       message(
