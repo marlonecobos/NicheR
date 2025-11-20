@@ -2,10 +2,10 @@
 % Please edit documentation in R/plot_e_space.R
 \name{plot_e_space}
 \alias{plot_e_space}
-\title{Plot Environmental Space with Optional Ellipsoid Overlays}
+\title{Plot niche and environments in E-space (2D or 3D)}
 \usage{
 plot_e_space(
-  env_bg,
+  env_bg = NULL,
   x,
   y,
   z,
@@ -22,82 +22,11 @@ plot_e_space(
   vs = NULL
 )
 }
-\arguments{
-\item{env_bg}{A \code{data.frame} (or coercible object) of background environments
-with at least three numeric predictor columns. These columns must contain
-the variables referenced by \code{x}, \code{y}, and \code{z}. If \code{env_bg}
-is a \code{terra::SpatRaster} or \code{raster::Raster*}, it is converted with
-\code{as.data.frame.nicheR()}. If \code{NULL}, a \code{NicheR_species} object
-supplied via \code{vs} can be used to infer \code{env_bg} from its
-\code{suitability} slot.}
-
-\item{x, y, z}{Column specifications for the three predictors to display. Each may
-be a single column name (character string) or a single 1-based integer index
-into \code{env_bg}. If any of \code{x}, \code{y}, or \code{z} are omitted,
-the function attempts to infer them from the predictor columns in \code{env_bg}
-(excluding \code{"x"} and \code{"y"} coordinate columns if present).}
-
-\item{labels}{Character vector of length 3 giving axis labels for the x, y,
-and z variables in display order. Defaults to \code{c("ENV 1", "ENV 2", "ENV 3")}.}
-
-\item{n_bg}{Positive integer giving the maximum number of background rows to plot.
-If \code{nrow(env_bg)} is greater than \code{n_bg}, a random subset of size
-\code{n_bg} is drawn. Using a large \code{n_bg} may slow plotting.}
-
-\item{niche}{Optional object of class \code{ellipsoid} describing the niche. If
-provided, its boundary and center will be plotted. For 2D plots, the
-object should contain \code{niche$angles}. If \code{NULL} and a
-\code{NicheR_species} object is supplied via \code{vs}, \code{niche} is
-filled from \code{vs$niche}.}
-
-\item{suitable_env}{Optional suitable environment object (data.frame,
-\code{suitable_env} list, or SpatRaster), typically produced by
-\code{\link{get_suitable_env}}. When provided, points inside the ellipsoid
-are plotted in E space.}
-
-\item{occ_pts}{Optional \code{data.frame} of occurrence points that includes the
-same predictor columns used for \code{x}, \code{y}, and \code{z}. These are
-overplotted if supplied. If \code{NULL} and a \code{NicheR_species} object
-is supplied via \code{vs}, this is filled from \code{vs$occurrences} when available.}
-
-\item{rand_seed}{Integer used to set the random number generator seed for
-reproducible background downsampling.}
-
-\item{show.occ.density}{Logical. If \code{TRUE} and \code{occ_pts} is provided,
-adds marginal density panels for each variable (2D plots only;
-\code{plot.3d = FALSE}).}
-
-\item{plot.3d}{Logical. If \code{TRUE}, returns an interactive \code{plotly} 3D scatter
-plot. If \code{FALSE} (the default), returns a static \code{ggpubr} grid of 2D panels.}
-
-\item{colors}{Optional named list of colors to override the default palette.
-Valid names are: \code{bg}, \code{ellipsoid}, \code{centroid}, \code{tolerance},
-\code{suitable_env}, \code{occ}.}
-
-\item{palette}{Character name of the internal palette to use.
-One of \code{"default"}, \code{"palette2"}, ..., \code{"palette6"}.}
-
-\item{vs}{Optional \code{NicheR_species} object returned by
-\code{\link{create_virtual_species}}. If provided, \code{niche},
-\code{occ_pts}, \code{env_bg}, and \code{suitable_env} are auto-filled from
-this object when they are not supplied explicitly.}
-}
-\value{
-If \code{plot.3d = TRUE}, a \code{plotly} object.
-If \code{plot.3d = FALSE}, a \code{ggpubr} object containing arranged
-\code{ggplot2} panels.
-}
 \description{
-Produces pairwise views of a 3D environmental space with optional overlays of a
-virtual niche ellipsoid and occurrence points. In 2D mode, it returns a grid
-of pairwise scatterplots with projected ellipse boundaries. In 3D mode, it
-returns an interactive \code{plotly} scatterplot.
+Automatically retrieves:
+ - env_bg (environmental background),
+ - suitable_env (inside ellipsoid),
+ - occurrences,
+ - x,y,z predictors
+from: user args → vs → nr_get().
 }
-\seealso{
-\code{\link{validate_plot_e_space_args}}, \code{\link{build_ellps}},
-  \code{\link{get_suitable_env}}, \code{\link{create_virtual_species}}
-
-Other plotting functions: 
-\code{\link{plot_g_space}()}
-}
-\concept{plotting functions}
