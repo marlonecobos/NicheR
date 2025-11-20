@@ -201,7 +201,7 @@ plot_e_space <- function(env_bg = NULL,
 
     # suitable_env
     if (is.null(suitable_env))
-      suitable_env <- nr_get_suitable_all(vs)
+      suitable_env <- nr_get_suitable(vs)
 
     # occurrences
     if (is.null(occ_pts))

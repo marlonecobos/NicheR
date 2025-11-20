@@ -25,8 +25,10 @@
 #'   \item{\code{"dist_sq"}}{Raster of squared Mahalanobis distance from the
 #'   niche centroid (inside the ellipsoid), if present.}
 #'
-#'   \item{\code{"all_suitable"}}{All spatial suitability rasters (list of
-#'   SpatRasters).}
+#'   \item{\code{"all_suitable"}}{The full suitability object stored in the input:
+#'     for a \code{suitable_env} this returns the entire object; for a
+#'     \code{NicheR_species} this returns the \code{$suitability} slot; for
+#'     lists or \code{SpatRaster} inputs it returns the object itself.}
 #'
 #'   \item{\code{"df"}}{Data frame of suitable points, if stored.}
 #'
@@ -83,7 +85,6 @@
 #'   \code{\link{get_sample_occ}}
 #'
 #' @export
-
 nr_get <- function(obj, what = c(
   "suitable", "dist_sq", "all_suitable", "df",
   "env", "niche", "occ",
@@ -93,7 +94,7 @@ nr_get <- function(obj, what = c(
 
   # 0. Direct SpatRaster
   if (inherits(obj, "SpatRaster")) {
-    if (what %in% c("suitable", "dist_sq", "bias", "bias_pooled")) {
+    if (what %in% c("suitable", "dist_sq", "bias", "bias_pooled", "all_suitable")) {
       return(obj)
     }
   }
@@ -115,7 +116,8 @@ nr_get <- function(obj, what = c(
     }
 
     if (what == "all_suitable") {
-      return(sp)
+      # NEW: return the full suitable_env object, not just the SpatRaster stack
+      return(obj)
     }
   }
 
@@ -161,15 +163,16 @@ nr_get <- function(obj, what = c(
 
     if (!is.null(suit)) {
 
-      # ask recursively inside suitability
+      if (what == "all_suitable")
+        # NEW: return entire suitability slot (e.g. suitable_env object)
+        return(suit)
+
+      # ask recursively inside suitability for specific components
       if (what == "suitable")
         return(nr_get(suit, "suitable"))
 
       if (what == "dist_sq")
         return(nr_get(suit, "dist_sq"))
-
-      if (what == "all_suitable")
-        return(nr_get(suit, "all_suitable"))
 
       if (what == "df")
         return(nr_get(suit, "df"))
@@ -193,6 +196,7 @@ nr_get <- function(obj, what = c(
 
   return(NULL)
 }
+
 
 #' @describeIn nr_get Extract the suitable-area raster.
 #' @export
