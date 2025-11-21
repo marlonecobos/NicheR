@@ -163,8 +163,8 @@ plot_g_space <- function(env_bg = NULL,
     default = list(
       bg           = "#F0F0F0FF",
       suitable_env = "#FED789FF",
-      occ_fill     = "#B4BF3AFF",
-      occ_stroke   = "#B4BF3AFF",
+      occ_fill     = "gray40",
+      occ_stroke   = "black",
       dist         = "YlOrRd"
     ),
     palette2 = list(
