@@ -160,7 +160,7 @@ set_bias_surface_t4 <- set_bias_surface(bias_surface = c(sp_rich, nighttime),
                                         out = "biased")
 
 
-# Test 5: Sample Occurence Function ---------------------------------------
+# Test 5: Sample Occurrence Function ---------------------------------------
 
 # get_sample_occ <- function(n_occ,
 #                            suitable_env,
