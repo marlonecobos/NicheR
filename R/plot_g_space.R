@@ -1,20 +1,123 @@
-#' Plot Geographic Space with Optional Suitability/Distance and Occurrences
+#' Plot geographic space for NicheR outputs
 #'
-#' Draws a basemap and overlays (a) suitable environments as tiles,
-#' (b) an optional continuous distance-to-centroid surface, and/or (c)
-#' occurrence points. The map extent is primarily inferred from `env_bg`
-#' (if available), otherwise from the coordinates in `suitable_env` and
-#' finally from `occ_pts`, always with a small buffer where needed.
+#' This function draws a basemap and overlays:
+#' \itemize{
+#'   \item suitable environments as tiles (binary presence-only surface),
+#'   \item an optional continuous distance-to-centroid surface (squared Mahalanobis distance),
+#'   \item and/or occurrence points.
+#' }
 #'
-#' When a `NicheR_species` object (`vs`) is supplied, any of
-#' `env_bg`, `suitable_env`, `occ_pts`, or `niche` that are `NULL` are filled
-#' using `nr_get_env()`, `nr_get_suitable_all()`, `nr_get_occ()`, and
-#' `nr_get_niche()` respectively.
+#' The map extent is inferred in the following order:
+#' \enumerate{
+#'   \item from \code{env_bg} (raster or data frame with \code{x}, \code{y}),
+#'   \item otherwise from \code{suitable_env} coordinates,
+#'   \item otherwise from \code{occ_pts} coordinates.
+#' }
 #'
-#' If `surface` is `NULL`, only the basemap (optionally informed by `env_bg`)
-#' and occurrence points are drawn; no suitability or distance surfaces
-#' are plotted.
+#' When a \code{NicheR_species} object (\code{vs}) is supplied, missing components
+#' are filled via the \code{nr_get_*()} helpers:
+#' \itemize{
+#'   \item \code{env_bg} from \code{nr_get_env(vs)},
+#'   \item \code{suitable_env} from \code{nr_get_suitable_all(vs)},
+#'   \item \code{occ_pts} from \code{nr_get_occ(vs)},
+#'   \item \code{niche} from \code{nr_get_niche(vs)} (currently not required for plotting,
+#'         but kept for internal use).
+#' }
 #'
+#' The function is designed to be memory-efficient. When \code{suitable_env}
+#' is supplied or resolved, it is interpreted with the following priority:
+#' \enumerate{
+#'   \item if \code{suitable_env} is a \code{data.frame} or \code{matrix}, it is used directly;
+#'   \item otherwise, \code{nr_get_suitable_df()} is tried to retrieve a data frame;
+#'   \item only if no data frame is available are raster surfaces retrieved via
+#'         \code{nr_get_suitable()} and/or \code{nr_get_dist_sq()}, and converted to a
+#'         data frame using \code{as.data.frame.nicheR()}.
+#' }
+#'
+#' If \code{surface = NULL}, no suitability or distance surfaces are drawn and the
+#' plot shows only the basemap (optionally constrained by \code{env_bg}) and
+#' occurrence points.
+#'
+#' @param env_bg Optional environmental background used to derive map extent.
+#'   Can be:
+#'   \itemize{
+#'     \item a \code{terra::SpatRaster} or \code{raster::Raster*} object, or
+#'     \item a \code{data.frame}/\code{matrix} with columns \code{x}, \code{y}
+#'           (assumed longitude/latitude in WGS84).
+#'   }
+#'
+#' @param suitable_env Optional object describing suitable environments and/or
+#'   distance to the niche centroid. It can be:
+#'   \itemize{
+#'     \item a \code{data.frame} or \code{matrix} with columns \code{x}, \code{y}
+#'           and optionally \code{dist_sq},
+#'     \item a \code{suitable_env} object returned by \code{\link{get_suitable_env}},
+#'     \item a \code{NicheR_species} subcomponent resolved via \code{nr_get_*()},
+#'     \item or any object from which \code{nr_get_suitable_df()},
+#'           \code{nr_get_suitable()}, and/or \code{nr_get_dist_sq()} can extract
+#'           the appropriate surfaces.
+#'   }
+#'   When a data frame is supplied, each row is treated as a suitable cell
+#'   (presence-only) and is plotted as a tile.
+#'
+#' @param occ_pts Optional occurrence data. A \code{data.frame} with columns
+#'   \code{x} and \code{y} (assumed longitude/latitude in WGS84). If \code{vs}
+#'   is supplied and \code{occ_pts} is \code{NULL}, occurrences are retrieved
+#'   via \code{nr_get_occ(vs)}.
+#'
+#' @param show.occ.density Reserved for future use (currently ignored).
+#'
+#' @param colors Optional named list to override plotting aesthetics. Recognized
+#'   names are:
+#'   \code{bg} (basemap fill),
+#'   \code{suitable_env} (suitable tiles),
+#'   \code{occ_fill}, \code{occ_stroke} (occurrence points),
+#'   and \code{dist} (an \code{RColorBrewer} palette name for distance tiles).
+#'   Any missing entries are filled from the selected \code{palette}.
+#'
+#' @param palette Character string selecting a built-in color palette.
+#'   One of \code{"default"}, \code{"palette2"}, or \code{"palette3"}.
+#'
+#' @param surface Character or \code{NULL} specifying which surfaces to draw:
+#'   \itemize{
+#'     \item \code{NULL}: do not draw any suitability or distance surfaces,
+#'           only basemap and occurrences,
+#'     \item \code{"suit"}: draw only suitability tiles,
+#'     \item \code{"dist"}: draw only the distance-to-centroid surface
+#'           (requires a \code{dist_sq} column),
+#'     \item \code{"both"}: draw both suitability tiles and the distance surface,
+#'           arranged in separate panels.
+#'   }
+#'
+#' @param vs Optional \code{NicheR_species} object created by
+#'   \code{\link{create_virtual_species}}. When provided, any of
+#'   \code{env_bg}, \code{suitable_env}, \code{occ_pts}, or \code{niche} that
+#'   are \code{NULL} will be filled from this object via the
+#'   \code{nr_get_*()} accessors.
+#'
+#' @param niche Optional ellipsoid object created by \code{\link{build_ellps}}.
+#'   Currently not required for plotting, but may be used internally or for
+#'   future extensions.
+#'
+#' @return A \code{ggpubr} object produced by \code{\link[ggpubr]{ggarrange}},
+#'   containing:
+#'   \itemize{
+#'     \item one or two map panels (suitability and/or distance), plus
+#'     \item a compact legend panel describing the plotted elements.
+#'   }
+#'
+#' @details
+#' When raster-based \code{suitable_env} inputs are used (either directly or
+#' via \code{nr_get_*()}), the function converts them to a data frame using
+#' \code{as.data.frame.nicheR()}. For large rasters this can be memory-intensive;
+#' for repeated plotting it is recommended to precompute and store a data frame
+#' of suitable coordinates (for example via \code{nr_get_suitable_df()}) and
+#' pass that directly to \code{suitable_env}.
+#'
+#' @seealso
+#'   \code{\link{get_suitable_env}},
+#'   \code{\link{nr_get}},
+#'   \code{\link{create_virtual_species}}
 #' @export
 plot_g_space <- function(env_bg = NULL,
                          suitable_env = NULL,
@@ -52,7 +155,7 @@ plot_g_space <- function(env_bg = NULL,
       }
     }
 
-    # niche (not strictly needed anymore here, but kept for possible future use)
+    # niche (kept for possible future use)
     if (is.null(niche)) {
       niche_from_vs <- nr_get_niche(vs)
       if (!is.null(niche_from_vs)) {
@@ -136,7 +239,11 @@ plot_g_space <- function(env_bg = NULL,
   }
 
   ## ------------------------------------------------------------------------
-  ## 4. Standardize suitable_env into a data.frame using nr_get_*
+  ## 4. Standardize suitable_env into a data.frame
+  ##    Priority:
+  ##    1) direct data.frame / matrix
+  ##    2) nr_get_suitable_df()
+  ##    3) rasters via nr_get_suitable() / nr_get_dist_sq()
   ## ------------------------------------------------------------------------
   suitable_df   <- NULL
   has_suitable  <- FALSE
@@ -155,75 +262,118 @@ plot_g_space <- function(env_bg = NULL,
       )
     }
 
-    # 4A. Try to get a df directly via nr_get()
-    df_try <- suppressWarnings(nr_get_suitable_df(suitable_env))
+    ## 4A. Direct data.frame / matrix: use as is (most memory-efficient)
+    if (is.data.frame(suitable_env) || is.matrix(suitable_env)) {
 
-    if (!is.null(df_try)) {
-
-      suitable_df <- as.data.frame(df_try)
+      suitable_df <- as.data.frame(suitable_env)
 
     } else {
 
-      # 4B. Otherwise, use rasters via nr_get_suitable / nr_get_dist_sq
-      r_suit <- NULL
-      r_dist <- NULL
+      ## 4B. Try to get a df via nr_get_suitable_df()
+      df_try <- suppressWarnings(nr_get_suitable_df(suitable_env))
 
-      if (surface_mode %in% c("both", "suit")) {
-        r_suit <- suppressWarnings(nr_get_suitable(suitable_env))
-      }
-      if (surface_mode %in% c("both", "dist")) {
-        r_dist <- suppressWarnings(nr_get_dist_sq(suitable_env))
-      }
+      if (!is.null(df_try)) {
 
-      # Coerce any Raster* to SpatRaster
-      if (inherits(r_suit, "Raster")) r_suit <- terra::rast(r_suit)
-      if (inherits(r_dist, "Raster")) r_dist <- terra::rast(r_dist)
+        suitable_df <- as.data.frame(df_try)
 
-      if (surface_mode == "suit") {
+      } else {
 
-        if (is.null(r_suit)) {
-          stop(
-            "surface = 'suit' requested, but no suitable raster could be found via nr_get_suitable().\n",
-            "Check that your `suitable_env` (or `vs`) contains a 'suitable' layer or df."
-          )
+        ## 4C. Fall back to rasters via nr_get_suitable / nr_get_dist_sq
+        r_suit <- NULL
+        r_dist <- NULL
+
+        if (surface_mode %in% c("both", "suit")) {
+          r_suit <- suppressWarnings(nr_get_suitable(suitable_env))
         }
-        names(r_suit) <- "suitable"
-        suitable_df <- as.data.frame.nicheR(r_suit)
-
-      } else if (surface_mode == "dist") {
-
-        if (is.null(r_dist)) {
-          stop(
-            "surface = 'dist' requested, but no distance raster could be found via nr_get_dist_sq().\n",
-            "Run get_suitable_env(..., distances = TRUE) or provide an object\n",
-            "from which nr_get_dist_sq() can extract a 'dist_sq' layer."
-          )
-        }
-        names(r_dist) <- "dist_sq"
-        suitable_df <- as.data.frame.nicheR(r_dist)
-
-      } else if (surface_mode == "both") {
-
-        if (is.null(r_suit) || is.null(r_dist)) {
-          stop(
-            "surface = 'both' requested, but could not find both suitability and distance rasters.\n",
-            "Ensure your object contains both 'suitable' and 'dist_sq' layers or a df with those columns."
-          )
+        if (surface_mode %in% c("both", "dist")) {
+          r_dist <- suppressWarnings(nr_get_dist_sq(suitable_env))
         }
 
-        names(r_suit) <- "suitable"
-        names(r_dist) <- "dist_sq"
-        ras_stack <- c(r_suit, r_dist)
-        suitable_df <- as.data.frame.nicheR(ras_stack)
+        # Coerce any Raster* to SpatRaster
+        if (inherits(r_suit, "Raster")) r_suit <- terra::rast(r_suit)
+        if (inherits(r_dist, "Raster")) r_dist <- terra::rast(r_dist)
+
+        make_df_from_raster <- function(r) {
+          if (is.null(r)) return(NULL)
+          est_mb <- tryCatch({
+            terra::ncell(r) * terra::nlyr(r) * 8 / 1024^2
+          }, error = function(e) NA_real_)
+
+          if (is.finite(est_mb)) {
+            message(
+              "Converting suitable raster(s) to data.frame via as.data.frame.nicheR() (~",
+              round(est_mb, 1), " MB).\n",
+              "For repeated plotting, consider storing and passing a data.frame of\n",
+              "suitable coordinates (e.g., nr_get_suitable_df()) instead."
+            )
+          } else {
+            message(
+              "Converting suitable raster(s) to data.frame via as.data.frame.nicheR().\n",
+              "For repeated plotting, consider passing a precomputed data.frame instead."
+            )
+          }
+
+          as.data.frame.nicheR(r)
+        }
+
+        if (surface_mode == "suit") {
+
+          if (is.null(r_suit)) {
+            stop(
+              "surface = 'suit' requested, but no suitable raster could be found via nr_get_suitable().\n",
+              "Check that your `suitable_env` (or `vs`) contains a 'suitable' layer or df."
+            )
+          }
+          names(r_suit) <- "suitable"
+          suitable_df <- make_df_from_raster(r_suit)
+
+        } else if (surface_mode == "dist") {
+
+          if (is.null(r_dist)) {
+            stop(
+              "surface = 'dist' requested, but no distance raster could be found via nr_get_dist_sq().\n",
+              "Run get_suitable_env(..., distances = TRUE) or provide an object\n",
+              "from which nr_get_dist_sq() can extract a 'dist_sq' layer."
+            )
+          }
+          names(r_dist) <- "dist_sq"
+          suitable_df <- make_df_from_raster(r_dist)
+
+        } else if (surface_mode == "both") {
+
+          if (is.null(r_suit) || is.null(r_dist)) {
+            stop(
+              "surface = 'both' requested, but could not find both suitability and distance rasters.\n",
+              "Ensure your object contains both 'suitable' and 'dist_sq' layers or a df with those columns."
+            )
+          }
+
+          names(r_suit) <- "suitable"
+          names(r_dist) <- "dist_sq"
+          ras_stack <- c(r_suit, r_dist)
+          suitable_df <- make_df_from_raster(ras_stack)
+        }
       }
     }
 
+    ## 4D. Sanity check and flags
     if (!is.null(suitable_df)) {
       if (!all(c("x", "y") %in% names(suitable_df))) {
         stop("`suitable_env` (after coercion) must contain 'x' and 'y' columns.")
       }
-      has_suitable <- "suitable" %in% names(suitable_df) || surface_mode != "dist"
-      has_distance <- "dist_sq" %in% names(suitable_df) && surface_mode != "suit"
+
+      # For tiles, we only need x,y; suitability is presence-only color.
+      has_suitable <- surface_mode %in% c("both", "suit")
+      has_distance <- ("dist_sq" %in% names(suitable_df)) &&
+        (surface_mode %in% c("both", "dist"))
+
+      if (surface_mode == "dist" && !has_distance) {
+        stop(
+          "surface = 'dist' requested, but no 'dist_sq' column is available in `suitable_env`.\n",
+          "Provide an object containing a 'dist_sq' surface (e.g. from get_suitable_env(..., distances = TRUE)),\n",
+          "or call plot_g_space(..., surface = NULL) to plot only background and occurrences."
+        )
+      }
     }
   }
 
@@ -489,7 +639,8 @@ plot_g_space <- function(env_bg = NULL,
     main_panel <- ggpubr::ggarrange(
       plotlist = map_list,
       nrow     = length(map_list),
-      labels   = NULL)
+      labels   = NULL
+    )
 
     return(ggpubr::ggarrange(
       main_panel,
@@ -499,3 +650,4 @@ plot_g_space <- function(env_bg = NULL,
     ))
   }
 }
+

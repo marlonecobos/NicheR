@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_g_space.R
 \name{plot_g_space}
 \alias{plot_g_space}
-\title{Plot Geographic Space with Optional Suitability/Distance and Occurrences}
+\title{Plot geographic space for NicheR outputs}
 \usage{
 plot_g_space(
   env_bg = NULL,
@@ -16,20 +16,126 @@ plot_g_space(
   niche = NULL
 )
 }
+\arguments{
+\item{env_bg}{Optional environmental background used to derive map extent.
+Can be:
+\itemize{
+  \item a \code{terra::SpatRaster} or \code{raster::Raster*} object, or
+  \item a \code{data.frame}/\code{matrix} with columns \code{x}, \code{y}
+        (assumed longitude/latitude in WGS84).
+}}
+
+\item{suitable_env}{Optional object describing suitable environments and/or
+distance to the niche centroid. It can be:
+\itemize{
+  \item a \code{data.frame} or \code{matrix} with columns \code{x}, \code{y}
+        and optionally \code{dist_sq},
+  \item a \code{suitable_env} object returned by \code{\link{get_suitable_env}},
+  \item a \code{NicheR_species} subcomponent resolved via \code{nr_get_*()},
+  \item or any object from which \code{nr_get_suitable_df()},
+        \code{nr_get_suitable()}, and/or \code{nr_get_dist_sq()} can extract
+        the appropriate surfaces.
+}
+When a data frame is supplied, each row is treated as a suitable cell
+(presence-only) and is plotted as a tile.}
+
+\item{occ_pts}{Optional occurrence data. A \code{data.frame} with columns
+\code{x} and \code{y} (assumed longitude/latitude in WGS84). If \code{vs}
+is supplied and \code{occ_pts} is \code{NULL}, occurrences are retrieved
+via \code{nr_get_occ(vs)}.}
+
+\item{show.occ.density}{Reserved for future use (currently ignored).}
+
+\item{colors}{Optional named list to override plotting aesthetics. Recognized
+names are:
+\code{bg} (basemap fill),
+\code{suitable_env} (suitable tiles),
+\code{occ_fill}, \code{occ_stroke} (occurrence points),
+and \code{dist} (an \code{RColorBrewer} palette name for distance tiles).
+Any missing entries are filled from the selected \code{palette}.}
+
+\item{palette}{Character string selecting a built-in color palette.
+One of \code{"default"}, \code{"palette2"}, or \code{"palette3"}.}
+
+\item{surface}{Character or \code{NULL} specifying which surfaces to draw:
+\itemize{
+  \item \code{NULL}: do not draw any suitability or distance surfaces,
+        only basemap and occurrences,
+  \item \code{"suit"}: draw only suitability tiles,
+  \item \code{"dist"}: draw only the distance-to-centroid surface
+        (requires a \code{dist_sq} column),
+  \item \code{"both"}: draw both suitability tiles and the distance surface,
+        arranged in separate panels.
+}}
+
+\item{vs}{Optional \code{NicheR_species} object created by
+\code{\link{create_virtual_species}}. When provided, any of
+\code{env_bg}, \code{suitable_env}, \code{occ_pts}, or \code{niche} that
+are \code{NULL} will be filled from this object via the
+\code{nr_get_*()} accessors.}
+
+\item{niche}{Optional ellipsoid object created by \code{\link{build_ellps}}.
+Currently not required for plotting, but may be used internally or for
+future extensions.}
+}
+\value{
+A \code{ggpubr} object produced by \code{\link[ggpubr]{ggarrange}},
+  containing:
+  \itemize{
+    \item one or two map panels (suitability and/or distance), plus
+    \item a compact legend panel describing the plotted elements.
+  }
+}
 \description{
-Draws a basemap and overlays (a) suitable environments as tiles,
-(b) an optional continuous distance-to-centroid surface, and/or (c)
-occurrence points. The map extent is primarily inferred from `env_bg`
-(if available), otherwise from the coordinates in `suitable_env` and
-finally from `occ_pts`, always with a small buffer where needed.
+This function draws a basemap and overlays:
+\itemize{
+  \item suitable environments as tiles (binary presence-only surface),
+  \item an optional continuous distance-to-centroid surface (squared Mahalanobis distance),
+  \item and/or occurrence points.
+}
 }
 \details{
-When a `NicheR_species` object (`vs`) is supplied, any of
-`env_bg`, `suitable_env`, `occ_pts`, or `niche` that are `NULL` are filled
-using `nr_get_env()`, `nr_get_suitable_all()`, `nr_get_occ()`, and
-`nr_get_niche()` respectively.
+The map extent is inferred in the following order:
+\enumerate{
+  \item from \code{env_bg} (raster or data frame with \code{x}, \code{y}),
+  \item otherwise from \code{suitable_env} coordinates,
+  \item otherwise from \code{occ_pts} coordinates.
+}
 
-If `surface` is `NULL`, only the basemap (optionally informed by `env_bg`)
-and occurrence points are drawn; no suitability or distance surfaces
-are plotted.
+When a \code{NicheR_species} object (\code{vs}) is supplied, missing components
+are filled via the \code{nr_get_*()} helpers:
+\itemize{
+  \item \code{env_bg} from \code{nr_get_env(vs)},
+  \item \code{suitable_env} from \code{nr_get_suitable_all(vs)},
+  \item \code{occ_pts} from \code{nr_get_occ(vs)},
+  \item \code{niche} from \code{nr_get_niche(vs)} (currently not required for plotting,
+        but kept for internal use).
+}
+
+The function is designed to be memory-efficient. When \code{suitable_env}
+is supplied or resolved, it is interpreted with the following priority:
+\enumerate{
+  \item if \code{suitable_env} is a \code{data.frame} or \code{matrix}, it is used directly;
+  \item otherwise, \code{nr_get_suitable_df()} is tried to retrieve a data frame;
+  \item only if no data frame is available are raster surfaces retrieved via
+        \code{nr_get_suitable()} and/or \code{nr_get_dist_sq()}, and converted to a
+        data frame using \code{as.data.frame.nicheR()}.
+}
+
+If \code{surface = NULL}, no suitability or distance surfaces are drawn and the
+plot shows only the basemap (optionally constrained by \code{env_bg}) and
+occurrence points.
+
+
+When raster-based \code{suitable_env} inputs are used (either directly or
+via \code{nr_get_*()}), the function converts them to a data frame using
+\code{as.data.frame.nicheR()}. For large rasters this can be memory-intensive;
+for repeated plotting it is recommended to precompute and store a data frame
+of suitable coordinates (for example via \code{nr_get_suitable_df()}) and
+pass that directly to \code{suitable_env}.
+}
+\seealso{
+\code{\link{get_suitable_env}},
+  \code{\link{nr_get}},
+  \code{\link{create_virtual_species}}
 }

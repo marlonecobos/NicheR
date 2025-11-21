@@ -289,8 +289,8 @@ vs_small <- create_virtual_species(env_bg = env_stack_small,
                                    center = niche_center,
                                    axes = niche_axes,
                                    n_occ = 75,
-                                   # bias_surface = c(sp_rich, nighttime),
-                                   # bias_dir = c(1, -1),
+                                   bias_surface = c(sp_rich, nighttime),
+                                   bias_dir = c(1, -1),
                                    out.suit = "both",
                                    out.bias = "both",
                                    distances = TRUE,
@@ -298,15 +298,23 @@ vs_small <- create_virtual_species(env_bg = env_stack_small,
 plot_e_space(vs = vs_small)
 plot_e_space(env_bg  = env_stack_small, vs = vs_small)
 
-plot_g_space(vs = vs_small, surface = "both")
+plot_g_space(vs = vs_small)
 
-plot_g_space(env_bg = env_stack_small)
+plot_g_space(vs = vs_small, surface = "suit")
 
-plot_g_space(env_bg = nr_get_env(vs),
-             # occ_pts = nr_get_occ(vs),
-             suitable_env = nr_get_dist_sq(vs),
+plot_g_space(env_bg = env_stack_small,
+             suitable_env = nr_get_suitable_df(vs_small),
+             surface = "suit")
+
+plot_g_space(env_bg = nr_get_env(vs_small),
+             occ_pts = nr_get_occ(vs_small),
+             suitable_env = nr_get_suitable_df(vs_small),
              surface = "dist")
 
+plot_g_space(env_bg = nr_get_env(vs_small),
+             occ_pts = nr_get_occ(vs_small),
+             suitable_env = nr_get_suitable_all(vs_small),
+             surface = "both")
 
 # Explore virtual species object
 vs_small
