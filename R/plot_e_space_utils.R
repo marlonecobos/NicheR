@@ -24,7 +24,6 @@
 #'   in the order \code{c(x, y, z)}.
 #' @keywords internal
 #' @seealso \code{\link{plot_e_space}}
-#' @export
 validate_plot_e_space_args <- function(env_bg, x, y, z,
                                        labels, n_bg,
                                        niche,
@@ -158,3 +157,173 @@ validate_plot_e_space_args <- function(env_bg, x, y, z,
 
   invisible(list(col_names = col_names))
 }
+
+#' Helper: Retrieve environmental background for plot_e_space()
+#'
+#' Priority:
+#'  1. User-supplied env_bg
+#'  2. From vs via nr_get_env()
+#'  3. If neither exists → message and use suitable_env or niche extents
+#'
+#' @keywords internal
+.pe_get_env_bg <- function(env_bg, vs, suitable_env, niche) {
+
+  # 1. User-supplied
+  if (!is.null(env_bg)) {
+    message("Using user-supplied env_bg.")
+    return(env_bg)
+  }
+
+  # 2. Try to get from vs
+  if (!is.null(vs)) {
+    env_vs <- nr_get_env(vs)
+    if (!is.null(env_vs)) {
+      message("Using env_bg from NicheR_species object via nr_get_env().")
+      return(env_vs)
+    }
+  }
+
+  # 3. No direct env_bg found
+  message(
+    "No env_bg provided and none found in vs. ",
+    "Will build environment using suitable_env or niche extents."
+  )
+
+  # 4. If suitable_env exists, convert to df
+  if (!is.null(suitable_env)) {
+    s_df <- nr_get_suitable_df(suitable_env)
+    if (!is.null(s_df)) {
+      message("Using suitable_env values as environmental background.")
+      return(s_df)
+    }
+  }
+
+  # 5. If niche exists, simulate bounding box grid
+  if (!is.null(niche)) {
+    message("Using ellipsoid bounding box as env_bg (no raster or df available).")
+    bb <- .pe_make_bbox_df(niche)
+    return(bb)
+  }
+
+  # 6. Nothing available → stop
+  stop(
+    "Could not determine env_bg. Supply env_bg explicitly ",
+    "or provide a vs/suitable_env/niche object."
+  )
+}
+
+#' Helper: Create bounding-box environmental grid from ellipsoid
+#'
+#' @keywords internal
+.pe_make_bbox_df <- function(niche, n = 5000) {
+  cx <- niche$center
+  ax <- niche$axes
+
+  # min/max ranges
+  mins <- cx - ax
+  maxs <- cx + ax
+
+  grid <- as.data.frame(matrix(
+    runif(n * length(cx), mins, maxs),
+    ncol = length(cx)
+  ))
+  names(grid) <- names(cx)
+
+  return(grid)
+}
+
+#' Helper: Get suitable-env points as data.frame for E-space plotting
+#'
+#' For E-space we only use data.frame-based suitability. If no
+#' data.frame is available (e.g., only rasters are stored), suitable
+#' points are not plotted to avoid unexpected large conversions.
+#'
+#' @keywords internal
+.pe_get_suitable_pts <- function(suitable_env) {
+
+  if (is.null(suitable_env)) return(NULL)
+
+  # 1) Try via nr_get_suitable_df() (works on vs, suitable_env objects, etc.)
+  df <- suppressWarnings(nr_get_suitable_df(suitable_env))
+  if (!is.null(df)) return(df)
+
+  # 2) If user directly passed a df / matrix, use that
+  if (is.data.frame(suitable_env) || is.matrix(suitable_env)) {
+    return(as.data.frame(suitable_env))
+  }
+
+  # 3) Otherwise, do NOT try to create a df from rasters here
+  #    (avoid big implicit conversions in E-space).
+  message(
+    "No suitable_env data.frame found; suitable environments will not be ",
+    "plotted in E-space. If you want them, re-run get_suitable_env() with ",
+    "out.suit = 'both' (or 'data.frame') and pass that object."
+  )
+
+  return(NULL)
+}
+
+
+#' Helper: Extract occurrence points (df)
+#'
+#' @keywords internal
+.pe_get_occ_pts <- function(occ_pts, vs) {
+
+  # user-supplied
+  if (!is.null(occ_pts)) return(as.data.frame(occ_pts))
+
+  # from vs
+  if (!is.null(vs)) {
+    op <- suppressWarnings(nr_get_occ(vs))
+    if (!is.null(op)) return(as.data.frame(op))
+  }
+
+  return(NULL)
+}
+
+#' Helper: Resolve x,y,z columns
+#'
+#' If user did not supply all, infer from env_bg
+#'
+#' @keywords internal
+.pe_resolve_xyz <- function(env_bg, x, y, z) {
+
+  auto_inf <- FALSE
+
+  if (missing(x) || missing(y) || missing(z)) auto_inf <- TRUE
+
+  # Extract predictor names (remove x/y if present)
+  if (all(c("x", "y") %in% names(env_bg))) {
+    preds <- setdiff(names(env_bg), c("x", "y"))
+  } else preds <- names(env_bg)
+
+  if (length(preds) < 3)
+    stop("Cannot infer x,y,z from env_bg (need ≥3 predictors). Provide x,y,z explicitly.")
+
+  # Auto inference
+  if (auto_inf) {
+    message("Auto-inferring x,y,z from first 3 predictor columns: ",
+            paste(preds[1:3], collapse=", "))
+    return(preds[1:3])
+  }
+
+  return(c(x, y, z))
+}
+
+#' Helper: build 2D ellipsoid objects for each pair
+#'
+#' @keywords internal
+.pe_build_ell2d <- function(niche) {
+  list(
+    y_x = build_ellps(center = niche$center[c(2,1)],
+                      axes   = niche$axes[c(2,1)],
+                      angles = niche$angles[c(2,1)]),
+    z_x = build_ellps(center = niche$center[c(3,1)],
+                      axes   = niche$axes[c(3,1)],
+                      angles = niche$angles[c(3,1)]),
+    z_y = build_ellps(center = niche$center[c(3,2)],
+                      axes   = niche$axes[c(3,2)],
+                      angles = niche$angles[c(3,2)])
+  )
+}
+

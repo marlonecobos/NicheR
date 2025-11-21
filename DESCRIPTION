@@ -1,6 +1,6 @@
 Package: NicheR
 Type: Package
-Title: Ecological Niche Modeling and Simulation
+Title: An R package for ellipsoid-based virtual species and niche visualization in E-space and G-space
 Version: 0.1.0
 Authors@R: c(
     person(
@@ -9,13 +9,13 @@ Authors@R: c(
       role = c("aut", "cre")
     ),
     person(
-      "Paanwaris", "Paansri",
-      email = "paanwaris@vt.edu", 
+      "Connor", "Hughes",
+      email = "connorjh@vt.edu", 
       role = "aut"
     ),
     person(
-      "Connor", "Hughes",
-      email = "connorjh@vt.edu", 
+      "Paanwaris", "Paansri",
+      email = "paanwaris@vt.edu", 
       role = "aut"
     )
   )
@@ -41,4 +41,10 @@ Imports:
     plotly,
     RColorBrewer,
     terra,
-    rgl
+    raster,
+    sf,
+    DBI,
+    RSQLite,
+    rlang,
+    stats,
+    utils
