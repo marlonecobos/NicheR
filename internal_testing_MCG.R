@@ -305,12 +305,13 @@ plot_e_space(vs = vs_small,
 plot_e_space(vs = vs_small,
              show.in.plot = c("niche", "bg"))
 
+# Test dist
+plot_g_space(vs = vs_small,
+             show.in.plot = c("dist", "bg", "suit"))
 
 plot_g_space(vs = vs_small,
-             show.in.plot = c("suit", "dist", "occ"))
-
-plot_g_space(vs = vs_small,
-             show.in.plot = c(c("suit", "dist")))
+             show.in.plot = c(c("suit")),
+             color = c(bg = "antiquewhite"))
 
 plot_g_space(vs = vs_small,
              show.in.plot = c("suit", "occ"))

@@ -402,26 +402,24 @@ plot_g_space <- function(env_bg = NULL,
 
   opts <- list(
     background_point = TRUE,
-    suitable_point   = has_suitable,
-    occurrence_point = !is.null(occ_pts) && show_occ,
-    dist_note        = has_distance
+    suitable_point   = has_suitable && show_suit,
+    occurrence_point = !is.null(occ_pts) && show_occ
   )
 
   legend_items <- data.frame(
-    id    = c("background_point", "suitable_point", "occurrence_point", "dist_note"),
-    type  = c("point",           "point",          "point",           "text"),
+    id    = c("background_point", "suitable_point", "occurrence_point"),
+    type  = c("point", "point", "point"),
     label = c("Background environments",
               "Suitable environments",
-              "Occurrences",
-              "Distance surface: lighter = closer to centroid"),
+              "Occurrences"),
     color = c(default_colors[["bg"]],
               default_colors[["suitable_env"]],
-              default_colors[["occ_fill"]],
-              NA_character_),
+              default_colors[["occ_fill"]]),
     stringsAsFactors = FALSE
   )
 
   active <- logical(nrow(legend_items))
+
   for (i in seq_len(nrow(legend_items))) {
     active[i] <- isTRUE(opts[[ legend_items$id[i] ]])
   }
@@ -430,16 +428,16 @@ plot_g_space <- function(env_bg = NULL,
   if (nrow(legend_items) == 0) {
     legend_plot <- ggplot2::ggplot() + ggplot2::theme_void()
   } else {
-    top_y   <- 2
-    spacing <- 0.25
-    x_point <- 0.00
+    top_y   <- 1.75
+    spacing <- 0.35
+    x_point <- 0.01
 
     legend_items <- legend_items %>%
       dplyr::mutate(
         row     = dplyr::row_number(),
         y       = top_y - (row - 1) * spacing,
         x_point = x_point,
-        x_text  = 0.01
+        x_text  = 0.02
       )
 
     legend_base <- ggplot2::ggplot() +
@@ -635,14 +633,23 @@ plot_g_space <- function(env_bg = NULL,
       ggplot2::scale_fill_distiller(
         name    = "Distance to centroid",
         palette = default_colors[["dist"]],
-        guide   = "none"
-        ) +
-      ggplot2::ggtitle("Distance surface")
+        guide   = ggplot2::guide_colorbar(
+          direction = "horizontal"
+        )
+      ) +
+      ggplot2::ggtitle("Distance surface") +
+      ggplot2::theme(
+        legend.position = "bottom",
+        legend.justification = c(0, 0),
+        legend.box.just = "left",
+        legend.margin = margin(0,0,0,0),
+        legend.box.margin = margin(0,0,0,-10)
+      )
 
     p_dist <- add_occ(p_dist)
-
     map_list[["dist_sq"]] <- p_dist
   }
+
 
   # If no surfaces requested or available -> basemap + (optional) occs
   if (!surfaces_requested || length(map_list) == 0L) {
@@ -668,6 +675,7 @@ plot_g_space <- function(env_bg = NULL,
     main_panel <- ggpubr::ggarrange(
       plotlist = map_list,
       nrow     = length(map_list),
+      heights = c(0.45, 0.55),
       labels   = NULL
     )
 
