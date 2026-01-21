@@ -4,37 +4,6 @@
 #' points that fall within a defined ellipsoid niche based on Mahalanobis
 #' distance.
 #'
-#' @param niche An object of class \code{ellipsoid} created by
-#'   \code{build_ellipsoid()}.
-#' @param env_bg A \code{terra::SpatRaster}, \code{data.frame}, or \code{matrix}
-#'   of environmental predictor variables. It must contain the variables
-#'   referenced by the \code{niche} object. If a \code{data.frame} is used and
-#'   spatial output is requested, it should also contain \code{x} and \code{y}
-#'   columns for spatial referencing.
-#' @param out.suit A character string specifying the desired output format.
-#'   One of \code{"data.frame"}, \code{"spatial"}, or \code{"both"}.
-#' @param distances Logical; if \code{TRUE}, an additional column named
-#'   \code{dist_sq} is added to the output data frame containing the squared
-#'   Mahalanobis distance for each suitable point. For spatial output,
-#'   a separate raster of \code{dist_sq} values is also returned.
-#' @param level Numeric; defines the ellipsoid cutoff used to classify
-#'   environments as suitable.
-#'   \itemize{
-#'     \item \code{level = 1}: geometric ellipsoid boundary (hard limit),
-#'     \item \code{0 < level < 1}: probability contour of a chi square
-#'       distribution (MVN style), e.g. \code{level = 0.95}.
-#'   }
-#' @param verbose Logical; if \code{TRUE}, prints basic progress messages.
-#'
-#' @return Depending on \code{out.suit}:
-#' \itemize{
-#'   \item \code{"data.frame"}: a data.frame of suitable points (with optional
-#'         \code{dist_sq} column).
-#'   \item \code{"spatial"}: a named list of \code{SpatRaster} objects.
-#'   \item \code{"both"}: a list with elements \code{suitable_env_sp} and
-#'         \code{suitable_env_df}.
-#' }
-#'
 #' @export
 get_suitable_env <- function(niche,
                              env_bg,

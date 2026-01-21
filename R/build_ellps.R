@@ -5,46 +5,12 @@
 #' as well as surface points for plotting. This function is a core component for
 #' defining virtual niches in environmental space.
 #'
-#' @param center A numeric vector of length 2 or 3 defining the ellipsoid's center.
-#'   This vector can be named (e.g., `c(Temp = 15, Precip = 800)`) to link
-#'   dimensions to environmental variables.
-#' @param axes A numeric vector with the same length as `center`, defining the
-#'   semi-axis lengths *before* rotation. These values represent the standard
-#'   deviations of the ellipsoid along its principal axes. Must be positive.
-#' @param angles A numeric vector of rotation angles in radians. For 2D, a single
-#'   angle is sufficient. For 3D, a vector of three angles `c(ax, ay, az)`
-#'   is required, corresponding to rotations around the x, y, and z axes,
-#'   respectively.
-#' @param n_points An integer specifying the resolution for the plotted
-#'   surface. A higher value results in a smoother surface but increases
-#'   computation time and file size.
-#'
-#' @return An S3 object of class `ellipsoid`, which is a list containing:
-#'   \item{center}{The numeric vector defining the ellipsoid's center.}
-#'   \item{axes}{The numeric vector of semi-axis lengths.}
-#'   \item{angles}{The numeric vector of rotation angles.}
-#'   \item{dimen}{The dimensionality of the ellipsoid (2 or 3).}
-#'   \item{R}{The rotation matrix used to orient the ellipsoid.}
-#'   \item{Sigma}{The covariance matrix of the ellipsoid, based on `axes` and
-#'     `R`.}
-#'   \item{Sigma_inv}{The inverse of the covariance matrix, useful for
-#'     Mahalanobis distance calculations.}
-#'   \item{surface}{A data frame of points representing the ellipsoid's surface,
-#'     suitable for plotting.}
-#'
-#' @details The function internally calculates the covariance matrix (`Sigma`)
-#'   and its inverse, which are fundamental for computing Mahalanobis distance
-#'   to determine if a point falls within the ellipsoid. The `surface` points
-#'   are generated as a set of points on a unit sphere (in 3D) or circle (in 2D)
-#'   that are then scaled by `axes` and rotated by `R` before being shifted to
-#'   the `center`.
-#'
-#' @family ellipsoid functions
 #' @export
 build_ellps <- function(center = c(x = 0, y = 0),
                         axes = c(1, 1),
                         angles = 0,
-                        n_points = 100) {
+                        n_points = 100,
+                        level = 0.95) {
 
   dimen <- length(center)
 
@@ -84,9 +50,11 @@ build_ellps <- function(center = c(x = 0, y = 0),
   }
 
   # --- 3. Shape (Covariance) Matrix (Sigma) ---
+  c <- qchisq(level, df = dimen)
   D_sq      <- diag(axes^2)
-  Sigma     <- R %*% D_sq %*% t(R)
+  Sigma     <- R %*% D_sq %*% t(R) / c
   Sigma_inv <- solve(Sigma)
+
 
   # Assign variable names to match users named variables, but they wont have
   # names if the user does not provide names
@@ -125,12 +93,14 @@ build_ellps <- function(center = c(x = 0, y = 0),
          axes = axes,
          angles = angles,
          dimen = dimen,
+         level = level,
          R = R,
          Sigma = Sigma,
          Sigma_inv = Sigma_inv,
          surface = surface),
     class = "ellipsoid"
   )
+
 }
 
 #' @export
@@ -141,6 +111,7 @@ print.ellipsoid <- function(x, digits = 3, ...) {
   cat(" Center:     ", paste(round(x$center, digits), collapse = ", "), "\n", sep = "")
   cat(" Axes:       ", paste(round(x$axes, digits), collapse = ", "), "\n", sep = "")
   cat(" Angles:     ", paste(round(x$angles, digits), collapse = ", "), " radians\n", sep = "")
+  cat(" Level: ", level, "\n", sep = "")
 
   cat("\n Rotation matrix (R):\n")
   print(round(x$R, digits))

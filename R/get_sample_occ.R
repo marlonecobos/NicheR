@@ -5,55 +5,6 @@
 #' the niche edge. Weights can be computed from Mahalanobis distance
 #' (\code{dist_sq}) or from a multivariate normal (MVN) density.
 #'
-#' @param n_occ Integer; number of occurrence points to sample.
-#' @param suitable_env A pool of suitable environments. Can be:
-#' \itemize{
-#'   \item a \code{terra::SpatRaster} or \code{raster::Raster*} (typically a
-#'         distance raster such as \code{dist_sq}),
-#'   \item a \code{data.frame} or \code{matrix} containing \code{x} and \code{y}
-#'         (and for non-random methods, \code{dist_sq}),
-#'   \item a \code{suitable_env} object returned by
-#'         \code{get_suitable_env(..., out.suit = "both")}.
-#' }
-#' @param method Character; one of \code{"random"}, \code{"center"}, or
-#'   \code{"edge"}.
-#' \itemize{
-#'   \item \code{"random"} samples uniformly from the pool.
-#'   \item \code{"center"} gives higher weight to points nearer the niche center.
-#'   \item \code{"edge"} gives higher weight to points nearer the niche boundary.
-#' }
-#' @param sampling Character; how to compute weights. One of:
-#' \itemize{
-#'   \item \code{"mahalanobis"}: use \code{dist_sq} as the weight base.
-#'   \item \code{"mvn"}: use MVN density via \code{mvtnorm::dmvnorm}. Requires
-#'         \code{niche}.
-#' }
-#' @param niche Optional \code{ellipsoid} object. Required if
-#'   \code{sampling = "mvn"}. Must include \code{center} and \code{Sigma}.
-#' @param bias_surface Optional 1-layer \code{terra::SpatRaster} (or
-#'   \code{raster::Raster*}) scaled to [0, 1], used to modulate sampling
-#'   probability. Bias is extracted at \code{x,y} and multiplied into the
-#'   sampling weights. \code{NA} bias values are treated as 0.
-#' @param seed Optional integer seed for reproducible sampling.
-#' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#'
-#' @return A \code{data.frame} with \code{n_occ} sampled rows from the suitable
-#'   pool. The returned object includes \code{x}, \code{y}, and any predictor
-#'   columns. The \code{dist_sq} column is removed before returning.
-#'
-#' @details
-#' This function assumes suitability has already been computed (e.g. with
-#' \code{get_suitable_env()}). It only performs the sampling step:
-#' \enumerate{
-#'   \item Convert \code{suitable_env} to a data.frame with \code{x}, \code{y},
-#'         and optionally \code{dist_sq}.
-#'   \item Compute weights based on \code{sampling} and \code{method}.
-#'   \item Optionally multiply weights by \code{bias_surface}.
-#'   \item Sample \code{n_occ} rows with probability proportional to weights.
-#' }
-#'
-#' @seealso \code{\link{get_suitable_env}}, \code{\link{set_bias_surface}}
-#'
 #' @export
 get_sample_occ <- function(n_occ,
                            suitable_env,
@@ -281,14 +232,15 @@ get_sample_occ <- function(n_occ,
 
     pdf <- mvtnorm::dmvnorm(X, mean = niche$center, sigma = niche$Sigma)
     pdf[!is.finite(pdf)] <- 0
+    pdf <- (pdf - min(pdf, na.rm = TRUE)) / (max(pdf, na.rm = TRUE) - min(pdf, na.rm = TRUE))
+
 
     if (method == "center") {
       # higher probability near center
       w <- pdf
     } else if (method == "edge") {
-      # emphasize edge: inverse of pdf (stable with epsilon)
-      eps <- max(.Machine$double.eps, max(pdf, na.rm = TRUE) * 1e-12)
-      w <- 1 / (pdf + eps)
+      # emphasize edge: inverse of pdf
+      w <- 1 - pdf
     }
 
     w[!is.finite(w)] <- 0

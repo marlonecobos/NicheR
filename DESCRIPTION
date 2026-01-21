@@ -17,6 +17,11 @@ Authors@R: c(
       "Paanwaris", "Paansri",
       email = "paanwaris@vt.edu", 
       role = "aut"
+    ),
+    person(
+      "Marlon", "Cobos",
+      email = "", 
+      role = "aut"
     )
   )
 Description: Provides a robust set of tools for researchers and modelers to
