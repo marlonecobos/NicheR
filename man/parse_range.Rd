@@ -4,7 +4,7 @@
 \alias{parse_range}
 \title{Parse Niche Range Input}
 \usage{
-parse_range(range, range_level = 0.95)
+parse_range(range, cl = 0.95)
 }
 \arguments{
 \item{range}{Input defining the niche center and tolerances. Supported formats:
@@ -16,7 +16,7 @@ parse_range(range, range_level = 0.95)
   \item matrix or data.frame of observations
 }}
 
-\item{range_level}{Numeric between 0 and 1. Probability mass represented by
+\item{cl}{Numeric between 0 and 1. Probability mass represented by
 the supplied minimum and maximum values when bounds are provided.}
 }
 \value{
@@ -35,7 +35,7 @@ standard deviations suitable for constructing a multivariate normal niche.
 \details{
 When \code{min} and \code{max} values are provided, they are interpreted as a
 central probability interval of a normal distribution with probability
-\code{range_level}. Standard deviations are derived using the corresponding
+\code{cl}. Standard deviations are derived using the corresponding
 normal quantile.
 }
 \keyword{internal}

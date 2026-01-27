@@ -23,13 +23,13 @@ defined by its semi-axis lengths.
 For an ellipsoid with semi-axes \eqn{a_1, a_2, \ldots, a_p}, the volume is:
 
 \deqn{
-V_p = V_{\text{unit ball},p} \prod_{i=1}^{p} a_i
+V_p = V_{\text{n},p} \prod_{i=1}^{p} a_i
 }
 
-where the volume of the p-dimensional unit ball is:
+where the volume of the p-dimensional n is:
 
 \deqn{
-V_{\text{unit ball},p} =
+V_{\text{n},p} =
 \frac{\pi^{p/2}}{\Gamma\left(\frac{p}{2} + 1\right)}
 }
 
@@ -63,20 +63,6 @@ covariance matrices or axis lengths derived from them.
 
 The volume depends on the selected probability contour (\code{level}) and
 therefore increases monotonically with increasing \code{level}.
-}
-\examples{
-# 2D ellipse with axes a = 3, b = 2
-ellipsoid_volume(
-  n_dimensions = 2,
-  semi_axes_length = c(3, 2)
-)
-
-# 3D ellipsoid
-ellipsoid_volume(
-  n_dimensions = 3,
-  semi_axes_length = c(4, 2, 1)
-)
-
 }
 \seealso{
 \code{\link{build_ellipsoid}},

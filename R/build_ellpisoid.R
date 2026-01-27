@@ -17,7 +17,7 @@
 #' Two probability levels are used:
 #'
 #' \describe{
-#'   \item{range_level}{Probability mass represented by the user-supplied
+#'   \item{cl}{Probability mass represented by the user-supplied
 #'   minimum and maximum values. Used only to infer marginal standard deviations
 #'   when defining the multivariate normal niche.}
 #'
@@ -34,7 +34,7 @@
 #'     \item data.frame or matrix of observations (columns = dimensions)
 #'   }
 #'
-#' @param range_level Numeric between 0 and 1. Probability mass represented by
+#' @param cl Numeric between 0 and 1. Probability mass represented by
 #'   the supplied minimum and maximum values when \code{range} is defined by
 #'   bounds. Default is 0.95.
 #'
@@ -78,18 +78,18 @@
 #'
 #' @export
 build_ellipsoid <- function(range,
-                            range_level = 0.95,  # distribution of individual dimensions
+                            cl = 0.95,  # distribution of individual dimensions
                             level = 0.95,        # distribution of the niche area
                             cor_tilt = NULL,
                             n_points = 100) {
 
   # Validate inputs
-  stopifnot(is.numeric(range_level), length(range_level) == 1, range_level > 0, range_level < 1)
+  stopifnot(is.numeric(cl), length(cl) == 1, cl > 0, cl < 1)
   stopifnot(is.numeric(level), length(level) == 1, level > 0, level < 1)
   stopifnot(is.numeric(n_points), length(n_points) == 1, n_points >= 10)
 
   # 1) Parse range into mu and marginal sd
-  parsed <- parse_range(range, range_level = range_level)
+  parsed <- parse_range(range, cl = cl)
   mu <- parsed$mu
   sd_vec <- parsed$sd
   p <- length(mu)
@@ -135,7 +135,7 @@ build_ellipsoid <- function(range,
     Sigma_inv = Sigma_inv,
     chol_Sigma = chol_Sigma,
     eigen = list(vectors = eig$vectors, values = eig$values),
-    range_level = range_level,
+    cl = cl,
     level = level,
     c2 = c2,
     axes_sd = as.numeric(sd_vec),
@@ -164,7 +164,7 @@ build_ellipsoid <- function(range,
 #'   \item matrix or data.frame of observations
 #' }
 #'
-#' @param range_level Numeric between 0 and 1. Probability mass represented by
+#' @param cl Numeric between 0 and 1. Probability mass represented by
 #'   the supplied minimum and maximum values when bounds are provided.
 #'
 #' @return A list containing:
@@ -178,103 +178,114 @@ build_ellipsoid <- function(range,
 #' @details
 #' When \code{min} and \code{max} values are provided, they are interpreted as a
 #' central probability interval of a normal distribution with probability
-#' \code{range_level}. Standard deviations are derived using the corresponding
+#' \code{cl}. Standard deviations are derived using the corresponding
 #' normal quantile.
 #'
 #' @keywords internal
-parse_range <- function(range, range_level = 0.95) {
+parse_range <- function(range, cl = 0.95) {
 
-  if (!is.numeric(range_level) || length(range_level) != 1 || range_level <= 0 || range_level >= 1) {
-    stop("range_level must be a single number between 0 and 1 (exclusive).")
+  if (!is.numeric(cl) || length(cl) != 1 ||
+      cl <= 0 || cl >= 1) {
+    stop("cl must be a single number between 0 and 1.")
   }
 
-  # Option A: data frame with min and max
+  # Case A: min / max provided by the user
   if (is.data.frame(range) && all(c("min", "max") %in% names(range))) {
 
     mins <- as.numeric(range$min)
     maxs <- as.numeric(range$max)
 
     if (length(mins) == 0) stop("range has no rows.")
-    if (length(mins) != length(maxs)) stop("min and max must have the same length.")
-    if (any(!is.finite(mins)) || any(!is.finite(maxs))) stop("range contains non-finite values in min/max.")
-    if (any(maxs <= mins)) stop("Each max must be greater than min.")
+    if (any(!is.finite(mins)) || any(!is.finite(maxs)))
+      stop("range contains non-finite min/max values.")
+    if (any(maxs <= mins))
+      stop("Each max must be greater than min.")
+
     mu_vec <- (mins + maxs) / 2
 
-    z <- stats::qnorm((1 + range_level) / 2)
-    if (!is.finite(z) || z <= 0) stop("Invalid range_level produced non-finite z score.")
+    z <- stats::qnorm((1 + cl) / 2) # make individual observations into normals
+
+    if (!is.finite(z) || z <= 0) stop("Invalid cl produced non-finite z score.")
 
     sd_vec <- (maxs - mins) / (2 * z)
-    if (any(!is.finite(sd_vec)) || any(sd_vec <= 0)) stop("Derived sd contains non-positive or non-finite values.")
 
-    return(list(mu = mu_vec, sd = sd_vec, p = length(mu_vec), input_type = "min_max"))
+    if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
+      stop("Derived sd contains non-positive or non-finite values.")
+
+    return(list(
+      mu = mu_vec,
+      sd = sd_vec,
+      p = length(mu_vec),
+      input_type = "min_max"
+    ))
   }
 
-  # Option B: list input
-  if (is.list(range)) {
-
-    if (!is.null(range$mu) && !is.null(range$sd)) {
-      mu_vec <- as.numeric(range$mu)
-      sd_vec <- as.numeric(range$sd)
-
-      if (length(mu_vec) == 0) stop("range$mu is empty.")
-      if (length(sd_vec) != length(mu_vec)) stop("range$sd must be the same length as range$mu.")
-      if (any(!is.finite(mu_vec)) || any(!is.finite(sd_vec))) stop("range$mu or range$sd contains non-finite values.")
-      if (any(sd_vec <= 0)) stop("range$sd must be positive.")
-
-      return(list(mu = mu_vec, sd = sd_vec, p = length(mu_vec), input_type = "mu_sd"))
-    }
-
-    if (!is.null(range$mean) && !is.null(range$sd)) {
-      mu_vec <- as.numeric(range$mean)
-      sd_vec <- as.numeric(range$sd)
-
-      if (length(mu_vec) == 0) stop("range$mean is empty.")
-      if (length(sd_vec) != length(mu_vec)) stop("range$sd must be the same length as range$mean.")
-      if (any(!is.finite(mu_vec)) || any(!is.finite(sd_vec))) stop("range$mean or range$sd contains non-finite values.")
-      if (any(sd_vec <= 0)) stop("range$sd must be positive.")
-
-      return(list(mu = mu_vec, sd = sd_vec, p = length(mu_vec), input_type = "mean_sd"))
-    }
-
-    if (!is.null(range$mu) && !is.null(range$Sigma)) {
-      mu_vec <- as.numeric(range$mu)
-      Sigma <- as.matrix(range$Sigma)
-
-      if (length(mu_vec) == 0) stop("range$mu is empty.")
-      if (!is.matrix(Sigma) || nrow(Sigma) != ncol(Sigma)) stop("range$Sigma must be a square matrix.")
-      if (nrow(Sigma) != length(mu_vec)) stop("range$Sigma dimensions must match length of range$mu.")
-      if (any(!is.finite(mu_vec)) || any(!is.finite(Sigma))) stop("range$mu or range$Sigma contains non-finite values.")
-
-      sd_vec <- sqrt(diag(Sigma))
-      if (any(!is.finite(sd_vec)) || any(sd_vec <= 0)) stop("Sigma implies non-positive or non-finite marginal SDs.")
-
-      return(list(mu = mu_vec, sd = sd_vec, p = length(mu_vec), input_type = "mu_Sigma"))
-    }
-  }
-
-  # Option C: observations
+  # Case B: observations -> compute ranges using range_from_stats -> fall back to Case A
   if (is.data.frame(range) || is.matrix(range)) {
 
-    X <- as.matrix(range)
+    df <- as.data.frame(range)
+    ranges <- ranges_from_data(df)
 
-    if (nrow(X) < 2) stop("range as observations must have at least 2 rows.")
-    if (ncol(X) < 1) stop("range as observations must have at least 1 column.")
-    if (any(!is.finite(X))) stop("range observations contain non-finite values.")
+    return(parse_range(range = ranges, cl = cl))
+  }
 
-    mu_vec <- colMeans(X)
-    sd_vec <- apply(X, 2, stats::sd)
+  # Case C: list inputs
+  if (is.list(range)) {
 
-    if (any(!is.finite(mu_vec)) || any(!is.finite(sd_vec))) stop("Computed mu/sd from observations contains non-finite values.")
-    if (any(sd_vec <= 0)) stop("At least one column has zero (or negative) SD; cannot build ellipsoid.")
+    nm <- names(range)
+    if (is.null(nm)) stop("range is a list but has no names.")
 
-    return(list(mu = as.numeric(mu_vec), sd = as.numeric(sd_vec), p = length(mu_vec), input_type = "observations"))
+    mu_name <- nm[tolower(nm) %in% c("mu", "mean")][1]
+    sd_name <- nm[tolower(nm) == "sd"][1]
+
+    # mu/mean + sd
+    if (!is.na(mu_name) && !is.na(sd_name)) {
+
+      if (length(range[[mu_name]]) != length(range[[sd_name]])) {
+        stop("mean/mu and sd must have the same length.")
+      }
+
+      ranges <- ranges_from_stats(
+        mean = range[[mu_name]],
+        sd   = range[[sd_name]],
+        cl   = cl * 100
+      )
+
+      return(parse_range(range = ranges, cl = cl))
+    }
+
+    # mu + Sigma
+    if (!is.null(range$mu) && !is.null(range$Sigma)) {
+
+      mu <- as.numeric(range$mu)
+      Sigma <- as.matrix(range$Sigma)
+
+      if (!is.matrix(Sigma) || nrow(Sigma) != ncol(Sigma))
+        stop("Sigma must be a square matrix.")
+      if (nrow(Sigma) != length(mu))
+        stop("Sigma dimensions must match mu length.")
+
+      sd_vec <- sqrt(diag(Sigma))
+      if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
+        stop("Sigma implies non-positive or non-finite marginal SDs.")
+
+      ranges <- ranges_from_stats(
+        mean = mu,
+        sd   = sd_vec,
+        cl   = cl * 100
+      )
+
+      return(parse_range(range = ranges, cl = cl))
+    }
   }
 
   stop(
-    "Unsupported range format. Provide one of:\n",
-    "  (A) data.frame with columns min and max;\n",
-    "  (B) list(mu, sd) or list(mean, sd) or list(mu, Sigma);\n",
-    "  (C) data.frame/matrix of observations (cols = dimensions)."
+    "Unsupported range format.\n",
+    "Valid inputs include:\n",
+    " • data.frame with min/max\n",
+    " • data.frame or matrix of observations\n",
+    " • list(mu, sd) or list(mean, sd)\n",
+    " • list(mu, Sigma)"
   )
 }
 
@@ -560,7 +571,7 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
   cat(" Marginal SDs:    ",
       paste(round(x$axes_sd, digits), collapse = ", "), "\n", sep = "")
 
-  cat(" Range level:     ", round(x$range_level, digits), "\n", sep = "")
+  cat(" Range level:     ", round(x$cl, digits), "\n", sep = "")
   cat(" Ellipsoid level: ", round(x$level, digits), "\n", sep = "")
   cat(" Chi-square c²:   ", round(x$c2, digits), "\n", sep = "")
 

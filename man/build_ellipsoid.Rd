@@ -6,7 +6,7 @@
 \usage{
 build_ellipsoid(
   range,
-  range_level = 0.95,
+  cl = 0.95,
   level = 0.95,
   cor_tilt = NULL,
   n_points = 100
@@ -22,7 +22,7 @@ Supported formats include:
   \item data.frame or matrix of observations (columns = dimensions)
 }}
 
-\item{range_level}{Numeric between 0 and 1. Probability mass represented by
+\item{cl}{Numeric between 0 and 1. Probability mass represented by
 the supplied minimum and maximum values when \code{range} is defined by
 bounds. Default is 0.95.}
 
@@ -71,7 +71,7 @@ correlation (tilt) matrix.
 Two probability levels are used:
 
 \describe{
-  \item{range_level}{Probability mass represented by the user-supplied
+  \item{cl}{Probability mass represented by the user-supplied
   minimum and maximum values. Used only to infer marginal standard deviations
   when defining the multivariate normal niche.}
 
