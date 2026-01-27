@@ -109,7 +109,7 @@ build_ellipsoid <- function(range,
 
   # 4) Validate Sigma is symmetric positive definite
   Sigma <- (Sigma + t(Sigma)) / 2
-  chol_Sigma <- tryCatch(chol(Sigma), error = function(e) NULL)
+  chol_Sigma <- tryCatch(chol(Sigma), error = function(e) NULL) # base function
 
   if (is.null(chol_Sigma)) {
     stop("Sigma is not positive definite.\n",
@@ -176,72 +176,49 @@ build_ellipsoid <- function(range,
 #' @keywords internal
 parse_range <- function(range, cl = 0.95) {
 
+  #   Check if cl is in the write format
   if (!is.numeric(cl) || length(cl) != 1 || cl <= 0 || cl >= 1) {
     stop("cl must be a single number between 0 and 1.")
   }
 
-  #  check if column names exist
+  # TO DO: create a check for names, this will be helpful for the stats trigger
 
-  # Case A1 (preferred): min/max as ROWS, variables as COLUMNS
-  #   rownames(range) include "min" and "max"
-
-  if(colnames(range) %in% c("min", "max")){
-    if ((is.data.frame(range) || is.matrix(range)) && nrow(range) == 2) {
-
-      # map rows safely even if order is max/min swapped
-
-      # check that row 1 is less than row 2 for all coulumns, if so label
-      # ronames(range) = c(min, max), if not check if row 2 is less than row 1 in
-      # all columns and label as rownames(range) = c(max , min), if neither of
-      # this conditions is true stop and send message "Each max must be greater
-      # than min. label rows for easier coding"
+  if (all(c("min", "max") %in% tolower(colnames(range))))
+    stop("please verify range data.frame format, rows are mins and max and columns are varibales")
 
 
-      mins <- as.numeric(rng[which(rn_l == "min")[1], , drop = TRUE])
-      maxs <- as.numeric(rng[which(rn_l == "max")[1], , drop = TRUE])
+  #   Case A (preferred): if two rows assume user is giving it in the correct format
+  # min/max as ROWS, variables as COLUMNS
+  if((is.data.frame(range) || is.matrix(range)) && nrow(range) == 2){
 
-      if (length(mins) == 0) stop("range has no columns (variables).")
-      if (any(!is.finite(mins)) || any(!is.finite(maxs)))
-        stop("range contains non-finite min/max values.")
-      if (any(maxs <= mins))
-        stop("Each max must be greater than min.")
+    message("Following Case A")
 
-        mu_vec <- (mins + maxs) / 2
+    # map rows safely even if order is max/min swapped
+    r1 <- as.numeric(range[1, , drop = TRUE])
+    r2 <- as.numeric(range[2, , drop = TRUE])
 
-        z <- stats::qnorm((1 + cl) / 2)
-        if (!is.finite(z) || z <= 0) stop("Invalid cl produced non-finite z score.")
-
-        sd_vec <- (maxs - mins) / (2 * z)
-        if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
-          stop("Derived sd contains non-positive or non-finite values.")
-
-        return(list(mu = mu_vec,
-                    sd = sd_vec,
-                    p = length(mu_vec)))
-
-      }
+    if (any(!is.finite(r1)) || any(!is.finite(r2))) {
+      stop("range contains non-finite values in the 2-row bounds input.")
     }
-  }
 
-
-  # Case A2 (old): min/max as COLUMNS, variables as ROWS
-
-  if (is.data.frame(range) && all(c("min", "max") %in% names(range))) {
-
-    mins <- as.numeric(range$min)
-    maxs <- as.numeric(range$max)
-
-    if (length(mins) == 0) stop("range has no rows.")
-    if (any(!is.finite(mins)) || any(!is.finite(maxs)))
-      stop("range contains non-finite min/max values.")
-    if (any(maxs <= mins))
-      stop("Each max must be greater than min.")
+    # check that row 1 is less than row 2 for all columns
+    if (all(r1 < r2)) {
+      rownames(range) <- c("min", "max")
+      mins <- r1
+      maxs <- r2
+    } else if (all(r2 < r1)) {
+      rownames(range) <- c("max", "min")
+      mins <- r2
+      maxs <- r1
+    } else {
+      stop("Each max must be greater than min.
+             ","Label rows for easier coding.")
+    }
 
     mu_vec <- (mins + maxs) / 2
-
     z <- stats::qnorm((1 + cl) / 2)
 
-    if (!is.finite(z) || z <= 0) stop("Invalid cl produced non-finite z score.")
+    if (!is.finite(z) || z <= 0) stop("Invalid, cl produced non-finite z score.")
 
     sd_vec <- (maxs - mins) / (2 * z)
 
@@ -251,14 +228,13 @@ parse_range <- function(range, cl = 0.95) {
     return(list(mu = mu_vec,
                 sd = sd_vec,
                 p = length(mu_vec)))
-
   }
-
 
   # Case B: observations -> compute bounds -> fall back to Case A1
   # ranges_from_data returns min/max as rows, variables as columns
-
   if (is.data.frame(range) || is.matrix(range)) {
+    message("Following Case B")
+
     df <- as.data.frame(range)
     bounds <- ranges_from_data(df)
     return(parse_range(range = bounds, cl = cl))
@@ -266,10 +242,12 @@ parse_range <- function(range, cl = 0.95) {
 
 
   # Case C: list inputs
-  if (is.list(range)) {
+  if (is.list(range) || is.vector(range)) {
+    message("Following Case C")
 
     nm <- names(range)
-    if (is.null(nm)) stop("range is a list but has no names.")
+
+    if (is.null(nm)) stop("range is a list or vector but has no names.")
 
     mu_name <- nm[tolower(nm) %in% c("mu", "mean")][1]
     sd_name <- nm[tolower(nm) == "sd"][1]
@@ -317,17 +295,13 @@ parse_range <- function(range, cl = 0.95) {
     " • data.frame/matrix with rownames min/max and variables as columns\n",
     " • data.frame with columns min/max (legacy)\n",
     " • data.frame or matrix of observations\n",
-    " • list(mu, sd) or list(mean, sd)\n",
-    " • list(mu, Sigma)"
+    " • list(mu, sd) or list(mean, sd) or c(mu, sd) or c(mean, sd)\n",
+    " • list(mu, Sigma) or c(mu, Sigma)"
   )
 }
 
 
 # Helpers for correlation tilt (orientation)
-make_identity_cor <- function(p) {
-  diag(1, p)
-}
-
 suggest_cor_tilt <- function(p, sd_vec) {
   # TO DO: later implement logic to generate candidate cor_tilt matrices that
   # keep Sigma positive definite for the given sd_vec. Also send message to user
@@ -367,7 +341,7 @@ parse_cor_tilt <- function(cor_tilt, p) {
     # add message about suggestion, maybe stop and ask, or suggest and attach to
     # first run of build_ellps
 
-    return(make_identity_cor(p))
+    return(diag(1, p))
   }
 
   # Case A: user provides correlation matrix directly

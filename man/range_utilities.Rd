@@ -7,6 +7,9 @@
 \title{Compute variable ranges from data or statistics with optional expansion}
 \usage{
 ranges_from_data(data, expand_min = NULL, expand_max = NULL)
+ranges_from_stats(mean, sd, cl = 95, expand_min = NULL, expand_max = NULL)
+
+ranges_from_data(data, expand_min = NULL, expand_max = NULL)
 
 ranges_from_stats(mean, sd, cl = 95, expand_min = NULL, expand_max = NULL)
 }

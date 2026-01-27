@@ -20,7 +20,7 @@ parse_range(range, cl = 0.95)
 the supplied minimum and maximum values when bounds are provided.}
 }
 \value{
-A list containing \code{mu}, \code{sd}, \code{p}, and \code{input_type}.
+A list containing \code{mu}, \code{sd}, and \code{p}.
 }
 \description{
 Converts user-defined niche range inputs into a centroid vector and marginal
