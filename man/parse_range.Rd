@@ -9,33 +9,21 @@ parse_range(range, cl = 0.95)
 \arguments{
 \item{range}{Input defining the niche center and tolerances. Supported formats:
 \itemize{
-  \item data.frame with columns \code{min} and \code{max}
-  \item list with \code{mu} and \code{sd}
-  \item list with \code{mean} and \code{sd}
+  \item data.frame where rows are \code{"min"} and \code{"max"}, and columns are variables (recommended)
+  \item data.frame with columns \code{min} and \code{max} (legacy format)
+  \item list with \code{mu} or \code{mean} and \code{sd}
   \item list with \code{mu} and covariance matrix \code{Sigma}
-  \item matrix or data.frame of observations
+  \item matrix or data.frame of observations (columns = dimensions)
 }}
 
 \item{cl}{Numeric between 0 and 1. Probability mass represented by
 the supplied minimum and maximum values when bounds are provided.}
 }
 \value{
-A list containing:
-\itemize{
-  \item \code{mu}: centroid vector
-  \item \code{sd}: marginal standard deviations
-  \item \code{p}: number of dimensions
-  \item \code{input_type}: detected input format
-}
+A list containing \code{mu}, \code{sd}, \code{p}, and \code{input_type}.
 }
 \description{
 Converts user-defined niche range inputs into a centroid vector and marginal
 standard deviations suitable for constructing a multivariate normal niche.
-}
-\details{
-When \code{min} and \code{max} values are provided, they are interpreted as a
-central probability interval of a normal distribution with probability
-\code{cl}. Standard deviations are derived using the corresponding
-normal quantile.
 }
 \keyword{internal}
