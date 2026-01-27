@@ -83,11 +83,12 @@ build_ellipsoid <- function(range,
                             cor_tilt = NULL,
                             n_points = 100) {
 
+  # User input checks
   stopifnot(is.numeric(cl), length(cl) == 1, cl > 0, cl < 1)
   stopifnot(is.numeric(level), length(level) == 1, level > 0, level < 1)
   stopifnot(is.numeric(n_points), length(n_points) == 1, n_points >= 10)
 
-  # 1) Parse range into mu and marginal sd
+  # 1) Parse range into mu/mean and marginal sd
   parsed <- parse_range(range, cl = cl)
   mu <- as.numeric(parsed$mu)
   sd_vec <- as.numeric(parsed$sd)
@@ -96,6 +97,7 @@ build_ellipsoid <- function(range,
   if (any(!is.finite(mu)) || any(!is.finite(sd_vec))) {
     stop("Parsed mu/sd contain non-finite values.")
   }
+
   if (any(sd_vec <= 0)) stop("Parsed sd must be positive.")
 
   # 2) Convert cor_tilt into correlation matrix R
@@ -110,10 +112,8 @@ build_ellipsoid <- function(range,
   chol_Sigma <- tryCatch(chol(Sigma), error = function(e) NULL)
 
   if (is.null(chol_Sigma)) {
-    stop(
-      "Sigma is not positive definite.\n",
-      "Check cor_tilt and implied standard deviations from range."
-    )
+    stop("Sigma is not positive definite.\n",
+         "Check cor_tilt and implied standard deviations from range.")
   }
 
   Sigma_inv <- chol2inv(chol_Sigma)
@@ -127,7 +127,8 @@ build_ellipsoid <- function(range,
   axes_boundary <- sqrt(vals * c2)
 
   # 6b) Hypervolume at this contour
-  volume <- ellipsoid_volume(n_dimensions = p, semi_axes_length = axes_boundary)
+  volume <- ellipsoid_volume(n_dimensions = p,
+                             semi_axes_length = axes_boundary)
 
   # 7) Surface points for plotting
   boundary_points <- ellipsoid_surface_points(mu, Sigma, c2, n_points)
@@ -170,7 +171,7 @@ build_ellipsoid <- function(range,
 #' @param cl Numeric between 0 and 1. Probability mass represented by
 #'   the supplied minimum and maximum values when bounds are provided.
 #'
-#' @return A list containing \code{mu}, \code{sd}, \code{p}, and \code{input_type}.
+#' @return A list containing \code{mu}, \code{sd}, and \code{p}.
 #'
 #' @keywords internal
 parse_range <- function(range, cl = 0.95) {
@@ -179,28 +180,31 @@ parse_range <- function(range, cl = 0.95) {
     stop("cl must be a single number between 0 and 1.")
   }
 
+  #  check if column names exist
+
   # Case A1 (preferred): min/max as ROWS, variables as COLUMNS
   #   rownames(range) include "min" and "max"
 
-  if (is.data.frame(range) || is.matrix(range)) {
+  if(colnames(range) %in% c("min", "max")){
+    if ((is.data.frame(range) || is.matrix(range)) && nrow(range) == 2) {
 
-    rn <- rownames(range)
+      # map rows safely even if order is max/min swapped
 
-    if (!is.null(rn)) {
-      rn_l <- tolower(rn)
+      # check that row 1 is less than row 2 for all coulumns, if so label
+      # ronames(range) = c(min, max), if not check if row 2 is less than row 1 in
+      # all columns and label as rownames(range) = c(max , min), if neither of
+      # this conditions is true stop and send message "Each max must be greater
+      # than min. label rows for easier coding"
 
-      if (all(c("min", "max") %in% rn_l)) {
 
-        rng <- as.data.frame(range)
-        # map rows safely even if order is max/min swapped
-        mins <- as.numeric(rng[which(rn_l == "min")[1], , drop = TRUE])
-        maxs <- as.numeric(rng[which(rn_l == "max")[1], , drop = TRUE])
+      mins <- as.numeric(rng[which(rn_l == "min")[1], , drop = TRUE])
+      maxs <- as.numeric(rng[which(rn_l == "max")[1], , drop = TRUE])
 
-        if (length(mins) == 0) stop("range has no columns (variables).")
-        if (any(!is.finite(mins)) || any(!is.finite(maxs)))
-          stop("range contains non-finite min/max values.")
-        if (any(maxs <= mins))
-          stop("Each max must be greater than min.")
+      if (length(mins) == 0) stop("range has no columns (variables).")
+      if (any(!is.finite(mins)) || any(!is.finite(maxs)))
+        stop("range contains non-finite min/max values.")
+      if (any(maxs <= mins))
+        stop("Each max must be greater than min.")
 
         mu_vec <- (mins + maxs) / 2
 
@@ -211,12 +215,10 @@ parse_range <- function(range, cl = 0.95) {
         if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
           stop("Derived sd contains non-positive or non-finite values.")
 
-        return(list(
-          mu = mu_vec,
-          sd = sd_vec,
-          p = length(mu_vec),
-          input_type = "min_max_rows"
-        ))
+        return(list(mu = mu_vec,
+                    sd = sd_vec,
+                    p = length(mu_vec)))
+
       }
     }
   }
@@ -246,12 +248,10 @@ parse_range <- function(range, cl = 0.95) {
     if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
       stop("Derived sd contains non-positive or non-finite values.")
 
-    return(list(
-      mu = mu_vec,
-      sd = sd_vec,
-      p = length(mu_vec),
-      input_type = "min_max_cols"
-    ))
+    return(list(mu = mu_vec,
+                sd = sd_vec,
+                p = length(mu_vec)))
+
   }
 
 
@@ -281,11 +281,10 @@ parse_range <- function(range, cl = 0.95) {
         stop("mean/mu and sd must have the same length.")
       }
 
-      bounds <- ranges_from_stats(
-        mean = range[[mu_name]],
-        sd   = range[[sd_name]],
-        cl   = cl * 100
-      )
+      bounds <- ranges_from_stats(mean = range[[mu_name]],
+                                  sd   = range[[sd_name]],
+                                  cl   = cl * 100)
+
       return(parse_range(range = bounds, cl = cl))
     }
 
@@ -304,11 +303,10 @@ parse_range <- function(range, cl = 0.95) {
       if (any(!is.finite(sd_vec)) || any(sd_vec <= 0))
         stop("Sigma implies non-positive or non-finite marginal SDs.")
 
-      bounds <- ranges_from_stats(
-        mean = mu,
-        sd   = sd_vec,
-        cl   = cl * 100
-      )
+      bounds <- ranges_from_stats(mean = mu,
+                                  sd   = sd_vec,
+                                  cl   = cl * 100)
+
       return(parse_range(range = bounds, cl = cl))
     }
   }
@@ -365,10 +363,14 @@ parse_cor_tilt <- function(cor_tilt, p) {
   # Default: no tilt (independent dimensions)
   if (missing(cor_tilt) || is.null(cor_tilt)) {
     suggest_cor_tilt(p = p, sd_vec = NULL)
+
+    # add message about suggestion, maybe stop and ask, or suggest and attach to
+    # first run of build_ellps
+
     return(make_identity_cor(p))
   }
 
-  # Case 1: user provides correlation matrix directly
+  # Case A: user provides correlation matrix directly
   if (is.matrix(cor_tilt)) {
 
     if (!all(dim(cor_tilt) == c(p, p)))
@@ -385,8 +387,8 @@ parse_cor_tilt <- function(cor_tilt, p) {
     return(R)
   }
 
-  # Case 2: observations used to estimate correlation
-  # The user gives a cloud of points that reflects how variables tend to vary together.
+  # Case B: observations used to estimate correlation. The user gives a cloud of
+  # points that reflects how variables tend to vary together.
   if (is.data.frame(cor_tilt)) cor_tilt <- as.matrix(cor_tilt)
 
   if (is.matrix(cor_tilt)) {
