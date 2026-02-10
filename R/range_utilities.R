@@ -34,6 +34,7 @@ NULL
 #' ranges_from_data(df, expand_min = list(var1 = 10),
 #'                  expand_max = list(var2 = 20))
 
+# To DO: cl to 0.95
 ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
   # Initial structural check
   if (!is.data.frame(data) || ncol(data) < 2) {
@@ -48,7 +49,7 @@ ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
       stop("None of the names in 'expand_min' match the names in 'data'.")
     }
   }
-  
+
   if (!is.null(expand_max)) {
     if (!any(names(expand_max) %in% col_names)) {
       stop("None of the names in 'expand_max' match the names in 'data'.")
@@ -57,18 +58,18 @@ ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
 
   # Compute ranges
   ranges <- sapply(data, range, na.rm = TRUE)
-  
+
   for (col_name in colnames(ranges)) {
     current_min <- ranges[1, col_name]
     current_max <- ranges[2, col_name]
     abs_range <- current_max - current_min
-    
+
     if (!is.null(expand_min) && col_name %in% names(expand_min)) {
-      ranges[1, col_name] <- current_min - 
+      ranges[1, col_name] <- current_min -
         (abs_range * expand_min[[col_name]] / 100)
     }
     if (!is.null(expand_max) && col_name %in% names(expand_max)) {
-      ranges[2, col_name] <- current_max + 
+      ranges[2, col_name] <- current_max +
         (abs_range * expand_max[[col_name]] / 100)
     }
   }
@@ -89,7 +90,8 @@ ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
 
 ranges_from_stats <- function(mean, sd, cl = 95, expand_min = NULL,
                               expand_max = NULL) {
- # Check that mean and sd are numeric
+
+  # Check that mean and sd are numeric
   if (!is.numeric(mean) || !is.numeric(sd)) {
     stop("'mean' and 'sd' must be numeric vectors.")
   }
@@ -101,13 +103,13 @@ ranges_from_stats <- function(mean, sd, cl = 95, expand_min = NULL,
 
   # Check that at least one name in expand arguments matches names in mean/sd
   var_names <- names(mean)
-  
+
   if (!is.null(expand_min)) {
     if (!any(names(expand_min) %in% var_names)) {
       stop("None of the names in 'expand_min' match the names in 'mean'.")
     }
   }
-  
+
   if (!is.null(expand_max)) {
     if (!any(names(expand_max) %in% var_names)) {
       stop("None of the names in 'expand_max' match the names in 'mean'.")
@@ -121,16 +123,16 @@ ranges_from_stats <- function(mean, sd, cl = 95, expand_min = NULL,
 
   mins <- qnorm(p_lower, mean = mean, sd = sd)
   maxs <- qnorm(p_upper, mean = mean, sd = sd)
-  
+
   var_names <- names(mean)
   ranges <- matrix(c(mins, maxs), nrow = 2, byrow = TRUE)
   colnames(ranges) <- var_names
-  
+
   for (var in var_names) {
     current_min <- ranges[1, var]
     current_max <- ranges[2, var]
     abs_range <- current_max - current_min
-    
+
     if (!is.null(expand_min) && var %in% names(expand_min)) {
       ranges[1, var] <- current_min - (abs_range * expand_min[[var]] / 100)
     }
