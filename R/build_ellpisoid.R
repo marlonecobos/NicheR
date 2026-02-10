@@ -75,11 +75,14 @@ build_ellipsoid <- function(range,
   if (!(is.data.frame(range) || is.matrix(range))) {
     stop("range must be a data.frame or matrix.")
   }
+
   range <- as.matrix(range)
 
   if (is.null(colnames(range))) {
     stop("range must have column names (variable names).")
   }
+
+  var_names <- colnames(range)
 
   if (nrow(range) != 2L) {
     stop("range must have exactly 2 rows (min/max) and variables as columns.")
@@ -102,7 +105,7 @@ build_ellipsoid <- function(range,
       stop("cov_matrix must have row and column names matching range column names.")
     }
 
-    if (!all(colnames(cov_matrix) == colnames(range)) || !all(rownames(cov_matrix) == colnames(range))) {
+    if (!all(colnames(cov_matrix) == var_names) || !all(rownames(cov_matrix) == var_names)) {
       stop("cov_matrix row/column names must match range column names (same order).")
     }
   }
@@ -143,12 +146,12 @@ build_ellipsoid <- function(range,
   # Covariance handling ------------------------------------------------------
 
   if (is.null(cov_matrix)) {
-    verbose_message("Step: computing covariance structure...\n")
+    verbose_message("Step: computing covariance matrix...\n")
 
 
     cov_matrix <- diag(sd_vec^2, nrow = dimensions, ncol = dimensions)
-    rownames(cov_matrix) <- colnames(range)
-    colnames(cov_matrix) <- colnames(range)
+    rownames(cov_matrix) <- var_names
+    colnames(cov_matrix) <- var_names
   } else {
 
     if (any(dim(cov_matrix) != c(dimensions, dimensions))) {
@@ -165,7 +168,7 @@ build_ellipsoid <- function(range,
 
   # Symmetry + SPD checks ----------------------------------------------------
 
-  verbose_message("Step: Checking covariance structure...\n")
+  verbose_message("Step: Checking covariance matrix...\n")
 
   cov_matrix <- (cov_matrix + t(cov_matrix)) / 2
 
@@ -203,7 +206,8 @@ build_ellipsoid <- function(range,
 
   out <- list(
     dimensions = dimensions,
-    mu_vec = mu_vec,
+    var_names = var_names,
+    centroid = mu_vec,
     cov_matrix = cov_matrix,
     Sigma_inv = Sigma_inv,
     chol_Sigma = chol_Sigma,
@@ -233,7 +237,7 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
   cat("Chi-square cutoff: ", round(x$chi2_cutoff, digits), "\n", sep = "")
 
   cat("Centroid (mu):     ",
-      paste(round(x$mu_vec, digits), collapse = ", "),
+      paste(round(x$centroid, digits), collapse = ", "),
       "\n", sep = "")
 
   cat("\nCovariance matrix:\n")
