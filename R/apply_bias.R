@@ -104,7 +104,7 @@ apply_bias <- function(bias_surface,
 
   # 1. Determine template raster ------------------------------------------
 
-  if(!is.null(suitable_env) && inherits(suitable_env, "SpatRaster")){
+  if(!is.null(suitable_env) && inherits(suitable_env, "SpatRaster") && isTRUE(truncated)){
     mask_ras <- suitable_env
     verbose_message("Step: Using suitable_env as mask/template...\n")
   }else{
