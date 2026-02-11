@@ -83,12 +83,12 @@ ell <- build_ellipsoid(range = range_df)
 plot_nicheR(list(ell))
 
 # Predict suitability
-pred <- predict.nicheR_ellipsoid(ell,
-                                 newdata = bios,
-                                 include_mahalanobis = TRUE,
-                                 include_suitability = TRUE,
-                                 suitability_truncated = TRUE,
-                                 mahalanobis_truncated = TRUE)
+pred <- predict(ell,
+                newdata = bios,
+                include_mahalanobis = TRUE,
+                include_suitability = TRUE,
+                suitability_truncated = TRUE,
+                mahalanobis_truncated = TRUE)
 
 plot(log(pred), col = rev(viridis::viridis(100)))
 ```

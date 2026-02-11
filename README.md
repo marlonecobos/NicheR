@@ -44,7 +44,7 @@ if (!require("devtools")) install.packages("devtools")
 #> Warning: package 'usethis' was built under R version 4.4.3
 devtools::install_github("castanedaM/nicheR")
 #> Using GitHub PAT from the git credential store.
-#> Skipping install of 'nicheR' from a github remote, the SHA1 (ff19800f) has not changed since last install.
+#> Skipping install of 'nicheR' from a github remote, the SHA1 (8650bc7e) has not changed since last install.
 #>   Use `force = TRUE` to force installation
 library(nicheR)
 ```
@@ -87,12 +87,12 @@ plot_nicheR(list(ell))
 ``` r
 
 # Predict suitability
-pred <- predict.nicheR_ellipsoid(ell,
-                                 newdata = bios,
-                                 include_mahalanobis = TRUE,
-                                 include_suitability = TRUE,
-                                 suitability_truncated = TRUE,
-                                 mahalanobis_truncated = TRUE)
+pred <- predict(ell,
+                newdata = bios,
+                include_mahalanobis = TRUE,
+                include_suitability = TRUE,
+                suitability_truncated = TRUE,
+                mahalanobis_truncated = TRUE)
 #> Starting: predict suitab...
 #> Step: Using  3  predictor variables:  bio1, bio12, bio15 
 #> Done: prediction completed.
