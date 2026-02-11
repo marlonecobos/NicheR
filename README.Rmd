@@ -18,93 +18,215 @@ knitr::opts_chunk$set(
 )
 ```
 
-# NicheR: Ellipsoid-Based Virtual Species and Niche Visualization in E-space and G-space
+# NicheR  
+### Ellipsoid-Based Virtual Species and Niche Modeling in E-space and G-space
 
-NicheR is an R package for building, visualizing, and sampling
-**ellipsoid-based ecological niches** using environmental data.  
+**NicheR** is an R package for building, visualizing, predicting, and 
+sampling **ellipsoid-based ecological niches** using environmental data.
 
 It provides:
 
-- Explicit ellipsoid construction in n-dimensional environmental space.  
-- Efficient detection of suitable environments using Mahalanobis distance.  
-- Sampling of virtual occurrences with flexible strategies and optional bias.  
-- Visualization tools in environmental space (E-space) and geographic space (G-space).  
-- A unified R-native workflow, with both high-level and low-level functions.
+- Explicit ellipsoid construction in n-dimensional environmental space  
+- Efficient suitability detection using Mahalanobis distance  
+- Flexible virtual occurrence sampling strategies  
+- Visualization tools in environmental space (E-space) and geographic space (G-space)  
+- A unified, fully scriptable R-native workflow  
 
-Inspired by the conceptual foundations of **NicheA** and the scripting
-flexibility of the **virtualspecies** package, **NicheR** provides a
-reproducible, scriptable ecosystem for virtual species simulation and
-niche theory exploration.
+Inspired by the conceptual foundations of **NicheA** and the flexibility 
+of the **virtualspecies** package, **NicheR** provides a reproducible 
+framework for virtual species simulation and niche theory exploration.
 
 ---
 
 ## Authors
 
-- Mariana Castaneda-Guzman 
+- Mariana Castaneda-Guzman  
 - Connor Hughes  
 - Paanwaris Paansri  
-- Marlon Cobos
-
-## Last Updated
-
-01/21/2025
+- Marlon Cobos  
 
 ---
 
 ## Installation
 
-You can install the development version of NicheR from GitHub:
+Install the development version from GitHub:
 
-```{r eval = FALSE}
-# 1. Install devtools if you do not have it yet
-if (!require("devtools")) {
-  install.packages("devtools")
-}
-
-# 2. Install NicheR from GitHub
-devtools::install_github("castanedaM/NicheR")
+```{r}
+if (!require("devtools")) install.packages("devtools")
+devtools::install_github("castanedaM/nicheR")
+library(nicheR)
 ```
 
-**Dependencies**
+---
 
-NicheR relies on the following R packages (installed automatically when
-you install NicheR):
+## Quick Example
 
-- `terra` – raster / spatial data handling  
-- `ggplot2`, `ggpubr` – plotting and layout  
-- `plotly`, `rgl` – interactive and 3D visualization  
-- `RColorBrewer` – color palettes  
-- plus standard base/system packages
+```{r}
+library(nicheR)
+library(terra)
+
+# Download environmental data
+wc <- geodata::worldclim_global(var = "bio",
+                                res = 10,
+                                path = tempdir())
+
+bios <- wc[[c(1, 12, 15)]]
+names(bios) <- c("bio1", "bio12", "bio15")
+
+# Define environmental ranges
+range_df <- data.frame(bio1  = c(-10, 10),
+                       bio12 = c(500, 1000),
+                       bio15 = c(30, 150))
+
+# Build ellipsoid niche
+ell <- build_ellipsoid(range = range_df)
+plot_nicheR(list(ell))
+
+# Predict suitability
+pred <- predict.nicheR_ellipsoid(ell,
+                                 newdata = bios,
+                                 include_mahalanobis = TRUE,
+                                 include_suitability = TRUE,
+                                 suitability_truncated = TRUE,
+                                 mahalanobis_truncated = TRUE)
+
+plot(log(pred), col = rev(viridis::viridis(100)))
+```
 
 ---
 
-# Quick Start: Full Workflow in One Step
+## Sampling Virtual Occurrences
 
-The easiest way to use NicheR is through the high-level wrapper
-`create_virtual_species()`, which:
+```{r}
+# Sample center, edge, and random occurrences
+occ_center <- sample_data(n_occ = 1000,
+                          suitable_env = pred,
+                          sampling = "center",
+                          method = "probability",
+                          seed = 42)
 
-1. Builds an ellipsoid niche in E-space  
-2. Computes suitable environments  
-3. Samples occurrence records  
+occ_edge <- sample_data(n_occ = 1000,
+                        suitable_env = pred,
+                        sampling = "edge",
+                        method = "probability",
+                        seed = 42)
+
+occ_random <- sample_data(n_occ = 1000,
+                          suitable_env = pred,
+                          sampling = "random",
+                          method = "probability",
+                          seed = 42)
+```
+
+Extract environmental values for E-space visualization:
+
+```{r}
+occ_center_env <- terra::extract(bios, occ_center)
+occ_edge_env <- terra::extract(bios, occ_edge)
+occ_random_env <- terra::extract(bios, occ_random)
+```
+
+Plot in environmental space:
+
+```{r}
+par(mfrow = c(3, 3)) 
+
+# Center pairs
+plot_nicheR(
+  list(ell),
+  dims = c(1, 2),
+  main = "Center-weighted sampling",
+  occ_list = list(occ_center_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(1, 3),
+  main = "Center-weighted sampling",
+  occ_list = list(occ_center_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(3, 2),
+  main = "Center-weighted sampling",
+  occ_list = list(occ_center_env))
+
+
+# edge pairs
+plot_nicheR(
+  list(ell),
+  dims = c(1, 2),
+  main = "edge-weighted sampling",
+  occ_list = list(occ_edge_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(1, 3),
+  main = "edge-weighted sampling",
+  occ_list = list(occ_edge_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(3, 2),
+  main = "edge-weighted sampling",
+  occ_list = list(occ_edge_env))
+
+
+# random pairs
+plot_nicheR(
+  list(ell),
+  dims = c(1, 2),
+  main = "random-weighted sampling",
+  occ_list = list(occ_random_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(1, 3),
+  main = "random-weighted sampling",
+  occ_list = list(occ_random_env))
+
+plot_nicheR(
+  list(ell),
+  dims = c(3, 2),
+  main = "random-weighted sampling",
+  occ_list = list(occ_random_env))
+
+```
 
 ---
 
-# Contributing
+## Conceptual Framework
 
-We welcome contributions!
+NicheR operates across two complementary spaces:
+
+- **E-space (Environmental Space)**  
+  Ellipsoids represent multivariate environmental tolerances.
+
+- **G-space (Geographic Space)**  
+  Predictions are projected across raster layers to identify suitable
+  geographic regions.
+
+This dual-space structure allows explicit separation between niche
+definition, projection, and sampling processes.
+
+---
+
+## Contributing
+
+We welcome contributions.
 
 If you have:
 
-- suggestions,  
-- bug reports, or  
-- would like to contribute code,
+- Suggestions  
+- Bug reports  
+- Feature requests  
+- Code improvements  
 
-please open an issue or submit a pull request on the **NicheR** GitHub repository.
+Please open an issue or submit a pull request on GitHub.
 
-When contributing, please:
+When contributing:
 
-- keep functions documented with roxygen2,  
-- include minimal reproducible examples, and  
-- add tests whenever appropriate.
+- Document functions using roxygen2  
+- Include minimal reproducible examples  
+- Add tests when appropriate  
 
-Thank you for helping improve NicheR!
+Thank you for helping improve **NicheR**.
