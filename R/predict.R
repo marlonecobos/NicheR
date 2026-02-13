@@ -60,7 +60,8 @@
 #' \code{data.frame} with the same number of rows as \code{newdata} and added
 #' columns matching the requested outputs. Rows with missing predictor values
 #' receive NA for numeric outputs.
-#'
+
+#' @method predict nicheR_ellipsoid
 #' @export
 predict.nicheR_ellipsoid <- function(object,
                                      newdata,

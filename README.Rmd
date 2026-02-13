@@ -193,6 +193,28 @@ plot_nicheR(
 ```
 
 ---
+## Applying Sampling Bias
+
+```{r}
+# import bias rasters
+bias_layer <- terra::rast("inst/extdata/bias_vars.tif")
+
+# set the bias surface
+# bias_dir = 1  : Higher values = Higher sampling probability
+# bias_dir = -1 : Lower values = Higher sampling probability
+bias_result <- apply_bias(bias_surface = bias_layer,
+                          bias_dir = c(-1, 1),
+                          suitable_env = pred,   # Use suitability raster as a mask
+                          out_bias = "biased",
+                          truncated = TRUE)
+
+# 3. Visualize the resulting bias surface
+plot(bias_result$pooled_bias_sp, 
+     main = "Pooled Bias Surface", 
+     col = viridis::magma(100))
+```
+
+---
 
 ## Conceptual Framework
 
