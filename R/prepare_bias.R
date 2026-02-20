@@ -9,16 +9,20 @@
 #' The function performs the following steps:
 #' \enumerate{
 #'   \item Split \code{bias_surface} into single-layer rasters.
-#'   \item Prepare the template raster: If \code{pred} is provided, it applies a
-#'   logarithmic transformation and sets \code{-Inf} values to \code{NA}. This
-#'   ensures that truncated prediction layers correctly constrain the bias surface.
-#'   \item Optionally crop each bias layer to the template extent
+#'   \item Prepare the template raster: If \code{pred} is provided, it subsets
+#'   to \code{suitability} and/or \code{suitability_trunc}, applies a logarithmic
+#'   transformation, and sets \code{-Inf} values to \code{NA}. If both layers
+#'   are present, the first layer acts as the baseline template for scaling.
+#'   \item Optionally crop each bias layer to the baseline extent
 #'   (\code{truncated = TRUE}).
 #'   \item Resample each layer to match the template grid.
 #'   \item Standardize each layer to \eqn{[0, 1]} using min and max values.
 #'   \item Optionally invert layers when \code{bias_dir = -1}.
 #'   \item Stack standardized directional layers.
-#'   \item Optionally pool layers by multiplication to form a single bias surface.
+#'   \item Optionally pool layers by multiplication.
+#'   \item Mask the final pooled and directional outputs by *each* available
+#'   prediction layer, returning aligned bias surfaces for both
+#'   \code{suitability} and \code{suitability_trunc} if provided.
 #' }
 #'
 #' Cropping and masking are done using \code{terra::crop()} and
@@ -32,7 +36,8 @@
 #'   (invert via \eqn{1 - x}). A single value is recycled to match the number of
 #'   bias layers.
 #' @param pred Optional. A \code{terra::SpatRaster} output from a prediction model
-#'   (e.g., ellipsoid suitability). Used as a mask/template. A log transformation
+#'   (e.g., ellipsoid suitability). Must contain 'suitability' and/or
+#'   'suitability_trunc' layers. Used as a mask/template. A log transformation
 #'   is applied, and \code{-Inf} values are converted to \code{NA} to properly
 #'   exclude truncated regions.
 #' @param out_bias Character. Controls returned outputs:
@@ -86,16 +91,12 @@ prepare_bias <- function(bias_surface,
 
   # Normalize bias_surface → list of single-layer rasters
   if(inherits(bias_surface, "SpatRaster")){
-
     verbose_message("Step: splitting SpatRaster into layers...\n")
     bias_list <- terra::as.list(bias_surface)
-
   }else if(is.list(bias_surface) &&
            all(vapply(bias_surface, inherits, logical(1), "SpatRaster"))){
-
     verbose_message("Step: flattening list of SpatRasters...\n")
     bias_list <- unlist(lapply(bias_surface, terra::as.list), recursive = FALSE)
-
   }else{
     stop("'bias_surface' must be SpatRaster or list of SpatRasters.")
   }
@@ -107,16 +108,30 @@ prepare_bias <- function(bias_surface,
   # 1. Determine template raster ------------------------------------------
 
   if(!is.null(pred) && inherits(pred, "SpatRaster")){
+
+    verbose_message("Step: Subsetting 'pred' layer...\n")
+
+    req_layers <- c("suitability", "suitability_trunc")
+    available_layers <- req_layers[req_layers %in% names(pred)]
+
+    if(length(available_layers) > 0){
+      pred <- pred[[available_layers]]
+    } else {
+      stop("The 'pred' object must contain at least one of the following layers: 'suitability' or 'suitability_trunc'.")
+    }
+
     verbose_message("Step: Processing 'pred' layer (log transformation & excluding -Inf)...\n")
 
-    # Take logarithm of the prediction layer
     mask_ras <- log(pred)
-
-    # Replace -Inf (and any potential NaN) with NA so they act as a proper mask
     mask_ras <- terra::ifel(is.infinite(mask_ras) | is.nan(mask_ras), NA, mask_ras)
+
+    # Use the first layer (usually suitability) to act as a stable single-layer
+    # geometry template inside the standardizing loop
+    template_ras <- mask_ras[[1]]
 
   }else{
     mask_ras <- bias_list[[1]]
+    template_ras <- mask_ras
     verbose_message("Step: Using first bias layer as mask/template...\n")
   }
 
@@ -147,15 +162,15 @@ prepare_bias <- function(bias_surface,
 
     # Crop before resampling
     if(isTRUE(truncated)){
-      raw <- terra::crop(raw, mask_ras, mask = TRUE)
+      raw <- terra::crop(raw, template_ras, mask = TRUE)
     }
 
     # Resample if needed
-    needs_resample <- (!identical(terra::res(raw), terra::res(mask_ras)) ||
-                         !identical(terra::ext(raw), terra::ext(mask_ras)))
+    needs_resample <- (!identical(terra::res(raw), terra::res(template_ras)) ||
+                         !identical(terra::ext(raw), terra::ext(template_ras)))
 
     aligned <- if(needs_resample){
-      terra::resample(raw, mask_ras, method = "near")
+      terra::resample(raw, template_ras, method = "near")
     }else{
       raw
     }
@@ -196,7 +211,7 @@ prepare_bias <- function(bias_surface,
     do.call(c, directional_bias_list)
   }
 
-  # 4. Combine layers ------------------------------------------------------
+  # 4. Combine layers & Final Multi-Masking --------------------------------
 
   res <- list()
 
@@ -204,7 +219,7 @@ prepare_bias <- function(bias_surface,
 
     verbose_message("Step: pooling directional layers...\n")
 
-    pooled_bias <- if(terra::nlyr(directional_bias) > 1){
+    pooled_base <- if(terra::nlyr(directional_bias) > 1){
       terra::app(directional_bias, fun = function(x){
         if(all(is.na(x))) NA_real_ else prod(x, na.rm = TRUE)
       })
@@ -212,17 +227,30 @@ prepare_bias <- function(bias_surface,
       directional_bias
     }
 
-    names(pooled_bias) <- "pooled_bias"
+    # Mask the pooled base by EACH available prediction layer
+    pb_list <- lapply(1:terra::nlyr(mask_ras), function(j){
+      lyr <- terra::mask(pooled_base, mask_ras[[j]])
+      suffix <- names(mask_ras)[j]
+      names(lyr) <- if(!is.null(pred)) paste0("pooled_bias_", suffix) else "pooled_bias"
+      lyr
+    })
 
-    pooled_bias <- terra::mask(pooled_bias, mask_ras)
-
-    res$pooled_bias <- pooled_bias
+    res$pooled_bias <- do.call(c, pb_list)
   }
 
-  directional_bias <- terra::mask(directional_bias, mask_ras)
-
   if(out_bias %in% c("standardized", "both")){
-    res$directional_bias <- directional_bias
+
+    # Mask directional base by EACH available prediction layer
+    db_list <- lapply(1:terra::nlyr(mask_ras), function(j){
+      lyrs <- terra::mask(directional_bias, mask_ras[[j]])
+      suffix <- names(mask_ras)[j]
+      if(!is.null(pred)){
+        names(lyrs) <- paste0(names(directional_bias), "_", suffix)
+      }
+      lyrs
+    })
+
+    res$directional_bias <- do.call(c, db_list)
   }
 
   # 5. Build result --------------------------------------------------------
