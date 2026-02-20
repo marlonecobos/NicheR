@@ -38,6 +38,7 @@ bias_result$pooled_bias
 
 apply_bias_result <- apply_bias(prepared_bias = bias_result,
                                 pred = pred,
-                                effect_direction = c(1, -1))
+                                effect_direction = c(1, -1),
+                                layers = c("suitability", "suitability_trunc"))
 plot(apply_bias_result,
      main = c("Direct effect", "Indirect effect"))
