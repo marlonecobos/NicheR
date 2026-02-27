@@ -65,7 +65,6 @@
 #' @export
 build_ellipsoid <- function(range,
                             cl = 0.99,
-                            cov_matrix = NULL,
                             verbose = TRUE){
 
   verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
@@ -92,26 +91,6 @@ build_ellipsoid <- function(range,
 
   if(!is.numeric(cl) || length(cl) != 1L || !is.finite(cl) || cl <= 0 || cl >= 1){
     stop("cl must be a single finite number strictly between 0 and 1.")
-  }
-
-  if(!is.null(cov_matrix)){
-
-    if(is.data.frame(cov_matrix)){
-      cov_matrix <- as.matrix(cov_matrix)
-    }
-
-    if(!is.matrix(cov_matrix)){
-      stop("cov_matrix must be a matrix (variance–covariance matrix).")
-    }
-
-    if(is.null(colnames(cov_matrix)) || is.null(rownames(cov_matrix))){
-      stop("cov_matrix must have row and column names matching range column names.")
-    }
-
-    if(!all(colnames(cov_matrix) == var_names) ||
-       !all(rownames(cov_matrix) == var_names)){
-      stop("cov_matrix row/column names must match range column names (same order).")
-    }
   }
 
   # Range parse --------------------------------------------------------------
@@ -146,91 +125,21 @@ build_ellipsoid <- function(range,
     stop("Derived sd_vec must be positive for all variables (check mins/maxs).")
   }
 
-  dimensions <- length(mu_vec)
-
   # Covariance handling ------------------------------------------------------
 
-  if(is.null(cov_matrix)){
 
-    verbose_message("Step: computing covariance matrix...\n")
+  verbose_message("Step: computing covariance matrix...\n")
 
-    cov_matrix <- diag(sd_vec^2, nrow = dimensions, ncol = dimensions)
-    rownames(cov_matrix) <- var_names
-    colnames(cov_matrix) <- var_names
+  cov_matrix <- diag(sd_vec^2, nrow = length(mu_vec), ncol = length(mu_vec))
+  rownames(cov_matrix) <- var_names
+  colnames(cov_matrix) <- var_names
 
-  }else{
-
-    verbose_message("Step: Checking covariance matrix...\n")
-
-    if(any(dim(cov_matrix) != c(dimensions, dimensions))){
-      stop("cov_matrix must be a square matrix with dimensions x dimensions.")
-    }
-
-    if(any(!is.finite(cov_matrix))){
-      stop("cov_matrix contains non-finite values.")
-    }
-
-    if(!isTRUE(all.equal(cov_matrix, t(cov_matrix), tolerance = 1e-6))){
-      stop("cov_matrix must be symmetric. You can use (cov_matrix + t(cov_matrix))/2 to make symmetric.")
-    }
-  }
-
-  chol_Sigma <- tryCatch(chol(cov_matrix), error = function(e) NULL)
-
-  if(is.null(chol_Sigma)){
-    stop("cov_matrix must be symmetric positive definite (SPD).")
-  }
-
-  verbose_message("Step: computing safe covariance limits... see out$cov_limits for options\n")
-
-  cov_limits <- covariance_limits(cov_matrix)
-  Sigma_inv <- chol2inv(chol_Sigma)
-
-  # Ellipsoid metrics --------------------------------------------------------
-
-  verbose_message("Step: computing ellipsoid metrics...\n")
-
-  chi2_cutoff <- stats::qchisq(cl, df = dimensions)
-
-  eig <- eigen(cov_matrix, symmetric = TRUE)
-
-  vals <- pmax(eig$values, 0)
-  semi_axes_lengths <- sqrt(vals * chi2_cutoff)
-
-  axis_points <- lapply(seq_len(dimensions), function(i){
-    list(
-      neg = mu_vec - semi_axes_lengths[i] * eig$vectors[, i],
-      pos = mu_vec + semi_axes_lengths[i] * eig$vectors[, i]
-    )
-  })
-
-  volume <- ellipsoid_volume(
-    n_dimensions = dimensions,
-    semi_axes_lengths = semi_axes_lengths
-  )
 
   verbose_message("Done: created ellipsoidal niche.\n")
 
-  out <- list(
-    dimensions = dimensions,
-    var_names = var_names,
-    centroid = mu_vec,
-    cov_matrix = cov_matrix,
-    Sigma_inv = Sigma_inv,
-    chol_Sigma = chol_Sigma,
-    eigen = list(vectors = eig$vectors, values = eig$values),
-    cl = cl,
-    chi2_cutoff = chi2_cutoff,
-    truncation_level = cl,
-    axes_sd = sd_vec,
-    semi_axes_lengths = as.numeric(semi_axes_lengths),
-    axis_points = axis_points,
-    volume = volume,
-    cov_limits = cov_limits
-  )
-
-  class(out) <- "nicheR_ellipsoid"
-
+  out <- ellipsoid_calculator(cov_matrix = cov_matrix,
+                              centroid = mu_vec, cl = cl,
+                              verbose = verbose)
   out
 }
 
@@ -277,15 +186,15 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...){
       paste(round(x$semi_axes_lengths, digits), collapse = ", "),
       "\n", sep = "")
 
-  cat("\nPrincipal axis endpoints (neg → pos):\n")
+  cat("\nPrincipal axis endpoints (start → end):\n")
 
   for(i in seq_len(x$dimensions)){
     cat(" Axis", i, ":\n", sep = "")
-    cat("   neg: ",
-        paste(round(x$axis_points[[i]]$neg, digits), collapse = ", "),
+    cat("   start: ",
+        paste(round(x$axis_points[[i]]$start, digits), collapse = ", "),
         "\n", sep = "")
-    cat("   pos: ",
-        paste(round(x$axis_points[[i]]$pos, digits), collapse = ", "),
+    cat("   end: ",
+        paste(round(x$axis_points[[i]]$end, digits), collapse = ", "),
         "\n", sep = "")
   }
 

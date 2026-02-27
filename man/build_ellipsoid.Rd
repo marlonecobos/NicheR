@@ -4,7 +4,7 @@
 \alias{build_ellipsoid}
 \title{Build a probabilistic ellipsoidal niche from ranges}
 \usage{
-build_ellipsoid(range, cl = 0.99, cov_matrix = NULL, verbose = TRUE)
+build_ellipsoid(range, cl = 0.99, verbose = TRUE)
 }
 \arguments{
 \item{range}{A 2 row \code{matrix} or \code{data.frame} of bounds, with variables as
@@ -14,11 +14,11 @@ provided and are stored as \code{var_names}.}
 \item{cl}{Numeric confidence level in (0, 1). Used to set the chi square cutoff
 that determines the ellipsoid contour.}
 
+\item{verbose}{Logical; if \code{TRUE}, print brief progress messages.}
+
 \item{cov_matrix}{Optional variance covariance matrix \eqn{\Sigma} for the
 ellipsoid (must be \code{dimensions x dimensions}, symmetric positive definite).
 If provided, it is used directly (no rescaling from \code{range}).}
-
-\item{verbose}{Logical; if \code{TRUE}, print brief progress messages.}
 }
 \value{
 An object of class \code{"nicheR_ellipsoid"} with components:

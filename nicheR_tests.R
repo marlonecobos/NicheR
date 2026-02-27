@@ -1,6 +1,6 @@
 # Title: nicheR tester functions
 # Authors: Mariana Castaneda-Guzman
-# Date Last Updated: 2/11/2026
+# Date Last Updated: 2/27/2026
 # Description: Tester workflows for function in the nicheR package
 
 
@@ -362,59 +362,34 @@ pred_t30 <- predict(ell_t30,
                     suitability_truncated = TRUE,
                     mahalanobis_truncated = TRUE)
 
-
-# Test B: check with environmental background and compare
-pred_t30B <- predict(ell_t30,
-                    newdata = bios_t30,
-                    suitability_truncated = TRUE,
-                    mahalanobis_trucated = FALSE,
-                    include_mahalanobis = FALSE,
-                    include_suitability = FALSE)
-
-pred_t30B[pred_t30B == 0] <- NA
-
-bios_t30B <- crop(mask(bios_t30, pred_t30B), pred_t30B)
-plot(bios_t30B)
-
-bios_t30B_df <- as.data.frame(bios_t30B)
-head(bios_t30B_df)
-
-plot_nicheR(list(ell_t30),
-            dims = c(1, 2),
-            main = "Sampled occurrences in E space",
-            occ_list = list(bios_t30B_df),
-            occ_col = c("grey"))
-
 # Center
 occ_t30C <- sample_data(n_occ = 200,
-                       suitable_env = pred_t30,
+                       prediction = pred_t30,
+                       prediction_layer = "Mahalanobis_trunc",
                        sampling = "center",
-                       method = "probability",
                        seed = 42)
 # Edge
 occ_t30D <- sample_data(n_occ = 200,
-                        suitable_env = pred_t30,
+                        prediction = pred_t30,
                         sampling = "edge",
-                        method = "probability",
+                        prediction_layer = "Mahalanobis_trunc",
                         seed = 42)
 # Random
 occ_t30E <- sample_data(n_occ = 200,
-                        suitable_env = pred_t30,
+                        prediction = pred_t30,
                         sampling = "random",
-                        method = "probability",
+                        prediction_layer = "Mahalanobis_trunc",
                         seed = 42)
 
-# TO DO: allow for only e-space return, not only g-space and return with E-space. Whatever prediction came with, ends up with, and preds.
 # TO DO: make it is own class object, better for plotting.
 # TO DO: add virtual data from function from the ellipsoids.
 # TO DO: prediction = NULL, if null make virtual ell data
 
-attributes(occ_t30E)
 head(occ_t30E)
 
-occ_t30C_bios <- terra::extract(bios_t30, occ_t30C)
-occ_t30D_bios <- terra::extract(bios_t30, occ_t30D)
-occ_t30E_bios <- terra::extract(bios_t30, occ_t30E)
+occ_t30C_bios <- terra::extract(bios_t30, occ_t30C[, c("x", "y")])
+occ_t30D_bios <- terra::extract(bios_t30, occ_t30D[, c("x", "y")])
+occ_t30E_bios <- terra::extract(bios_t30, occ_t30E[, c("x", "y")])
 
 plot_nicheR(list(ell_t30),
             dims = c(1, 2),
@@ -449,24 +424,6 @@ occ_t32 <- sample_data(n_occ = 50,
                        seed = 42)
 
 
-# Test 33: Outside sampling of the niche
-occ_t33 <- sample_data(n_occ = 10000,
-                        suitable_env = pred_t30$suitability,
-                        sampling = "center",
-                        method = "probability",
-                        seed = 42)
-
-occ_t33_bios <- terra::extract(bios_t30, occ_t33)
-
-plot_nicheR(list(ell_t30),
-            dims = c(1, 2),
-            main = "Sampled occurrences Center",
-            occ_list = occ_t33_bios,
-            occ_col = "green4")
-
-
-
-
 # apply_bias() tests -------------------------------------------------------
 
 # Test 34: Basic run, single bias layer (terra example raster)
@@ -474,18 +431,22 @@ library(terra)
 
 elev_t34 <- terra::rast(system.file("ex/elev.tif", package = "terra"))
 names(elev_t34) <- "elev"
+plot(elev_t34)
 
-bias_t34 <- apply_bias(bias_surface = elev_t34,
-                       out_bias = "both",
-                       truncated = TRUE,
-                       verbose = TRUE)
+bias_t34 <- prepare_bias(bias_surface = pred_t30[[1]],
+                         effect_direction = "direct")
 
 bias_t34$combination_formula
-bias_t34$pooled_bias_sp
-bias_t34$directional_bias_stack
+bias_t34$composite_surface
 
-plot(bias_t34$pooled_bias_sp, main = "T34 pooled bias (elev)")
+plot(bias_t34$composite_surface, main = "T34 pooled bias (elev)")
 
+
+bias_t34_a <- apply_bias(bias_t34,
+                         suitable_environment = pred_t30[[2]])
+
+plot(bias_t34_a$suitability_biased)
+plot(pred_t30[[2]])
 
 # Test 35: Two layers, invert one (bias_dir = c(1, -1))
 slope_t35 <- terra::terrain(elev_t34, v = "slope", unit = "degrees")
@@ -565,14 +526,21 @@ rng <- data.frame(bio1 = c(-10, 10),
                   bio12 = c(500, 2000))
 
 ell <- build_ellipsoid(range = rng)
+
 ell <- update_ellipsoid_covariance(object = ell,
                                    covariance = c("bio1-bio12" = 200))
 
+plot_ellipsoid(object = ell)
 
+plot_ellipsoid(object = ell, background = as.data.frame(bios, xy = F))
 
 plot_ellipsoid(object = ell, background = as.data.frame(bios, xy = F),
                xlab = "temp", ylab = "pred",
                main = "This is our elliposid",
                las = 1, xlim = c(-20, 20),
                sample = 10000, pch = ".")
+
+
+
+
 

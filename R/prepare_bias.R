@@ -1,81 +1,80 @@
-#' Prepare and Combine Sampling Bias Surfaces
+#' Prepare Sampling Bias Surfaces
 #'
-#' Builds standardized, optionally directional, and pooled sampling bias
-#' surfaces from one or more user-provided rasters. Bias layers are aligned to
-#' a common template based on the `pred` layer, scaled to \eqn{[0, 1]},
-#' optionally inverted, and combined multiplicatively to produce a pooled bias surface.
+#' Standardizes, optionally inverts, and combines one or more sampling bias
+#' rasters into a composite bias surface aligned to a common template.
 #'
 #' @details
-#' The function performs the following steps:
+#' This function:
 #' \enumerate{
-#'   \item Split \code{bias_surface} into single-layer rasters.
-#'   \item Prepare the template raster: If \code{pred} is provided, it subsets
-#'   to \code{suitability} and/or \code{suitability_trunc}, applies a logarithmic
-#'   transformation, and sets \code{-Inf} values to \code{NA}. If both layers
-#'   are present, the first layer acts as the baseline template for scaling.
-#'   \item Optionally crop each bias layer to the baseline extent
-#'   (\code{truncated = TRUE}).
-#'   \item Resample each layer to match the template grid.
-#'   \item Standardize each layer to \eqn{[0, 1]} using min and max values.
-#'   \item Optionally invert layers when \code{bias_dir = -1}.
-#'   \item Stack standardized directional layers.
-#'   \item Optionally pool layers by multiplication.
-#'   \item Mask the final pooled and directional outputs by *each* available
-#'   prediction layer, returning aligned bias surfaces for both
-#'   \code{suitability} and \code{suitability_trunc} if provided.
+#'   \item Splits \code{bias_surface} into single-layer rasters.
+#'   \item Determines a template raster:
+#'   \itemize{
+#'     \item If \code{template_surface} is provided, each bias layer is cropped
+#'     and masked to its extent and later resampled to its grid.
+#'     \item If \code{template_surface} is \code{NULL}, the first bias layer is
+#'     used as the template grid.
+#'   }
+#'   \item Resamples bias layers to match the template grid when needed
+#'   (\code{terra::compareGeom()} + \code{terra::resample(method = "near")}).
+#'   \item Standardizes each layer to \eqn{[0, 1]} using min-max scaling.
+#'   \item Applies the direction of effect:
+#'   \itemize{
+#'     \item \code{"direct"} uses standardized values as-is.
+#'     \item \code{"inverse"} inverts standardized values via \eqn{1 - x}.
+#'   }
+#'   \item Optionally builds a composite bias surface:
+#'   \itemize{
+#'     \item Where multiple layers overlap, values are combined multiplicatively.
+#'     \item Where only one layer is defined, that layer's value is retained.
+#'     \item Where all layers are \code{NA}, the composite is \code{NA}.
+#'   }
 #' }
-#'
-#' Cropping and masking are done using \code{terra::crop()} and
-#' \code{terra::mask()}. Resampling uses nearest-neighbor interpolation
-#' (\code{method = "near"}) to preserve sharp edges common in bias layers.
 #'
 #' @param bias_surface A \code{terra::SpatRaster} or a list of
 #'   \code{terra::SpatRaster} objects. Multi-layer rasters are split internally
 #'   into single-layer bias surfaces.
-#' @param bias_dir Numeric vector of \code{1} (use layer as-is) or \code{-1}
-#'   (invert via \eqn{1 - x}). A single value is recycled to match the number of
-#'   bias layers.
-#' @param pred Optional. A \code{terra::SpatRaster} output from a prediction model
-#'   (e.g., ellipsoid suitability). Must contain 'suitability' and/or
-#'   'suitability_trunc' layers. Used as a mask/template. A log transformation
-#'   is applied, and \code{-Inf} values are converted to \code{NA} to properly
-#'   exclude truncated regions.
-#' @param out_bias Character. Controls returned outputs:
-#'   \itemize{
-#'     \item \code{"both"} – return both (default)
-#'     \item \code{"biased"} – pooled bias surface only
-#'     \item \code{"standardized"} – directional standardized layers only
-#'   }
+#' @param effect_direction Character vector specifying how each bias layer
+#'   contributes to sampling probability. Options are \code{"direct"} or
+#'   \code{"inverse"}. A single value is recycled to match the number of bias
+#'   layers.
+#' @param template_surface Optional. A \code{terra::SpatRaster} used as a spatial
+#'   template. If provided, bias layers are cropped and masked to its extent and
+#'   resampled to its grid. If \code{NULL}, the first bias layer is used as the
+#'   template grid.
+#' @param include_composite Logical. If \code{TRUE} (default), returns a
+#'   composite bias surface.
+#' @param include_processed_layers Logical. If \code{TRUE}, also returns the
+#'   processed (standardized and directional) bias layers as a multi-layer
+#'   \code{SpatRaster}.
 #' @param verbose Logical. If \code{TRUE}, prints progress messages.
-#' @param truncated Logical. If \code{TRUE} (default), each bias layer is cropped
-#'   to the template extent before resampling. If \code{FALSE}, layers are only
-#'   resampled and masked.
 #'
 #' @return
 #' A list of class \code{"nicheR_bias_surface"} with:
 #' \itemize{
-#'   \item \code{pooled_bias} – pooled bias raster (if requested)
-#'   \item \code{directional_bias} – stack of standardized and directional
-#'   layers (if requested)
-#'   \item \code{combination_formula} – character string showing how layers were
-#'   combined (e.g., \code{"roads * (1-pop_density) * protected"})
+#'   \item \code{composite_surface} A single-layer composite bias surface
+#'   (only if \code{include_composite = TRUE}).
+#'   \item \code{processed_layers} A multi-layer raster of standardized and
+#'   directional bias layers (returned if \code{include_processed_layers = TRUE},
+#'   or if \code{include_composite = FALSE}).
+#'   \item \code{combination_formula} Character string describing how layers
+#'   were combined (e.g., \code{"roads * (1-pop_density) * protected"}).
 #' }
 #'
-#' @seealso \code{\link{sample_data}}
+#' @seealso \code{\link{apply_bias}}
 #'
 #' @export
 prepare_bias <- function(bias_surface,
-                         bias_dir = 1,
-                         pred = NULL,
-                         out_bias = c("both", "biased", "standardized"),
-                         verbose = TRUE,
-                         truncated = TRUE){
+                         effect_direction = c("direct", "inverse"),
+                         template_layer = NULL,
+                         include_composite = TRUE,
+                         include_processed_layers = FALSE,
+                         mask_na = TRUE,
+                         verbose = TRUE){
 
   verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
 
   gc()
 
-  out_bias <- match.arg(out_bias)
 
   verbose_message("Starting: prepare_bias()\n")
 
@@ -85,14 +84,11 @@ prepare_bias <- function(bias_surface,
     stop("'bias_surface' must be a SpatRaster or list of SpatRasters.")
   }
 
-  if(!is.logical(truncated) || length(truncated) != 1L){
-    stop("'truncated' must be TRUE or FALSE.")
-  }
-
   # Normalize bias_surface → list of single-layer rasters
   if(inherits(bias_surface, "SpatRaster")){
     verbose_message("Step: splitting SpatRaster into layers...\n")
     bias_list <- terra::as.list(bias_surface)
+
   }else if(is.list(bias_surface) &&
            all(vapply(bias_surface, inherits, logical(1), "SpatRaster"))){
     verbose_message("Step: flattening list of SpatRasters...\n")
@@ -107,73 +103,82 @@ prepare_bias <- function(bias_surface,
 
   # 1. Determine template raster ------------------------------------------
 
-  if(!is.null(pred) && inherits(pred, "SpatRaster")){
-
-    verbose_message("Step: Subsetting 'pred' layer...\n")
-
-    req_layers <- c("suitability", "suitability_trunc")
-    available_layers <- req_layers[req_layers %in% names(pred)]
-
-    if(length(available_layers) > 0){
-      pred <- pred[[available_layers]]
-    } else {
-      stop("The 'pred' object must contain at least one of the following layers: 'suitability' or 'suitability_trunc'.")
-    }
-
-    verbose_message("Step: Processing 'pred' layer (log transformation & excluding -Inf)...\n")
-
-    mask_ras <- log(pred)
-    mask_ras <- terra::ifel(is.infinite(mask_ras) | is.nan(mask_ras), NA, mask_ras)
-
-    # Use the first layer (usually suitability) to act as a stable single-layer
-    # geometry template inside the standardizing loop
-    template_ras <- mask_ras[[1]]
+  if(!is.null(template_surface) && inherits(template_surface, "SpatRaster")){
+    verbose_message("Step: using user provided template surface layer to crop and mask to extent, will also be use to resample if necessary...\n")
 
   }else{
-    mask_ras <- bias_list[[1]]
-    template_ras <- mask_ras
-    verbose_message("Step: Using first bias layer as mask/template...\n")
+    verbose_message("Step: Using first layer in bias_surface as template surface layer to resample if necessary...\n")
+    template_surface <- bias_list[[1]]
   }
 
-  # 2. Prepare bias_dir ----------------------------------------------------
+  # 2. Prepare effect direction ------------------------------------------
 
-  if(length(bias_dir) == 1){
-    bias_dir <- rep(bias_dir, length(bias_list))
+  effect_direction <- match.arg(effect_direction,
+                                choices = c("direct", "inverse"),
+                                several.ok = TRUE)
+
+  if(length(effect_direction) == 1L){
+    effect_direction <- rep(effect_direction, length(bias_list))
   }
 
-  if(!all(bias_dir %in% c(1, -1))){
-    stop("bias_dir must contain only 1 or -1.")
+  if(length(effect_direction) != length(bias_list)){
+    stop("'effect_direction' must be length 1 or the same length as the number of bias layers.")
   }
+
+  if(!all(effect_direction %in% c("direct", "inverse"))){
+    stop("'effect_direction' must contain only 'direct' or 'inverse'.")
+  }
+
+  # Output logic checks ------------------------------------------------------
+
+  if(!is.logical(include_composite) || length(include_composite) != 1L){
+    stop("'include_composite' must be TRUE or FALSE.")
+  }
+
+  if(!is.logical(include_processed_layers) || length(include_processed_layers) != 1L){
+    stop("'include_processed_layers' must be TRUE or FALSE.")
+  }
+
+  if(!include_composite && !include_processed_layers){
+    include_composite <- TRUE
+
+    if(isTRUE(verbose)){
+      verbose_message("Step: both 'include_composite' and 'include_processed_layers' were FALSE. ", "Defaulting to include_composite = TRUE...\n")
+    }
+  }
+
+  # 3. Process layers ------------------------------------------------------
+
+  verbose_message("Step: standarizing (min/max) and applying direction of effect to ", length(bias_list), " bias layer/s...\n")
 
   directional_bias_list <- vector("list", length(bias_list))
   formula_entries <- character(length(bias_list))
 
-  verbose_message("Step: processing ", length(bias_list), " bias layers...\n")
-
-  # 3. Process layers ------------------------------------------------------
 
   for(i in seq_along(bias_list)){
 
     raw <- bias_list[[i]]
-    this_dir <- bias_dir[i]
+    this_dir <- effect_direction[i]
 
     nm <- names(raw)
-    nm <- if(is.null(nm) || nm == "") paste0("bias_", i) else nm[1]
-
-    # Crop before resampling
-    if(isTRUE(truncated)){
-      raw <- terra::crop(raw, template_ras, mask = TRUE)
-    }
+    nm <- if(is.null(nm) || nm == "" || nm == "lyr.1") paste0("bias_", i) else nm[1]
 
     # Resample if needed
-    needs_resample <- (!identical(terra::res(raw), terra::res(template_ras)) ||
-                         !identical(terra::ext(raw), terra::ext(template_ras)))
+    same_grid <- terra::compareGeom(raw,
+                                    template_surface,
+                                    stopOnError = FALSE)
 
-    aligned <- if(needs_resample){
-      terra::resample(raw, template_ras, method = "near")
+    if(!isTRUE(same_grid)){
+      verbose_message("Step: resampling bias layer ", i, " to match template surface...\n")
+      aligned <- terra::resample(raw,
+                                 template_surface,
+                                 method = "near")
     }else{
-      raw
+      aligned <- raw
     }
+
+    aligned <- terra::crop(aligned,
+                           template_surface, mask = TRUE)
 
     # Standardize
     mm <- terra::minmax(aligned)
@@ -191,77 +196,74 @@ prepare_bias <- function(bias_surface,
     }
 
     # Apply direction
-    directional <- if(this_dir == -1){
+    resampled_flag <- !isTRUE(same_grid)
+
+    resample_tag <- if(resampled_flag) "_resampled" else ""
+
+    if(this_dir == "inverse"){
       formula_entries[i] <- paste0("(1-", nm, ")")
-      1 - scaled
+      directional_bias_list[[i]] <- 1 - scaled
+      names(directional_bias_list[[i]]) <- paste0("standarized_", nm, "_inverse", resample_tag)
     }else{
       formula_entries[i] <- nm
-      scaled
+      directional_bias_list[[i]] <- scaled
+      names(directional_bias_list[[i]]) <- paste0("standarized_", nm, "_direct", resample_tag)
     }
-
-    names(directional) <- nm
-    directional_bias_list[[i]] <- directional
   }
 
   # Stack layers ----------------------------------------------------------
 
-  directional_bias <- if(length(directional_bias_list) == 1){
+  directional_bias_stack <- if(length(directional_bias_list) == 1L){
     directional_bias_list[[1]]
   }else{
     do.call(c, directional_bias_list)
   }
 
-  # 4. Combine layers & Final Multi-Masking --------------------------------
+  # 4. Combine layers ----------------------------------------------------
 
-  res <- list()
+  out_rast <- list()
 
-  if(out_bias %in% c("biased", "both")){
+  if(isTRUE(include_composite)){
 
-    verbose_message("Step: pooling directional layers...\n")
+    verbose_message("Step: building standarized (min/max) directional composite bias surface...\n")
 
-    pooled_base <- if(terra::nlyr(directional_bias) > 1){
-      terra::app(directional_bias, fun = function(x){
-        if(all(is.na(x))) NA_real_ else prod(x, na.rm = TRUE)
-      })
+    if(terra::nlyr(directional_bias_stack) > 1){
+      # Bias layers are combined multiplicatively where overlapping; in areas
+      # where only one layer is defined, that layer’s value is retained.
+      composite_raster <- terra::app(directional_bias_stack,
+                                     fun = function(x){
+                                       if(all(is.na(x))){
+                                         NA_real_
+                                       }else if(sum(!is.na(x)) == 1){
+                                         x[!is.na(x)]
+                                       }else{
+                                         prod(x)
+                                       }
+                                     })
+
     }else{
-      directional_bias
+      composite_raster <- directional_bias_stack
     }
 
-    # Mask the pooled base by EACH available prediction layer
-    pb_list <- lapply(1:terra::nlyr(mask_ras), function(j){
-      lyr <- terra::mask(pooled_base, mask_ras[[j]])
-      suffix <- names(mask_ras)[j]
-      names(lyr) <- if(!is.null(pred)) paste0("pooled_bias_", suffix) else "pooled_bias"
-      lyr
-    })
+    names(composite_raster) <- "standarized_composite_bias_surface"
+    out_rast$composite_surface <- composite_raster
 
-    res$pooled_bias <- do.call(c, pb_list)
+    if(isTRUE(include_processed_layers)){
+      out_rast$processed_layers <- directional_bias_stack
+    }
+
+    out_rast$combination_formula <- paste(formula_entries, collapse = " * ")
+
+  }else{
+    out_rast$processed_layers <- directional_bias_stack
   }
 
-  if(out_bias %in% c("standardized", "both")){
-
-    # Mask directional base by EACH available prediction layer
-    db_list <- lapply(1:terra::nlyr(mask_ras), function(j){
-      lyrs <- terra::mask(directional_bias, mask_ras[[j]])
-      suffix <- names(mask_ras)[j]
-      if(!is.null(pred)){
-        names(lyrs) <- paste0(names(directional_bias), "_", suffix)
-      }
-      lyrs
-    })
-
-    res$directional_bias <- do.call(c, db_list)
-  }
 
   # 5. Build result --------------------------------------------------------
-
-  res$combination_formula <- paste(formula_entries, collapse = " * ")
-
-  class(res) <- "nicheR_bias_surface"
 
   verbose_message("Done: prepare_bias()\n")
 
   gc()
 
-  res
+  out_rast
 }

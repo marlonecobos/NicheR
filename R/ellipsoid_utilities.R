@@ -115,48 +115,10 @@ update_ellipsoid_covariance <- function(object,
 
   up <- update_covariance(object$cov_matrix, covariance = covariance, tol = tol)
 
-  # Assuming new matrix is symmetrical
-  # or can check with: Sigma_new <- (up$updated_matrix + t(up$updated_matrix)) / 2
-  Sigma_new <- up$updated_matrix
-
-  verbose_message("Step: recomputing ellipsoid metrics...\n")
-
-  # SPD + inverse
-  chol_Sigma <- tryCatch(chol(Sigma_new), error = function(e) NULL)
-  if (is.null(chol_Sigma)) stop("Updated covariance matrix is not SPD.")
-  Sigma_inv <- chol2inv(chol_Sigma)
-
-  # Cutoff
-  chi2_cutoff <- stats::qchisq(object$cl, df = object$dimensions)
-
-  # Eigen + axes
-  eig <- eigen(Sigma_new, symmetric = TRUE)
-  vals <- pmax(eig$values, 0)
-  semi_axes_lengths <- sqrt(vals * chi2_cutoff)
-
-  axis_points <- lapply(seq_len(object$dimensions), function(i) {
-    list(
-      neg = object$mu_vec - semi_axes_lengths[i] * eig$vectors[, i],
-      pos = object$mu_vec + semi_axes_lengths[i] * eig$vectors[, i]
-    )
-  })
-
-  volume <- ellipsoid_volume(
-    n_dimensions = object$dimensions,
-    semi_axes_lengths = semi_axes_lengths
-  )
-
-  verbose_message("Done: updated ellipsoidal niche boundary. For remianing limits see out$cov_limits_remaining\n")
-
-  # update object
-  object$cov_matrix <- Sigma_new
-  object$chol_Sigma <- chol_Sigma
-  object$Sigma_inv <- Sigma_inv
-  object$eigen <- list(vectors = eig$vectors, values = eig$values)
-  object$chi2_cutoff <- chi2_cutoff
-  object$semi_axes_lengths <- as.numeric(semi_axes_lengths)
-  object$axis_points <- axis_points
-  object$volume <- volume
+  object <- ellipsoid_calculator(cov_matrix = up$updated_matrix,
+                                 centroid = object$centroid,
+                                 cl = object$cl,
+                                 verbose = verbose)
 
   # new fields
   object$cov_limits_remaining <- up$remaining_limits

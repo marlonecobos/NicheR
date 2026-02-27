@@ -2,15 +2,16 @@
 % Please edit documentation in R/prepare_bias.R
 \name{prepare_bias}
 \alias{prepare_bias}
-\title{Prepare and Combine Sampling Bias Surfaces}
+\title{Prepare Sampling Bias Surfaces}
 \usage{
 prepare_bias(
   bias_surface,
-  bias_dir = 1,
-  pred = NULL,
-  out_bias = c("both", "biased", "standardized"),
-  verbose = TRUE,
-  truncated = TRUE
+  effect_direction = c("direct", "inverse"),
+  template_layer = NULL,
+  include_composite = TRUE,
+  include_processed_layers = FALSE,
+  mask_na = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -18,69 +19,68 @@ prepare_bias(
 \code{terra::SpatRaster} objects. Multi-layer rasters are split internally
 into single-layer bias surfaces.}
 
-\item{bias_dir}{Numeric vector of \code{1} (use layer as-is) or \code{-1}
-(invert via \eqn{1 - x}). A single value is recycled to match the number of
-bias layers.}
+\item{effect_direction}{Character vector specifying how each bias layer
+contributes to sampling probability. Options are \code{"direct"} or
+\code{"inverse"}. A single value is recycled to match the number of bias
+layers.}
 
-\item{pred}{Optional. A \code{terra::SpatRaster} output from a prediction model
-(e.g., ellipsoid suitability). Must contain 'suitability' and/or
-'suitability_trunc' layers. Used as a mask/template. A log transformation
-is applied, and \code{-Inf} values are converted to \code{NA} to properly
-exclude truncated regions.}
+\item{include_composite}{Logical. If \code{TRUE} (default), returns a
+composite bias surface.}
 
-\item{out_bias}{Character. Controls returned outputs:
-\itemize{
-  \item \code{"both"} – return both (default)
-  \item \code{"biased"} – pooled bias surface only
-  \item \code{"standardized"} – directional standardized layers only
-}}
+\item{include_processed_layers}{Logical. If \code{TRUE}, also returns the
+processed (standardized and directional) bias layers as a multi-layer
+\code{SpatRaster}.}
 
 \item{verbose}{Logical. If \code{TRUE}, prints progress messages.}
 
-\item{truncated}{Logical. If \code{TRUE} (default), each bias layer is cropped
-to the template extent before resampling. If \code{FALSE}, layers are only
-resampled and masked.}
+\item{template_surface}{Optional. A \code{terra::SpatRaster} used as a spatial
+template. If provided, bias layers are cropped and masked to its extent and
+resampled to its grid. If \code{NULL}, the first bias layer is used as the
+template grid.}
 }
 \value{
 A list of class \code{"nicheR_bias_surface"} with:
 \itemize{
-  \item \code{pooled_bias} – pooled bias raster (if requested)
-  \item \code{directional_bias} – stack of standardized and directional
-  layers (if requested)
-  \item \code{combination_formula} – character string showing how layers were
-  combined (e.g., \code{"roads * (1-pop_density) * protected"})
+  \item \code{composite_surface} A single-layer composite bias surface
+  (only if \code{include_composite = TRUE}).
+  \item \code{processed_layers} A multi-layer raster of standardized and
+  directional bias layers (returned if \code{include_processed_layers = TRUE},
+  or if \code{include_composite = FALSE}).
+  \item \code{combination_formula} Character string describing how layers
+  were combined (e.g., \code{"roads * (1-pop_density) * protected"}).
 }
 }
 \description{
-Builds standardized, optionally directional, and pooled sampling bias
-surfaces from one or more user-provided rasters. Bias layers are aligned to
-a common template based on the `pred` layer, scaled to \eqn{[0, 1]},
-optionally inverted, and combined multiplicatively to produce a pooled bias surface.
+Standardizes, optionally inverts, and combines one or more sampling bias
+rasters into a composite bias surface aligned to a common template.
 }
 \details{
-The function performs the following steps:
+This function:
 \enumerate{
-  \item Split \code{bias_surface} into single-layer rasters.
-  \item Prepare the template raster: If \code{pred} is provided, it subsets
-  to \code{suitability} and/or \code{suitability_trunc}, applies a logarithmic
-  transformation, and sets \code{-Inf} values to \code{NA}. If both layers
-  are present, the first layer acts as the baseline template for scaling.
-  \item Optionally crop each bias layer to the baseline extent
-  (\code{truncated = TRUE}).
-  \item Resample each layer to match the template grid.
-  \item Standardize each layer to \eqn{[0, 1]} using min and max values.
-  \item Optionally invert layers when \code{bias_dir = -1}.
-  \item Stack standardized directional layers.
-  \item Optionally pool layers by multiplication.
-  \item Mask the final pooled and directional outputs by *each* available
-  prediction layer, returning aligned bias surfaces for both
-  \code{suitability} and \code{suitability_trunc} if provided.
+  \item Splits \code{bias_surface} into single-layer rasters.
+  \item Determines a template raster:
+  \itemize{
+    \item If \code{template_surface} is provided, each bias layer is cropped
+    and masked to its extent and later resampled to its grid.
+    \item If \code{template_surface} is \code{NULL}, the first bias layer is
+    used as the template grid.
+  }
+  \item Resamples bias layers to match the template grid when needed
+  (\code{terra::compareGeom()} + \code{terra::resample(method = "near")}).
+  \item Standardizes each layer to \eqn{[0, 1]} using min-max scaling.
+  \item Applies the direction of effect:
+  \itemize{
+    \item \code{"direct"} uses standardized values as-is.
+    \item \code{"inverse"} inverts standardized values via \eqn{1 - x}.
+  }
+  \item Optionally builds a composite bias surface:
+  \itemize{
+    \item Where multiple layers overlap, values are combined multiplicatively.
+    \item Where only one layer is defined, that layer's value is retained.
+    \item Where all layers are \code{NA}, the composite is \code{NA}.
+  }
 }
-
-Cropping and masking are done using \code{terra::crop()} and
-\code{terra::mask()}. Resampling uses nearest-neighbor interpolation
-(\code{method = "near"}) to preserve sharp edges common in bias layers.
 }
 \seealso{
-\code{\link{sample_data}}
+\code{\link{apply_bias}}
 }

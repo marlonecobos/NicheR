@@ -2,36 +2,64 @@
 % Please edit documentation in R/apply_bias.R
 \name{apply_bias}
 \alias{apply_bias}
-\title{Apply Sampling Bias to a Prediction Surface}
+\title{Apply Sampling Bias to Suitability Surfaces}
 \usage{
 apply_bias(
   prepared_bias,
-  pred,
-  effect_direction = 1,
-  layers = c("suitability", "suitability_trunc")
+  prediction,
+  effect_direction = "direct",
+  verbose = TRUE
 )
 }
 \arguments{
-\item{prepared_bias}{A \code{nicheR_bias_surface} object (output from
-\code{prepare_bias}) or a \code{terra::SpatRaster}.}
+\item{prepared_bias}{A single-layer \code{terra::SpatRaster} composite bias
+surface, or the list output returned by \code{\link{prepare_bias}} containing
+\code{composite_surface}.}
 
-\item{pred}{A \code{terra::SpatRaster} representing the prediction surface
-(e.g., habitat suitability).}
+\item{prediction}{A \code{terra::SpatRaster} containing one or more
+suitability layers with values in \eqn{[0, 1]}.}
 
-\item{effect_direction}{Numeric vector. \code{1} for a direct effect (\code{pred * bias}),
-or \code{-1} for an indirect/inverse effect (\code{pred * (1 - bias)}).
-Can contain multiple values (e.g., \code{c(1, -1)}). If multiple values are provided,
-the function returns layers for every combination of valid prediction layer
-and effect direction. Default is \code{1}.}
+\item{effect_direction}{Character vector indicating how bias affects each
+suitability layer. Options are \code{"direct"} or \code{"inverse"}.
+A single value is recycled to match the number of suitability layers.
+\code{"inverse"} applies \eqn{1 - bias} before multiplication.}
 
-\item{layers}{Character vector. Names of the layers in \code{pred} to which
-the bias should be applied. Defaults to \code{c("suitability", "suitability_trunc")}.}
+\item{verbose}{Logical. If \code{TRUE}, prints progress messages.}
 }
 \value{
-A \code{terra::SpatRaster} containing the bias-adjusted prediction layers.
+A named list of class \code{"nicheR_biased_suitability"} containing:
+\itemize{
+  \item One element per input suitability layer, each a single-layer
+  \code{terra::SpatRaster} of biased suitability (cropped and masked to the
+  suitability domain). Elements are named \code{"<layer>_biased"} and the raster
+  layer name includes the applied direction (e.g., \code{"<layer>_biased_direct"}).
+  \item \code{combination_formula} Character vector (length = number of
+  suitability layers) describing the operation applied to each layer
+  (e.g., \code{"suitability * bias"} or \code{"suitability * (1-bias)"}).
+}
 }
 \description{
-Modifies a prediction surface by applying a spatial bias layer.
-The bias layer is dynamically cropped and masked to match the prediction
-layer, adjusted for effect direction, and combined multiplicatively.
+Applies a prepared composite sampling bias surface to one or more suitability
+rasters by multiplication. The bias surface is aligned to the suitability grid
+when needed, optionally inverted per suitability layer, and the result is
+cropped and masked to the suitability domain.
+}
+\details{
+This function expects a single-layer composite bias surface (from
+\code{\link{prepare_bias}}) and a \code{terra::SpatRaster} of suitability values
+(typically the raster output from a prediction step). It performs the following:
+\enumerate{
+  \item Extracts a single-layer composite bias surface from \code{prepared_bias}.
+  \item Verifies both bias and suitability values are within \eqn{[0, 1]}.
+  \item Aligns the bias surface to the suitability grid if geometries differ
+  (\code{terra::compareGeom()} + \code{terra::resample(method = "near")}).
+  \item Applies the bias to each suitability layer via multiplication.
+  \item Crops and masks each output layer to the suitability domain.
+}
+
+The output is a product of suitability and bias surfaces and therefore is not
+interpretable as a probability.
+}
+\seealso{
+\code{\link{prepare_bias}}
 }
