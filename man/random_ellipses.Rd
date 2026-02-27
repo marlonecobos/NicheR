@@ -15,8 +15,9 @@ random_ellipses(
 )
 }
 \arguments{
-\item{object}{A nicheR_ellipsoid object used as a reference ellipse, and
-containing at least \code{covariance_matrix} and \code{cl}.}
+\item{object}{A nicheR_ellipsoid object used as a reference ellipse
+(the biggest to be generated), and containing at least
+\code{covariance_matrix} and \code{cl}.}
 
 \item{background}{Matrix or Dataframe. The 2D point cloud (coordinates)
 used to select random centroids.}

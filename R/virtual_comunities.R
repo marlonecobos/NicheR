@@ -5,8 +5,9 @@
 #' cloud. Covariance matrices are built using random rotations and scaled
 #' eigenvalues restricted by user-defined limits.
 #'
-#' @param object A nicheR_ellipsoid object used as a reference ellipse, and
-#'   containing at least \code{covariance_matrix} and \code{cl}.
+#' @param object A nicheR_ellipsoid object used as a reference ellipse
+#'   (the biggest to be generated), and containing at least
+#'   \code{covariance_matrix} and \code{cl}.
 #' @param background Matrix or Dataframe. The 2D point cloud (coordinates)
 #'   used to select random centroids.
 #' @param n Integer. Number of ellipses to generate.
@@ -39,13 +40,16 @@ random_ellipses <- function(object,
     stop("Argument 'object' must be of class 'nicheR_ellipsoid'.")
   }
   if (missing(background)) stop("Argument 'background' is required.")
+  if (!identical(colnames(background), colnames(object$cov_matrix))) {
+    stop("Column names of 'background' must match those of 'object$cov_matrix'.")
+  }
   if (!is.null(seed)) set.seed(seed)
   
   # Extract reference covariance and level
   background <- as.matrix(background)
   ref_cov <- object$cov_matrix
   ref_vars <- diag(ref_cov)
-  ref_level <- object$level
+  ref_level <- object$cl
   
   # Sample centroids
   if (uniform_centroids) {
@@ -96,7 +100,7 @@ random_ellipses <- function(object,
     names(cent) <- colnames(ref_cov)
     
     ellipsoid_calculator(cov_matrix = new_varcov, centroid = cent,
-                         cl = ref_level)
+                         cl = ref_level, verbose = FALSE)
   })
   
   return(rand_ellipses)
@@ -167,7 +171,7 @@ nested_ellipses <- function(object,
     scaled_cov <- k * object$cov_matrix
     ellipsoid_calculator(cov_matrix = scaled_cov,
                          centroid = object$centroid,
-                         cl = object$cl)
+                         cl = object$cl, verbose = FALSE)
   })
   
   return(ell_list)
