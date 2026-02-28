@@ -83,7 +83,7 @@ virtual_data <- function(object,
   centroid <- object$centroid
   cov_matrix <- object$cov_matrix
   p <- length(centroid)
-    
+
   # Eigen-decomposition of the covariance matrix
   es <- object$eigen
   ev <- object$eigen$values
