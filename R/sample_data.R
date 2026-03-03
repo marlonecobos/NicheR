@@ -1,56 +1,5 @@
 #' Sample Occurrence Data from a Prediction Surface
 #'
-#' Samples \code{n_occ} occurrence locations from a prediction surface using
-#' weighted random sampling. The prediction can be provided as a
-#' \code{terra::SpatRaster} or a data.frame containing prediction values.
-#'
-#' The user must specify whether the prediction values represent
-#' \code{"suitability"} (expected range [0, 1]) or \code{"mahalanobis"}
-#' (distance or distance-squared values).
-#'
-#' @param n_occ Integer. Number of occurrences to sample.
-#' @param prediction Prediction object to sample from. Typically a
-#' \code{terra::SpatRaster} or a data.frame. This is resolved by
-#' \code{resolve_prediction()}.
-#' @param prediction_layer Optional. Layer name or index used by
-#' \code{resolve_prediction()} when \code{prediction} contains multiple layers.
-#' @param sampling Character. Sampling bias direction. One of:
-#' \itemize{
-#'   \item \code{"centroid"}: sample more from high suitability or low distance
-#'   \item \code{"edge"}: sample more from low suitability or high distance
-#'   \item \code{"random"}: sample uniformly
-#' }
-#' @param method Character. Interpretation of \code{prediction} values. One of:
-#' \itemize{
-#'   \item \code{"suitability"}: values must be in [0, 1]
-#'   \item \code{"mahalanobis"}: values treated as a distance-like measure (>= 0)
-#' }
-#' @param sampling_mask Optional. Restriction mask applied only when
-#' \code{prediction} resolves to a \code{terra::SpatRaster}. Must be a
-#' \code{terra::SpatRaster} or \code{terra::SpatVector}.
-#' @param seed Numeric. Random seed.
-#' @param verbose Logical. If \code{TRUE}, prints progress messages.
-#'
-#' @return A data.frame of sampled points.
-#' If raster input is used, includes \code{x} and \code{y} columns plus any
-#' extracted columns (excluding the internal prediction column).
-#'
-#' @details
-#' Weighting rules:
-#' \itemize{
-#'   \item \code{sampling = "random"}: uniform weights.
-#'   \item \code{method = "suitability"}:
-#'     \code{"centroid"} uses \eqn{w = pred + eps}, \code{"edge"} uses
-#'     \eqn{w = (1 - pred) + eps}.
-#'   \item \code{method = "mahalanobis"}:
-#'     \code{"centroid"} uses \eqn{w = 1 / (pred + eps)}, \code{"edge"} uses
-#'     \eqn{w = pred + eps}.
-#' }
-#'
-#' If \code{method = "suitability"} and any finite prediction values fall outside
-#' [0, 1] (with a small tolerance), the function stops with an error advising the
-#' user to switch \code{method} or rescale their prediction.
-#'
 #' @export
 sample_data <- function(n_occ,
                         prediction,
@@ -61,10 +10,8 @@ sample_data <- function(n_occ,
                         seed = 1,
                         verbose = TRUE){
 
-  verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
   gc()
-
-  verbose_message("Starting: sample_data()\n")
+  verbose_message(verbose, "Starting: sample_data()\n")
 
   sampling <- match.arg(sampling,
                         choices = c("centroid", "edge", "random"),
@@ -87,7 +34,7 @@ sample_data <- function(n_occ,
     stop("'verbose' must be TRUE or FALSE.")
   }
 
-  eps <- .Machine$double.eps
+  eps <- 1e-8
   tol <- 1e-8
 
   # Resolve prediction input --------------------------------------------------
@@ -208,7 +155,7 @@ sample_data <- function(n_occ,
   df$pred <- NULL
   out <- df[idx, , drop = FALSE]
 
-  verbose_message("Done: sampled ", nrow(out), " points.\n")
+  verbose_message(verbose, "Done: sampled ", nrow(out), " points.\n")
   gc()
 
   out

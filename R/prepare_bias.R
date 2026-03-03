@@ -71,12 +71,8 @@ prepare_bias <- function(bias_surface,
                          mask_na = TRUE,
                          verbose = TRUE){
 
-  verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
-
   gc()
-
-
-  verbose_message("Starting: prepare_bias()\n")
+  verbose_message(verbose, "Starting: prepare_bias()\n")
 
   # Basic Input checks --------------------------------------------------------
 
@@ -86,12 +82,12 @@ prepare_bias <- function(bias_surface,
 
   # Normalize bias_surface → list of single-layer rasters
   if(inherits(bias_surface, "SpatRaster")){
-    verbose_message("Step: splitting SpatRaster into layers...\n")
+    verbose_message(verbose, "Step: splitting SpatRaster into layers...\n")
     bias_list <- terra::as.list(bias_surface)
 
   }else if(is.list(bias_surface) &&
            all(vapply(bias_surface, inherits, logical(1), "SpatRaster"))){
-    verbose_message("Step: flattening list of SpatRasters...\n")
+    verbose_message(verbose, "Step: flattening list of SpatRasters...\n")
     bias_list <- unlist(lapply(bias_surface, terra::as.list), recursive = FALSE)
   }else{
     stop("'bias_surface' must be SpatRaster or list of SpatRasters.")
@@ -104,10 +100,10 @@ prepare_bias <- function(bias_surface,
   # 1. Determine template raster ------------------------------------------
 
   if(!is.null(template_surface) && inherits(template_surface, "SpatRaster")){
-    verbose_message("Step: using user provided template surface layer to crop and mask to extent, will also be use to resample if necessary...\n")
+    verbose_message(verbose, "Step: using user provided template surface layer to crop and mask to extent, will also be use to resample if necessary...\n")
 
   }else{
-    verbose_message("Step: Using first layer in bias_surface as template surface layer to resample if necessary...\n")
+    verbose_message(verbose, "Step: Using first layer in bias_surface as template surface layer to resample if necessary...\n")
     template_surface <- bias_list[[1]]
   }
 
@@ -143,13 +139,13 @@ prepare_bias <- function(bias_surface,
     include_composite <- TRUE
 
     if(isTRUE(verbose)){
-      verbose_message("Step: both 'include_composite' and 'include_processed_layers' were FALSE. ", "Defaulting to include_composite = TRUE...\n")
+      verbose_message(verbose, "Step: both 'include_composite' and 'include_processed_layers' were FALSE. ", "Defaulting to include_composite = TRUE...\n")
     }
   }
 
   # 3. Process layers ------------------------------------------------------
 
-  verbose_message("Step: standarizing (min/max) and applying direction of effect to ", length(bias_list), " bias layer/s...\n")
+  verbose_message(verbose, "Step: standarizing (min/max) and applying direction of effect to ", length(bias_list), " bias layer/s...\n")
 
   directional_bias_list <- vector("list", length(bias_list))
   formula_entries <- character(length(bias_list))
@@ -169,7 +165,7 @@ prepare_bias <- function(bias_surface,
                                     stopOnError = FALSE)
 
     if(!isTRUE(same_grid)){
-      verbose_message("Step: resampling bias layer ", i, " to match template surface...\n")
+      verbose_message(verbose, "Step: resampling bias layer ", i, " to match template surface...\n")
       aligned <- terra::resample(raw,
                                  template_surface,
                                  method = "near")
@@ -225,7 +221,7 @@ prepare_bias <- function(bias_surface,
 
   if(isTRUE(include_composite)){
 
-    verbose_message("Step: building standarized (min/max) directional composite bias surface...\n")
+    verbose_message(verbose, "Step: building standarized (min/max) directional composite bias surface...\n")
 
     if(terra::nlyr(directional_bias_stack) > 1){
       # Bias layers are combined multiplicatively where overlapping; in areas
@@ -261,7 +257,7 @@ prepare_bias <- function(bias_surface,
 
   # 5. Build result --------------------------------------------------------
 
-  verbose_message("Done: prepare_bias()\n")
+  verbose_message(verbose, "Done: prepare_bias()\n")
 
   gc()
 

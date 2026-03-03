@@ -52,11 +52,9 @@ apply_bias <- function(prepared_bias,
                        effect_direction = "direct",
                        verbose = TRUE){
 
-  verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
+
   gc()
-
-
-  verbose_message("Starting: apply_bias()\n")
+  verbose_message(verbose, "Starting: apply_bias()\n")
 
   # Basic Input checks --------------------------------------------------------
 
@@ -139,7 +137,7 @@ apply_bias <- function(prepared_bias,
   if(length(effect_direction) == 1L){
     effect_direction <- rep(effect_direction, terra::nlyr(prediction))
 
-    verbose_message("Step: applying bias with '",
+    verbose_message(verbose, "Step: applying bias with '",
                     effect_direction[1],
                     "' effect to all suitability layer(s)...\n")
 
@@ -148,11 +146,11 @@ apply_bias <- function(prepared_bias,
     effect_direction <- rep(effect_direction,
                             length.out = terra::nlyr(prediction))
 
-    verbose_message("Step: applying layer-specific bias directions with repetition: ",
+    verbose_message(verbose, "Step: applying layer-specific bias directions with repetition: ",
                     paste(effect_direction, collapse = ", "),
                     "\n")
   }else{
-    verbose_message("Step: applying layer-specific bias directions: ",
+    verbose_message(verbose, "Step: applying layer-specific bias directions: ",
                     paste(effect_direction, collapse = ", "),
                     "\n")
   }
@@ -164,7 +162,7 @@ apply_bias <- function(prepared_bias,
                                   stopOnError = FALSE)
 
   if(!isTRUE(same_grid)){
-    verbose_message("Step: resampling prepared bias to match prediction grid...\n")
+    verbose_message(verbose, "Step: resampling prepared bias to match prediction grid...\n")
     bias_rast <- terra::resample(bias_rast,
                                  prediction[[1]],
                                  method = "near")
@@ -172,7 +170,7 @@ apply_bias <- function(prepared_bias,
 
   # 6. Apply bias to each suitable layer -------------------------------------
 
-  verbose_message("Step: applying bias to", terra::nlyr(prediction), "prediction layer/s...\n")
+  verbose_message(verbose, "Step: applying bias to", terra::nlyr(prediction), "prediction layer/s...\n")
 
   out_list <- vector("list", terra::nlyr(prediction))
   formula_entries <- character(terra::nlyr(prediction))
@@ -234,7 +232,7 @@ apply_bias <- function(prepared_bias,
 
   class(out_list) <- "nicheR_biased_surface"
 
-  verbose_message("Done: apply_bias(). Note: values are no longer probabilities\n")
+  verbose_message(verbose, "Done: apply_bias(). Note: values are no longer probabilities\n")
 
   gc()
 

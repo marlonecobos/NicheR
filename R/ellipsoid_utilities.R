@@ -1,89 +1,68 @@
-#' Compute Ellipsoidal Niche Volume
+#' Print message if verbose is TRUE
 #'
-#' Calculates the geometric volume (or area in 2D) of a dimensions-dimensional ellipsoid
-#' defined by its semi-axis lengths.
+#' Internal helper used to conditionally print progress messages.
 #'
-#' For an ellipsoid with semi-axes \eqn{a_1, a_2, \ldots, a_p}, the volume is:
+#' @param verbose Logical; whether to print the message.
+#' @param ... Objects passed to \code{message()}.
 #'
+#' @return Invisibly \code{NULL}.
+#' @keywords internal
+verbose_message <- function(verbose, ...) {
+  if (isTRUE(verbose)) message(...)
+  invisible(NULL)
+}
+
+#' Compute ellipsoid hypervolume
+#'
+#' Computes the geometric volume (area in 2D, volume in 3D, hypervolume in higher
+#' dimensions) of a \eqn{p}-dimensional ellipsoid defined by its semi-axis lengths.
+#'
+#' For semi-axes \eqn{a_1, \dots, a_p}, the volume is:
 #' \deqn{
-#' V_p = V_{\text{n},dimensions} \prod_{i=1}^{dimensions} a_i
+#' V_p = \frac{\pi^{p/2}}{\Gamma(p/2 + 1)} \prod_{i=1}^{p} a_i
 #' }
+#' where \eqn{\pi^{p/2} / \Gamma(p/2 + 1)} is the volume of the unit
+#' \eqn{p}-dimensional ball.
 #'
-#' where the volume of the dimensions-dimensional n is:
+#' In probabilistic niche models, semi-axis lengths are typically derived from
+#' covariance eigenvalues and a chi-square cutoff.
 #'
-#' \deqn{
-#' V_{\text{n},dimensions} =
-#' \frac{\pi^{dimensions/2}}{\Gamma\left(\frac{dimensions}{2} + 1\right)}
-#' }
-#'
-#' In the context of probabilistic niche modeling, the semi-axis lengths are
-#' typically defined as:
-#'
-#' \deqn{
-#' a_i = \sqrt{\lambda_i \, c^2}
-#' }
-#'
-#' where:
-#' \itemize{
-#'   \item \eqn{\lambda_i} are the eigenvalues of the covariance matrix
-#'   \eqn{\cov_matrix}
-#'   \item \eqn{c^2 = \chi^2_p(\text{level})} is the chi-square cutoff defining the
-#'   probability contour
-#' }
-#'
-#' This formulation allows ellipsoid volume to be computed directly from either
-#' covariance matrices or axis lengths derived from them.
-#'
-#' @param n_dimensions Integer. Number of dimensions (\eqn{dimensions}).
+#' @param n_dimensions Integer. Number of dimensions \eqn{p}.
 #' @param semi_axes_lengths Numeric vector of length \code{n_dimensions}
 #'   containing the ellipsoid semi-axis lengths.
 #'
-#' @return Numeric. Geometric volume of the ellipsoid.
+#' @return Numeric. Geometric volume (or hypervolume) of the ellipsoid.
 #'
-#' @details
-#' \strong{Interpretation:}
-#'
-#' \itemize{
-#'   \item In 2D, the returned value is area.
-#'   \item In 3D, the returned value is volume.
-#'   \item In higher dimensions, the result is a hypervolume measured in the
-#'     product of environmental units.
-#' }
-#'
-#' The volume depends on the selected probability contour (\code{level}) and
-#' therefore increases monotonically with increasing \code{level}.
-#'
-#' @seealso
-#' \code{\link{build_ellipsoid}},
-#' \code{\link{ellipsoid_surface_points}}
+#' @seealso \code{\link{build_ellipsoid}},
+#'   \code{\link{ellipsoid_calculator}}
 #'
 #' @export
 ellipsoid_volume <- function(n_dimensions, semi_axes_lengths) {
 
-  # ---- validation ----
-  if (missing(n_dimensions))
+  # Checks
+  if(missing(n_dimensions))
     stop("Argument 'n_dimensions' must be defined.")
 
-  if (missing(semi_axes_lengths))
+  if(missing(semi_axes_lengths))
     stop("Argument 'semi_axes_lengths' must be defined.")
 
-  if (!is.numeric(n_dimensions) || length(n_dimensions) != 1)
+  if(!is.numeric(n_dimensions) || length(n_dimensions) != 1)
     stop("'n_dimensions' must be a single numeric value.")
 
-  if (!is.numeric(semi_axes_lengths))
+  if(!is.numeric(semi_axes_lengths))
     stop("'semi_axes_lengths' must be numeric.")
 
-  if (length(semi_axes_lengths) != n_dimensions)
+  if(length(semi_axes_lengths) != n_dimensions)
     stop("'semi_axes_lengths' must have length equal to 'n_dimensions'.")
 
-  if (any(semi_axes_lengths <= 0))
+  if(any(semi_axes_lengths <= 0))
     stop("All semi-axis lengths must be positive.")
 
-  # ---- dimensions-dimensional n volume ----
+  # dimensions-dimensional n volume
   unit_ball_volume <- pi^(n_dimensions / 2) /
     gamma(n_dimensions / 2 + 1)
 
-  # ---- ellipsoid volume ----
+  # ellipsoid volume
   volume <- unit_ball_volume * prod(semi_axes_lengths)
 
   return(volume)
@@ -109,9 +88,7 @@ update_ellipsoid_covariance <- function(object,
 
   stopifnot(inherits(object, "nicheR_ellipsoid"))
 
-  verbose_message <- function(...) if (isTRUE(verbose)) cat(...)
-
-  verbose_message("Starting: updating covariance values...\n")
+  verbose_message(verbose, "Starting: updating covariance values...\n")
 
   up <- update_covariance(object$cov_matrix, covariance = covariance, tol = tol)
 

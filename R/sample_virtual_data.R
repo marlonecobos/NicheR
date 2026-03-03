@@ -12,7 +12,7 @@ sample_virtual_data <- function(n_occ,
   verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
   gc()
 
-  verbose_message("Starting: sample_data()\n")
+  verbose_message(verbose, "Starting: sample_data()\n")
 
   sampling <- match.arg(sampling,
                         choices = c("centroid", "edge", "random"),
@@ -118,7 +118,7 @@ sample_virtual_data <- function(n_occ,
   df$pred <- NULL
   out <- df[idx, , drop = FALSE]
 
-  verbose_message("Done: sampled ", nrow(out), " points.\n")
+  verbose_message(verbose, "Done: sampled ", nrow(out), " points.\n")
   gc()
 
   out

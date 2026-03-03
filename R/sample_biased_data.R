@@ -5,11 +5,8 @@ sample_biased_data <- function(n_occ,
                         sampling_mask = NULL,
                         seed = 1,
                         verbose = TRUE){
-
-  verbose_message <- function(...) if(isTRUE(verbose)) cat(...)
   gc()
-
-  verbose_message("Starting: sample_biased_data()\n")
+  verbose_message(verbose, "Starting: sample_biased_data()\n")
 
   # Basic Input checks --------------------------------------------------------
 
@@ -101,7 +98,7 @@ sample_biased_data <- function(n_occ,
   df$pred <- NULL
   out <- df[idx, , drop = FALSE]
 
-  verbose_message("Done: sampled ", nrow(out), " points from biased prediction layer\n")
+  verbose_message(verbose, "Done: sampled ", nrow(out), " points from biased prediction layer\n")
   gc()
 
   out

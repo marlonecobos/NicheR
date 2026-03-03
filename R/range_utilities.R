@@ -6,14 +6,14 @@
 #'
 #' @usage
 #' ranges_from_data(data, expand_min = NULL, expand_max = NULL)
-#' ranges_from_stats(mean, sd, cl = 95, expand_min = NULL, expand_max = NULL)
+#' ranges_from_stats(mean, sd, cl = 0.95, expand_min = NULL, expand_max = NULL)
 #'
 #' @param data A data.frame of at least two columns. Each column should
 #' contain numeric values.
 #' @param mean A named numeric vector of mean values for each variable.
 #' @param sd A named numeric vector of standard deviation values for each
 #' variable. Names must match those in `mean`.
-#' @param cl A numeric value indicating the confidence level (default 95).
+#' @param cl A numeric value indicating the confidence level (default 0.95).
 #' @param expand_min A named vector or list of percentages (e.g., 10 for 10%)
 #' defining how much to expand the minimum value of specific variables.
 #' @param expand_max A named vector or list of percentages defining how
@@ -34,7 +34,6 @@ NULL
 #' ranges_from_data(df, expand_min = list(var1 = 10),
 #'                  expand_max = list(var2 = 20))
 
-# To DO: cl to 0.95
 ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
   # Initial structural check
   if (!is.data.frame(data) || ncol(data) < 2) {
@@ -85,10 +84,10 @@ ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
 #' # From statistics
 #' m <- c(var1 = 10, var2 = 100)
 #' s <- c(var1 = 2, var2 = 15)
-#' ranges_from_stats(mean = m, sd = s, cl = 95,
+#' ranges_from_stats(mean = m, sd = s, cl = 0.95,
 #'                   expand_min = list(var1 = 10))
 
-ranges_from_stats <- function(mean, sd, cl = 95, expand_min = NULL,
+ranges_from_stats <- function(mean, sd, cl = 0.95, expand_min = NULL,
                               expand_max = NULL) {
 
   # Check that mean and sd are numeric
@@ -117,7 +116,7 @@ ranges_from_stats <- function(mean, sd, cl = 95, expand_min = NULL,
   }
 
   # Compute ranges
-  alpha <- 1 - (cl / 100)
+  alpha <- 1 - cl
   p_lower <- alpha / 2
   p_upper <- 1 - (alpha / 2)
 
