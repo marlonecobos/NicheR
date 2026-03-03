@@ -7,7 +7,7 @@
 #'   \code{cov_matrix}, and \code{chi2_cutoff}.
 #' @param background Optional data frame of background points (rows = observations,
 #'   columns = environmental variables).
-#' @param sample Integer. Number of background points to sample for plotting.
+#' @param bg_sample Integer. Number of background points to bg_sample for plotting.
 #' @param lty Line type for ellipsoid boundary.
 #' @param lwd Line width for ellipsoid boundary.
 #' @param col_ell Color for ellipsoid boundary.
@@ -23,7 +23,8 @@
 #' @export
 plot_ellipsoid <- function(object,
                            background = NULL,
-                           sample = 1000,
+                           dim = c(1, 2),
+                           bg_sample = 1000,
                            lty = 1,
                            lwd = 1,
                            col_ell = "#000000",
@@ -34,22 +35,22 @@ plot_ellipsoid <- function(object,
                            cex_ell = 1,
                            cex_bg = 1, ...){
 
-#   Check for data frame
-  ell_points <- ellipsoid_surface_points(mu_vec = object$centroid,
-                                         cov_matrix = object$cov_matrix,
-                                         chi2_cutoff = object$chi2_cutoff,
-                                         n_point = 100)
+  # Check for data frame
+  ell_points <- ellipsoid_boundary_2d(object = object,
+                                      n_segments = 50,
+                                      dim = dim)
+
   # to do: make sure name of vars does not disappear
 
   if(!is.null(background)){
 
-    if(nrow(background) <= sample){
-      sample <- nrow(background)
+    if(nrow(background) <= bg_sample){
+      bg_sample <- nrow(background)
     }
 
-    sample_bg <- sample(1:nrow(background), sample)
+    bg_sample_bg <- bg_sample(1:nrow(background), bg_sample)
 
-    plot(background[sample_bg, ],
+    plot(background[bg_sample_bg, ],
          col = adjustcolor(col_bg, alpha.f = alpha_bg),
          pch = pch,
          cex = cex_bg, ...)

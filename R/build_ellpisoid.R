@@ -112,10 +112,13 @@ build_ellipsoid <- function(range,
   colnames(cov_matrix) <- var_names
   names(mu_vec) <- var_names
 
-  verbose_message(verbose, "Done: created ellipsoidal niche.\n")
+  verbose_message(verbose, "Step: computing additional ellipsoidal niche metrics...\n")
 
   out <- ellipsoid_calculator(cov_matrix = cov_matrix,
                               centroid = mu_vec, cl = cl,
-                              verbose = verbose)
+                              verbose = FALSE)
+
+  verbose_message(verbose, "Done: created ellipsoidal niche.\n")
+
   out
 }
