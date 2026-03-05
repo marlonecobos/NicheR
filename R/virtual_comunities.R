@@ -14,37 +14,44 @@
 #' @param smaller_proportion Numeric. Minimum scaling factor for the covariance.
 #'   Must be between 0 and 1. Default = 0.1. This controls how much smaller
 #'   the new ellipses can be compared to the reference.
-#' @param uniform_centroids Logical. If TRUE, centroids are sampled more
+#' @param thin_background Logical. If TRUE, centroids are sampled more
 #'   uniformly across the background using a grid-based thinning approach.
 #'   Default = TRUE.
 #' @param resolution Integer. Number of cells per side in the grid to deal with
-#'   point density variation across background.
+#'   point density variation across background. Default = 50.
 #' @param seed Integer. Random seed for reproducibility. Default = 1.
 #' Set to NULL for no seeding.
 #'
-#' @return A list of length \code{n} with ellipse features.
-#' 
+#' @return
+#' A list of \code{n} "nicheR_ellipsoid" objects.
+#'
 #' @export
 
 random_ellipses <- function(object,
                             background,
                             n = 10,
                             smaller_proportion = 0.1,
-                            uniform_centroids = TRUE,
+                            thin_background = TRUE,
                             resolution = 50,
                             seed = 1) {
   
   # Input validation
-  if (missing(object)) stop("Argument 'object' is required.")
+  if (missing(object)) {
+    stop("Argument 'object' is required.")
+  }
   if (!inherits(object, "nicheR_ellipsoid")) {
     stop("Argument 'object' must be of class 'nicheR_ellipsoid'.")
   }
-  if (missing(background)) stop("Argument 'background' is required.")
-  if (!identical(colnames(background), colnames(object$cov_matrix))) {
-    stop("Column names of 'background' must match those of 'object$cov_matrix'.")
+  if (missing(background)) {
+    stop("Argument 'background' is required.")
   }
-  if (!is.null(seed)) set.seed(seed)
-  
+  if (!identical(colnames(background), colnames(object$cov_matrix))) {
+    stop("'background' column names must match those of 'object$cov_matrix'.")
+  }
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
   # Extract reference covariance and level
   background <- as.matrix(background)
   ref_cov <- object$cov_matrix
@@ -52,7 +59,7 @@ random_ellipses <- function(object,
   ref_level <- object$cl
   
   # Sample centroids
-  if (uniform_centroids) {
+  if (thin_background) {
     ## Create a grid and assign points to grid cells
     x_range <- seq(min(background[, 1]), max(background[, 1]),
                    length.out = resolution)
@@ -81,12 +88,10 @@ random_ellipses <- function(object,
     new_vars <- ref_vars * v_scales
     sds <- sqrt(new_vars)
     
-    ## Calculate covariance limits based on new variances
-    max_cov <- sds[1] * sds[2]
-    
     ## Pick a random covariance
     ## To avoid being too close to the edge use a multiplier of 0.9
-    new_cov_val <- runif(1, min = -max_cov * 0.9, max = max_cov * 0.9)
+    rho <- runif(1, min = -0.9, max = 0.9)
+    new_cov_val <- rho * sds[1] * sds[2]
     
     ## Reconstruct the variance-covariance matrix
     new_varcov <- matrix(c(new_vars[1], new_cov_val,
@@ -168,11 +173,140 @@ nested_ellipses <- function(object,
   
   # Generate nested ellipses
   ell_list <- lapply(scales, function(k) {
-    scaled_cov <- k * object$cov_matrix
+    scaled_cov <- (k^2) * object$cov_matrix
     ellipsoid_calculator(cov_matrix = scaled_cov,
                          centroid = object$centroid,
                          cl = object$cl, verbose = FALSE)
   })
   
   return(ell_list)
+}
+
+
+
+
+#' Generate ellipses via multivariate normal biased sampling
+#'
+#' @description
+#' Creates a set of ellipses with centroids sampled from a background, biased
+#' by their proximity to the centroid to a reference niche. Includes an option
+#' to thin the background to reduce centroid sampling bias due to point-density.
+#'
+#' @param object A nicheR_ellipsoid object used as the reference. This is will
+#'    be considered the "largest" ellipse to be generated.
+#' @param background Matrix or Dataframe. The 2D point cloud (coordinates)
+#'    used to select centroids for the ellipses.
+#' @param n Integer. Number of ellipses to generate. Default = 10.
+#' @param smaller_proportion Numeric scalar in \code{(0, 1)}. The scale of the
+#'    smallest ellipse relative to the original. Default is \code{0.1}.
+#' @param thin_background Logical. If TRUE, centroids are sampled more
+#'   uniformly across the background using a grid-based thinning approach.
+#'   Default = FALSE.
+#' @param resolution Integer. Number of cells per side in the grid to deal with
+#'   point density variation across background. Default = 100.
+#' @param seed Integer. Random seed for reproducibility. Default = 1.
+#' Set to NULL for no seeding.
+#'
+#' @return
+#' A list of \code{n} "nicheR_ellipsoid" objects. Ellipses are generated to
+#' simulate a community of niches with varying degrees of similarity to the
+#' reference. The distribution of the generated ellipses is influenced by
+#' the proximity to the reference and the density of the background points.
+#'
+#' @export
+
+conserved_ellipses <- function(object,
+                               background,
+                               n = 10,
+                               smaller_proportion = 0.1,
+                               thin_background = FALSE,
+                               resolution = 100,
+                               seed = 1) {
+  
+  # Input validation
+  if (missing(object)) {
+    stop("Argument 'object' is required.")
+  }
+  if (!inherits(object, "nicheR_ellipsoid")) {
+    stop("Argument 'object' must be of class 'nicheR_ellipsoid'.")
+  }
+  if (missing(background)) {
+    stop("Argument 'background' is required.")
+  }
+  if (!identical(colnames(background), colnames(object$cov_matrix))) {
+    stop("'background' column names must match those of 'object$cov_matrix'.")
+  }
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  
+  # Extract reference metrics
+  background <- as.matrix(background)
+  ref_cov  <- object$cov_matrix
+  ref_vars <- diag(ref_cov)
+  ref_level <- object$cl
+  
+  # Background boundaries for reflection logic
+  bg_mvnd <- predict.nicheR_ellipsoid(object, background, verbose = FALSE)
+  bg_prob <- bg_mvnd$suitability  # this is MVND at each background point
+
+  # Handle Background Thinning if asked
+  if (thin_background) {
+    ## Create grid indices
+    x_range <- seq(min(background[, 1]), max(background[, 1]),
+                   length.out = resolution)
+    y_range <- seq(min(background[, 2]), max(background[, 2]),
+                   length.out = resolution)
+    
+    grid_id <- paste(findInterval(background[, 1], x_range),
+                     findInterval(background[, 2], y_range), sep = "_")
+    
+    ## Select one representative index per grid cell
+    thin_idx <- tapply(seq_len(nrow(background)), grid_id, function(x) {
+      if(length(x) == 1) return(x) else return(sample(x, 1))
+    })
+    
+    ## Subset both background and the associated probabilities
+    background <- background[thin_idx, , drop = FALSE]
+    bg_prob <- bg_prob[thin_idx]
+  }
+  
+  # Sample centroids with bias toward the reference centroid
+  if (sum(bg_prob) > 0) {
+    cent_samp <- sample(seq_len(nrow(background)), size = n,
+                        prob = bg_prob, replace = TRUE)
+    centroids <- background[cent_samp, , drop = FALSE]
+  } else {
+    stop("'background' has points too far from the reference in 'object'.")
+  }
+  
+  # Generate Ellipses
+  results <- lapply(1:n, function(i) {
+    ## Randomly scale variances between smaller_proportion and 1.0 of original
+    ## This keeps the new variances within the "largest possible" limit
+    v_scales <- runif(2, min = smaller_proportion, max = 1)
+    new_vars <- ref_vars * v_scales
+    sds <- sqrt(new_vars)
+    
+    ## Pick a random covariance
+    ## To avoid being too close to the edge use a multiplier of 0.9
+    rho <- runif(1, min = -0.9, max = 0.9)
+    new_cov_val <- rho * sds[1] * sds[2]
+    
+    ## Reconstruct the variance-covariance matrix
+    new_varcov <- matrix(c(new_vars[1], new_cov_val,
+                           new_cov_val, new_vars[2]), nrow = 2)
+
+    ## Centroid
+    cent <- centroids[i, ]
+
+    ## Name covariance matrix and centroid for downstream use
+    colnames(new_varcov) <- rownames(new_varcov) <- colnames(ref_cov)
+    names(cent) <- colnames(ref_cov)
+
+    ellipsoid_calculator(cov_matrix = new_varcov, centroid = cent,
+                         cl = ref_level, verbose = FALSE)
+  })
+
+  return(results)
 }
