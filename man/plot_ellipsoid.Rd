@@ -7,7 +7,8 @@
 plot_ellipsoid(
   object,
   background = NULL,
-  sample = 1000,
+  dim = c(1, 2),
+  bg_sample = 1000,
   lty = 1,
   lwd = 1,
   col_ell = "#000000",
@@ -27,7 +28,7 @@ plot_ellipsoid(
 \item{background}{Optional data frame of background points (rows = observations,
 columns = environmental variables).}
 
-\item{sample}{Integer. Number of background points to sample for plotting.}
+\item{bg_sample}{Integer. Number of background points to bg_sample for plotting.}
 
 \item{lty}{Line type for ellipsoid boundary.}
 

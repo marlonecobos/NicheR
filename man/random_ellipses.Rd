@@ -9,7 +9,7 @@ random_ellipses(
   background,
   n = 10,
   smaller_proportion = 0.1,
-  uniform_centroids = TRUE,
+  thin_background = TRUE,
   resolution = 50,
   seed = 1
 )
@@ -28,18 +28,18 @@ used to select random centroids.}
 Must be between 0 and 1. Default = 0.1. This controls how much smaller
 the new ellipses can be compared to the reference.}
 
-\item{uniform_centroids}{Logical. If TRUE, centroids are sampled more
+\item{thin_background}{Logical. If TRUE, centroids are sampled more
 uniformly across the background using a grid-based thinning approach.
 Default = TRUE.}
 
 \item{resolution}{Integer. Number of cells per side in the grid to deal with
-point density variation across background.}
+point density variation across background. Default = 50.}
 
 \item{seed}{Integer. Random seed for reproducibility. Default = 1.
 Set to NULL for no seeding.}
 }
 \value{
-A list of length \code{n} with ellipse features.
+A list of \code{n} "nicheR_ellipsoid" objects.
 }
 \description{
 Creates n random ellipses with centroids sampled from an irregular point
