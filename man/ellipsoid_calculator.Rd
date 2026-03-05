@@ -7,30 +7,50 @@
 ellipsoid_calculator(cov_matrix, centroid, cl, verbose = TRUE)
 }
 \arguments{
-\item{cov_matrix}{A square, numeric covariance matrix representing the
-shape and orientation of the niche.}
+\item{cov_matrix}{A square, numeric covariance matrix \eqn{\Sigma}. Must be SPD.
+Row/column names (if provided) are used as variable names in the output.}
 
-\item{centroid}{A numeric vector representing the center of the ellipsoid
-(e.g., the mean of the variables).}
+\item{centroid}{Numeric vector giving the centroid \eqn{\mu}. Must have length
+equal to \code{ncol(cov_matrix)}.}
 
-\item{cl}{A numeric value between 0 and 1 representing the confidence
-level (e.g., 0.95 for a 95\% confidence ellipsoid).}
+\item{cl}{Numeric confidence level in (0, 1). Used to compute the chi-square
+cutoff defining the ellipsoid contour.}
 
-\item{verbose}{Logical; if \code{TRUE}, the function prints progress messages
-to the console. Default is \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.}
 }
 \value{
-An object of class \code{\link{nicheR_ellipsoid}}. With all elements
-computed for the ellipsoid produced by the input parameters.
+An object of class \code{"nicheR_ellipsoid"} created by
+\code{\link{new_nicheR_ellipsoid}}, containing ellipsoid geometry and
+associated quantities (e.g., centroid, covariance matrix, chi-square cutoff,
+semi-axis lengths, axis vertex coordinates, volume, and covariance limits).
 }
 \description{
-This function computes the geometric and statistical characteristics of an
-n-dimensional ellipsoid based on a covariance matrix and a centroid.
-It calculates the semi-axes lengths, the coordinates of the vertices,
-the volume, and checks for Spectral Positive Definiteness (SPD).
+Computes geometric and probabilistic metrics for an n-dimensional ellipsoid
+defined by a centroid and covariance matrix, including semi-axis lengths,
+axis vertices, and hypervolume for a chi-square confidence contour.
+}
+\details{
+The ellipsoid boundary is defined by the constant Mahalanobis distance contour:
+\deqn{(x - \mu)^\top \Sigma^{-1} (x - \mu) = c^2,}
+where \eqn{\mu} is the centroid, \eqn{\Sigma} is the covariance matrix, and
+\eqn{c^2 = \chi^2_{n}(\mathrm{cl})} is the chi-square cutoff with \eqn{n}
+degrees of freedom.
+
+The covariance matrix must be symmetric positive definite (SPD). The inverse
+covariance is computed via the Cholesky factorization. Semi-axis lengths are
+computed from covariance eigenvalues \eqn{\lambda_i} as:
+\deqn{a_i = \sqrt{\lambda_i c^2}.}
+
+Axis vertices are computed along each eigenvector direction as
+\eqn{\mu \pm a_i v_i}. Hypervolume is computed with
+\code{\link{ellipsoid_volume}}, and covariance-derived limits with
+\code{\link{covariance_limits}}.
 }
 \examples{
-cm <- matrix(c(11.11, 0, 0, 17777.78), nrow = 2)
+cm <- matrix(c(11.11, 0,
+               0, 17777.78), nrow = 2, byrow = TRUE)
+colnames(cm) <- rownames(cm) <- c("var1", "var2")
 ctr <- c(20, 600)
-ellie <- ellipsoid_calculator(cm, ctr, 0.95)
+ell <- ellipsoid_calculator(cov_matrix = cm, centroid = ctr, cl = 0.95, verbose = FALSE)
+
 }

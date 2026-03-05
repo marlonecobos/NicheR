@@ -2,69 +2,35 @@
 % Please edit documentation in R/ellipsoid_utilities.R
 \name{ellipsoid_volume}
 \alias{ellipsoid_volume}
-\title{Compute Ellipsoidal Niche Volume}
+\title{Compute ellipsoid hypervolume}
 \usage{
 ellipsoid_volume(n_dimensions, semi_axes_lengths)
 }
 \arguments{
-\item{n_dimensions}{Integer. Number of dimensions (\eqn{dimensions}).}
+\item{n_dimensions}{Integer. Number of dimensions \eqn{p}.}
 
 \item{semi_axes_lengths}{Numeric vector of length \code{n_dimensions}
 containing the ellipsoid semi-axis lengths.}
 }
 \value{
-Numeric. Geometric volume of the ellipsoid.
+Numeric. Geometric volume (or hypervolume) of the ellipsoid.
 }
 \description{
-Calculates the geometric volume (or area in 2D) of a dimensions-dimensional ellipsoid
-defined by its semi-axis lengths.
+Computes the geometric volume (area in 2D, volume in 3D, hypervolume in higher
+dimensions) of a \eqn{p}-dimensional ellipsoid defined by its semi-axis lengths.
 }
 \details{
-For an ellipsoid with semi-axes \eqn{a_1, a_2, \ldots, a_p}, the volume is:
-
+For semi-axes \eqn{a_1, \dots, a_p}, the volume is:
 \deqn{
-V_p = V_{\text{n},dimensions} \prod_{i=1}^{dimensions} a_i
+V_p = \frac{\pi^{p/2}}{\Gamma(p/2 + 1)} \prod_{i=1}^{p} a_i
 }
+where \eqn{\pi^{p/2} / \Gamma(p/2 + 1)} is the volume of the unit
+\eqn{p}-dimensional ball.
 
-where the volume of the dimensions-dimensional n is:
-
-\deqn{
-V_{\text{n},dimensions} =
-\frac{\pi^{dimensions/2}}{\Gamma\left(\frac{dimensions}{2} + 1\right)}
-}
-
-In the context of probabilistic niche modeling, the semi-axis lengths are
-typically defined as:
-
-\deqn{
-a_i = \sqrt{\lambda_i \, c^2}
-}
-
-where:
-\itemize{
-  \item \eqn{\lambda_i} are the eigenvalues of the covariance matrix
-  \eqn{\cov_matrix}
-  \item \eqn{c^2 = \chi^2_p(\text{level})} is the chi-square cutoff defining the
-  probability contour
-}
-
-This formulation allows ellipsoid volume to be computed directly from either
-covariance matrices or axis lengths derived from them.
-
-
-\strong{Interpretation:}
-
-\itemize{
-  \item In 2D, the returned value is area.
-  \item In 3D, the returned value is volume.
-  \item In higher dimensions, the result is a hypervolume measured in the
-    product of environmental units.
-}
-
-The volume depends on the selected probability contour (\code{level}) and
-therefore increases monotonically with increasing \code{level}.
+In probabilistic niche models, semi-axis lengths are typically derived from
+covariance eigenvalues and a chi-square cutoff.
 }
 \seealso{
 \code{\link{build_ellipsoid}},
-\code{\link{ellipsoid_surface_points}}
+  \code{\link{ellipsoid_calculator}}
 }

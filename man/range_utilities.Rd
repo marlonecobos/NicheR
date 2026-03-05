@@ -7,11 +7,11 @@
 \title{Compute variable ranges from data or statistics with optional expansion}
 \usage{
 ranges_from_data(data, expand_min = NULL, expand_max = NULL)
-ranges_from_stats(mean, sd, cl = 95, expand_min = NULL, expand_max = NULL)
+ranges_from_stats(mean, sd, cl = 0.95, expand_min = NULL, expand_max = NULL)
 
 ranges_from_data(data, expand_min = NULL, expand_max = NULL)
 
-ranges_from_stats(mean, sd, cl = 95, expand_min = NULL, expand_max = NULL)
+ranges_from_stats(mean, sd, cl = 0.95, expand_min = NULL, expand_max = NULL)
 }
 \arguments{
 \item{data}{A data.frame of at least two columns. Each column should
@@ -28,7 +28,7 @@ much to expand the maximum value of specific variables.}
 \item{sd}{A named numeric vector of standard deviation values for each
 variable. Names must match those in `mean`.}
 
-\item{cl}{A numeric value indicating the confidence level (default 95).}
+\item{cl}{A numeric value indicating the confidence level (default 0.95).}
 }
 \value{
 A data.frame with the (potentially expanded) minimum and maximum
@@ -47,6 +47,6 @@ ranges_from_data(df, expand_min = list(var1 = 10),
 # From statistics
 m <- c(var1 = 10, var2 = 100)
 s <- c(var1 = 2, var2 = 15)
-ranges_from_stats(mean = m, sd = s, cl = 95,
+ranges_from_stats(mean = m, sd = s, cl = 0.95,
                   expand_min = list(var1 = 10))
 }
