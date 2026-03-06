@@ -1,0 +1,240 @@
+---
+title: "Sampling Occurrence Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sampling Occurrence Data}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6,
+  dpi = 100,
+  out.width = "95%"
+)
+```
+
+# Description
+
+The nicheR package provides a flexible suite of sampling functions for drawing occurrence points from raster layers, data frames, or virtual species objects.
+
+This vignette covers the complete core workflow:
+
+1.  Defining the niche space (`build_ellipsoid()`).
+
+2.  Predicting habitat suitability spatially (`predict()`).
+
+3.  Sampling standard occurrences (`sample_data()`).
+
+4.  Simulating biased sampling efforts (`sample_biased_data()`).
+
+5.  Directly sampling from virtual species objects (`sample_virtual_data()`).
+
+# Getting ready
+
+```{r}
+# Load packages
+library(nicheR)
+library(terra)
+```
+
+# 1. Defining the Niche Space: `build_ellipsoid()`
+
+**Objective:** To construct a probabilistic ellipsoidal niche in multivariate environmental space using user-defined variable ranges.
+
+**Purpose:** Before we can predict suitability across a landscape, we need a mathematical representation of the species' fundamental niche. This function takes simple minimum and maximum environmental tolerances and computes the centroid ($\mu$) and covariance matrix (σ) needed to define a theoretical multivariate normal (MVN) niche.
+
+## Example: Building an Ellipsoid
+
+```{r}
+bios_file <- system.file("extdata", "bio_layers.tif", package = "nicheR")
+bios <- rast("inst/extdata/bio_layers.tif")
+plot(bios, main = "Environmental Base Layers")
+
+# Define environmental ranges
+range_df <- data.frame(bio1  = c(20, 28),
+                       bio12 = c(820, 1500),
+                       bio15 = c(70, 90))
+
+# Build ellipsoid niche
+ell <- build_ellipsoid(range = range_df)
+```
+
+# 2. Generating the Prediction Surface
+
+**Objective:** To compute the squared Mahalanobis distance ($D^2$) and a monotonic suitability index across a landscape using a probabilistic ellipsoid niche.
+
+**Purpose:** This step translates a theoretical, multi-dimensional niche (defined by a centroid and covariance matrix) into a spatial prediction surface. It establishes the "ground truth" of habitat suitability that we will sample from in later steps.
+
+The `predict()` method for `nicheR_ellipsoid` objects takes environmental data (as a `SpatRaster` or `data.frame`) and calculates distance and suitability.
+
+## Example: Predicting to a Spatial Raster
+
+```{r}
+# Predict suitability
+pred <- predict(ell,
+                newdata = bios,
+                include_mahalanobis = TRUE,
+                include_suitability = TRUE,
+                suitability_truncated = TRUE,
+                mahalanobis_truncated = TRUE)
+
+plot(pred, col = rev(viridis::viridis(100)))
+```
+
+# 3. Standard Occurrence Sampling: sample_data()
+
+**Objective:** To generate presence points from a continuous prediction surface (e.g., habitat suitability or Mahalanobis distance) using weighted random sampling.
+
+**Purpose:** This method is essential for creating true presence datasets from a known truth to evaluate ENM predictive performance.
+
+The sample_data() function allows you to sample points based on suitability or distance metrics. You can control the sampling direction using the sampling argument:
+
+"centroid": Samples more frequently from areas of high suitability or low distance.
+
+"edge": Samples more frequently from areas of low suitability or high distance.
+
+"random": Samples uniformly across the available space.
+
+## Example: Sampling from a Suitability Raster
+
+```{r}
+# Sample 100 points, favoring highly suitable habitats (centroid)
+suit_occ_centroid <- sample_data(
+  n_occ = 50,
+  prediction = pred,
+  prediction_layer = "suitability",
+  sampling = "centroid",
+  method = "suitability",
+  seed = 123
+)
+
+suit_occ_center_env <- terra::extract(bios, suit_occ_centroid[, c(1:2)]) |> 
+  cbind(suit_occ_centroid[3])
+
+# Plot: Standard Centroid Sampling
+plot_ellipsoid(ell, main = "Standard Centroid Sampling",
+               xlim = c(15, 30),
+               ylim = c(790, 6300))
+
+add_data(x = as.vector(bios$bio1),
+         y = as.vector(bios$bio12),
+         pch = ".")
+
+add_data(x = suit_occ_center_env$bio1,
+         y = suit_occ_center_env$bio12,
+         pts_col = "orange",
+         pch = 20)
+
+add_data(x = ell$centroid[1],
+         y = ell$centroid[2],
+         pts_col = "red",
+         pch = 15)
+```
+
+# 4. Introducing Sampling Bias: sample_biased_data()
+
+**Objective:** To simulate spatially biased occurrence data from a prediction layer.
+
+**Purpose:** Real-world biodiversity data is rarely collected systematically. This function allows researchers to simulate spatial sampling bias (e.g., points collected near roads or research stations) to test how robust their ecological models are to imperfect detection and biased collection efforts.
+
+*Note: This function applies a spatial restriction or weighting scheme to simulate uneven sampling effort.*
+
+## Example: Simulating Biased Sampling
+
+```{r}
+# Create a dummy bias layer (e.g., accessibility score based on distance to roads)
+bias_file <- system.file("extdata", "bias_layers.tif", package = "nicheR")
+bias <- rast(bias_file)
+
+prep_bias <- prepare_bias(bias_surface = bias,
+                          effect_direction = c("inverse", "direct"))
+plot(prep_bias$composite_surface, main = "Composite Bias Surface")
+
+app_bias <- apply_bias(prepared_bias = prep_bias,
+                       prediction = pred,
+                       effect_direction = "direct")
+plot(app_bias$suitability_biased, main = "Biased Suitability Surface")
+
+# Sample 50 points using the biased prediction layer
+suit_occ_biased <- sample_biased_data(n_occ = 50,
+                                      prediction = app_bias$suitability_biased,
+                                      seed = 456)
+
+head(suit_occ_biased)
+
+suit_occ_bias <- terra::extract(bios, suit_occ_biased[, c(1:2)]) |> 
+  cbind(suit_occ_biased[3])
+
+# Plot: Biased Occurrence Sampling
+plot_ellipsoid(ell, main = "Biased Occurrence Sampling",
+               xlim = c(15, 30),
+               ylim = c(790, 6300))
+
+add_data(x = as.vector(bios$bio1),
+         y = as.vector(bios$bio12),
+         pch = ".")
+
+add_data(x = suit_occ_bias$bio1,
+         y = suit_occ_bias$bio12,
+         pts_col = "orange",
+         pch = 20)
+
+add_data(x = ell$centroid[1],
+         y = ell$centroid[2],
+         pts_col = "red",
+         pch = 15)
+```
+
+# 5. Virtual Species Sampling: `sample_virtual_data()`
+
+**Objective:** To directly generate sampled occurrences from a simulated virtual species object.
+
+**Purpose:** Virtual species are highly useful for controlled experiments in quantitative ecology. This function streamlines the workflow by allowing you to extract occurrence points directly from your virtual species models without manually extracting and converting the underlying rasters first.
+
+This function inherently supports the same weighting rules (`centroid`, `edge`, `random`) and methods (`suitability`, `mahalanobis`) as `sample_data()`.
+
+## Example: Sampling from a Virtual Species Object
+
+```{r}
+virtual_range <- data.frame(bio1 = c(10, 80),
+                            bio12 = c(500, 1000),
+                            bio15 = c(30, 150))
+
+virtual_ell <- build_ellipsoid(range = virtual_range)
+plot_ellipsoid(virtual_ell, main = "Virtual Species Niche")
+
+occ_virtual <- sample_virtual_data(n_occ = 50,
+                                   object = virtual_ell,
+                                   prediction_layer = "suitability",
+                                   sampling = "centroid",
+                                   method = "suitability",
+                                   seed = 42)
+
+head(occ_virtual)
+
+# Plot: Virtual Species Centroid Sampling
+plot_ellipsoid(virtual_ell, main = "Virtual Species Centroid Sampling",
+               xlim = c(5, 85),
+               ylim = c(450, 1050))
+
+add_data(x = occ_virtual$bio1,
+         y = occ_virtual$bio12,
+         pts_col = "orange",
+         pch = 20)
+
+add_data(x = virtual_ell$centroid[1],
+         y = virtual_ell$centroid[2],
+         pts_col = "red",
+         pch = 15)
+```
+
+# Summary
+
+The `nicheR` sampling functions provide fine-grained control over how occurrence points are simulated across geographic and environmental space. By adjusting the `method` and `sampling` parameters, you can easily shift between theoretical ideal datasets and realistic, biased scenarios.
