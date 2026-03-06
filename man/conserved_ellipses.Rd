@@ -8,7 +8,8 @@ conserved_ellipses(
   object,
   background,
   n = 10,
-  smaller_proportion = 0.1,
+  smallest_proportion = 0.1,
+  largest_proportion = 1,
   thin_background = FALSE,
   resolution = 100,
   seed = 1
@@ -23,8 +24,13 @@ used to select centroids for the ellipses.}
 
 \item{n}{Integer. Number of ellipses to generate. Default = 10.}
 
-\item{smaller_proportion}{Numeric scalar in \code{(0, 1)}. The scale of the
+\item{smallest_proportion}{Numeric scalar in \code{(0, 1)}. The scale of the
 smallest ellipse relative to the original. Default is \code{0.1}.}
+
+\item{largest_proportion}{Numeric. Maximum scaling factor for the variance
+relative to the reference. Default = 1.0. This controls how much larger
+the new ellipses can be compared to the reference. Values larger than 1
+will result in ellipses that exceed the reference size.}
 
 \item{thin_background}{Logical. If TRUE, centroids are sampled more
 uniformly across the background using a grid-based thinning approach.

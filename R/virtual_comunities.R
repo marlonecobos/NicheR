@@ -11,9 +11,13 @@
 #' @param background Matrix or Dataframe. The 2D point cloud (coordinates)
 #'   used to select random centroids.
 #' @param n Integer. Number of ellipses to generate.
-#' @param smaller_proportion Numeric. Minimum scaling factor for the covariance.
+#' @param smallest_proportion Numeric. Minimum scaling factor for the variance.
 #'   Must be between 0 and 1. Default = 0.1. This controls how much smaller
 #'   the new ellipses can be compared to the reference.
+#' @param largest_proportion Numeric. Maximum scaling factor for the variance
+#'   relative to the reference. Default = 1.0. This controls how much larger
+#'   the new ellipses can be compared to the reference. Values larger than 1
+#'   will result in ellipses that exceed the reference size.
 #' @param thin_background Logical. If TRUE, centroids are sampled more
 #'   uniformly across the background using a grid-based thinning approach.
 #'   Default = TRUE.
@@ -30,7 +34,8 @@
 random_ellipses <- function(object,
                             background,
                             n = 10,
-                            smaller_proportion = 0.1,
+                            smallest_proportion = 0.1,
+                            largest_proportion = 1.0,
                             thin_background = TRUE,
                             resolution = 50,
                             seed = 1) {
@@ -47,6 +52,12 @@ random_ellipses <- function(object,
   }
   if (!identical(colnames(background), colnames(object$cov_matrix))) {
     stop("'background' column names must match those of 'object$cov_matrix'.")
+  }
+  if (smallest_proportion <= 0 || smallest_proportion >= 1) {
+    stop("'smallest_proportion' must be a single numeric value, >0, <1.")
+  }
+  if (largest_proportion < smallest_proportion) {
+    stop("'largest_proportion' must be a single value > 'smallest_proportion'.")
   }
   if (!is.null(seed)) {
     set.seed(seed)
@@ -82,9 +93,9 @@ random_ellipses <- function(object,
   
   # Generate Ellipses
   rand_ellipses <- lapply(1:n, function(i) {
-    ## Randomly scale variances between smaller_proportion and 1.0 of original
+    ## Randomly scale variances between smallest_proportion and 1.0 of original
     ## This keeps the new variances within the "largest possible" limit
-    v_scales <- runif(2, min = smaller_proportion, max = 1)
+    v_scales <- runif(2, min = smallest_proportion, max = largest_proportion)
     new_vars <- ref_vars * v_scales
     sds <- sqrt(new_vars)
     
@@ -124,7 +135,7 @@ random_ellipses <- function(object,
 #'    describing an initial ellipse. Must contain \code{centroid},
 #'    \code{cov_matrix}, and \code{cl}.
 #' @param n Integer. Number of nested ellipses to generate. Default is 10.
-#' @param smaller_proportion Numeric scalar in \code{(0, 1)}. The scale of the
+#' @param smallest_proportion Numeric scalar in \code{(0, 1)}. The scale of the
 #'    smallest ellipse relative to the original. Default is \code{0.1}.
 #' @param bias Numeric. An exponent controlling the spacing of the nested
 #'    ellipses.
@@ -139,7 +150,7 @@ random_ellipses <- function(object,
 #' @return
 #' A list of \code{n} "nicheR_ellipsoid" objects. The largest ellipse
 #' corresponds to the original reference, and the smallest is that scaled by
-#' \code{smaller_proportion}.
+#' \code{smallest_proportion}.
 #'
 #' @details
 #' The function generates a sequence of scale factors $k$ using the formula:
@@ -150,7 +161,7 @@ random_ellipses <- function(object,
 
 nested_ellipses <- function(object,
                             n = 10,
-                            smaller_proportion = 0.1,
+                            smallest_proportion = 0.1,
                             bias = 1) {
   # Basic checks
   if (missing(object)) stop("Argument 'object' is required.")
@@ -169,7 +180,7 @@ nested_ellipses <- function(object,
   # Generate biased scale factors
   # t goes from 1 to 0. Raising it to 'bias' shifts the distribution
   t <- seq(1, 0, length.out = n)
-  scales <- smaller_proportion + (1 - smaller_proportion) * (t^bias)
+  scales <- smallest_proportion + (1 - smallest_proportion) * (t^bias)
   
   # Generate nested ellipses
   ell_list <- lapply(scales, function(k) {
@@ -197,8 +208,12 @@ nested_ellipses <- function(object,
 #' @param background Matrix or Dataframe. The 2D point cloud (coordinates)
 #'    used to select centroids for the ellipses.
 #' @param n Integer. Number of ellipses to generate. Default = 10.
-#' @param smaller_proportion Numeric scalar in \code{(0, 1)}. The scale of the
+#' @param smallest_proportion Numeric scalar in \code{(0, 1)}. The scale of the
 #'    smallest ellipse relative to the original. Default is \code{0.1}.
+#' @param largest_proportion Numeric. Maximum scaling factor for the variance
+#'   relative to the reference. Default = 1.0. This controls how much larger
+#'   the new ellipses can be compared to the reference. Values larger than 1
+#'   will result in ellipses that exceed the reference size.
 #' @param thin_background Logical. If TRUE, centroids are sampled more
 #'   uniformly across the background using a grid-based thinning approach.
 #'   Default = FALSE.
@@ -218,7 +233,8 @@ nested_ellipses <- function(object,
 conserved_ellipses <- function(object,
                                background,
                                n = 10,
-                               smaller_proportion = 0.1,
+                               smallest_proportion = 0.1,
+                               largest_proportion = 1.0,
                                thin_background = FALSE,
                                resolution = 100,
                                seed = 1) {
@@ -235,6 +251,12 @@ conserved_ellipses <- function(object,
   }
   if (!identical(colnames(background), colnames(object$cov_matrix))) {
     stop("'background' column names must match those of 'object$cov_matrix'.")
+  }
+  if (smallest_proportion <= 0 || smallest_proportion >= 1) {
+    stop("'smallest_proportion' must be a single numeric value, >0, <1.")
+  }
+  if (largest_proportion < smallest_proportion) {
+    stop("'largest_proportion' must be a single value > 'smallest_proportion'.")
   }
   if (!is.null(seed)) {
     set.seed(seed)
@@ -282,9 +304,9 @@ conserved_ellipses <- function(object,
   
   # Generate Ellipses
   results <- lapply(1:n, function(i) {
-    ## Randomly scale variances between smaller_proportion and 1.0 of original
+    ## Randomly scale variances between smallest_proportion and 1.0 of original
     ## This keeps the new variances within the "largest possible" limit
-    v_scales <- runif(2, min = smaller_proportion, max = 1)
+    v_scales <- runif(2, min = smallest_proportion, max = largest_proportion)
     new_vars <- ref_vars * v_scales
     sds <- sqrt(new_vars)
     
