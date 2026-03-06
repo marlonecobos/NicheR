@@ -55,7 +55,6 @@ library(terra)
 ```{r}
 bios_file <- system.file("extdata", "bio_layers.tif", package = "nicheR")
 bios <- rast("inst/extdata/bio_layers.tif")
-plot(bios, main = "Environmental Base Layers")
 
 # Define environmental ranges
 range_df <- data.frame(bio1  = c(20, 28),
@@ -84,8 +83,6 @@ pred <- predict(ell,
                 include_suitability = TRUE,
                 suitability_truncated = TRUE,
                 mahalanobis_truncated = TRUE)
-
-plot(pred, col = rev(viridis::viridis(100)))
 ```
 
 # 3. Standard Occurrence Sampling: sample_data()
@@ -155,12 +152,10 @@ bias <- rast(bias_file)
 
 prep_bias <- prepare_bias(bias_surface = bias,
                           effect_direction = c("inverse", "direct"))
-plot(prep_bias$composite_surface, main = "Composite Bias Surface")
 
 app_bias <- apply_bias(prepared_bias = prep_bias,
                        prediction = pred,
                        effect_direction = "direct")
-plot(app_bias$suitability_biased, main = "Biased Suitability Surface")
 
 # Sample 50 points using the biased prediction layer
 suit_occ_biased <- sample_biased_data(n_occ = 50,
