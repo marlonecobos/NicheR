@@ -10,7 +10,7 @@ random_ellipses(
   n = 10,
   smallest_proportion = 0.1,
   largest_proportion = 1,
-  thin_background = TRUE,
+  thin_background = FALSE,
   resolution = 50,
   seed = 1
 )
@@ -36,7 +36,7 @@ will result in ellipses that exceed the reference size.}
 
 \item{thin_background}{Logical. If TRUE, centroids are sampled more
 uniformly across the background using a grid-based thinning approach.
-Default = TRUE.}
+Default = FALSE.}
 
 \item{resolution}{Integer. Number of cells per side in the grid to deal with
 point density variation across background. Default = 50.}
