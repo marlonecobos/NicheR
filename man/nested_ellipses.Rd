@@ -4,7 +4,7 @@
 \alias{nested_ellipses}
 \title{Generate nested ellipses based on a reference ellipse}
 \usage{
-nested_ellipses(object, n = 10, smaller_proportion = 0.1, bias = 1)
+nested_ellipses(object, n = 10, smallest_proportion = 0.1, bias = 1)
 }
 \arguments{
 \item{object}{An object of class "nicheR_ellipsoid"
@@ -13,7 +13,7 @@ describing an initial ellipse. Must contain \code{centroid},
 
 \item{n}{Integer. Number of nested ellipses to generate. Default is 10.}
 
-\item{smaller_proportion}{Numeric scalar in \code{(0, 1)}. The scale of the
+\item{smallest_proportion}{Numeric scalar in \code{(0, 1)}. The scale of the
 smallest ellipse relative to the original. Default is \code{0.1}.}
 
 \item{bias}{Numeric. An exponent controlling the spacing of the nested
@@ -29,7 +29,7 @@ ellipses.
 \value{
 A list of \code{n} "nicheR_ellipsoid" objects. The largest ellipse
 corresponds to the original reference, and the smallest is that scaled by
-\code{smaller_proportion}.
+\code{smallest_proportion}.
 }
 \description{
 Creates a sequence of nested ellipses by scaling the covariance matrix of a
