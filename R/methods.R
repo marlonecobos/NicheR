@@ -49,8 +49,7 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
     print(round(x$axes_coordinates[[i]], digits))
   }
 
-  cat("\nEllipsoid volume:\n")
-  print(round(x$volume, digits))
+  cat("\nEllipsoid volume:  ", round(x$volume, digits), "\n", sep = "")
 
   invisible(x)
 }
@@ -76,23 +75,45 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
 print.nicheR_community <- function(x, digits = 3, ...) {
 
   cat("nicheR Community Object\n")
-  cat("-----------------------\n\n")
+  cat("-----------------------\n")
 
   # 1. Print Generation Details
   cat("Generation Metadata:\n")
-  print(x$details)
+  cat("  Pattern:            ", x$details$pattern, "\n", sep = "")
+  cat("  Number of ellipses: ", x$details$n, "\n", sep = "")
+  cat("  Smallest prop.:     ", round(x$details$smallest_proportion, digits),
+      "\n", sep = "")
+  
+  # Only print these if they aren't NA
+  if (!is.na(x$details$largest_proportion)) {
+    cat("  Largest prop.:      ", round(x$details$largest_proportion, digits),
+        "\n", sep = "")
+  }
+  if (!is.na(x$details$bias)) {
+    cat("  Bias exponent:      ", round(x$details$bias, digits), "\n", sep = "")
+  }
+  if (!is.na(x$details$seed)) {
+    cat("  Random seed:        ", x$details$seed, "\n", sep = "")
+  }
 
   # 2. Print Reference Ellipsoid
   # We use the existing print method for the reference object
-  cat("\nReference Ellipsoid Summary:\n")
-  print(x$reference, digits = digits, ...)
+  cat("\nReference ellipsoid summary:\n")
+  cat("  Dimensions:        ", x$reference$dimensions, "D\n", sep = "")
+  cat("  Variables:         ", paste(x$reference$var_names, collapse = ", "),
+      "\n", sep = "")
+  cat("  Centroid (mu):     ",
+      paste(round(x$reference$centroid, digits), collapse = ", "),
+      "\n", sep = "")
+  cat("  Ellipsoid volume:  ", round(x$reference$volume, digits),
+      "\n", sep = "")
 
   # 3. Community Summary Statistics
-  cat("\nCommunity Summary (n =", x$details$n, "):\n")
+  cat("\nCommunity summary (n =", x$details$n, "):\n")
 
   # Extract centroids and volumes from the list of ellipsoids
-  all_centroids <- do.call(rbind, lapply(x$ellipse_community, {
-    function(e) e$centroid
+  all_centroids <- do.call(rbind, lapply(x$ellipse_community, function(e) {
+    e$centroid
   }))
   all_volumes <- vapply(x$ellipse_community, function(e) e$volume, numeric(1))
 
@@ -102,22 +123,18 @@ print.nicheR_community <- function(x, digits = 3, ...) {
   mean_vol  <- mean(all_volumes)
   sd_vol    <- sd(all_volumes)
 
-  cat("  Centroid Positions:\n")
+  cat("  Centroid positions - mean (±SD):\n")
 
   # Format as: Variable Name | Mean (± SD)
   for (i in seq_along(mean_cent)) {
-    cat("  ", names(mean_cent)[i], ": ",
-        round(mean_cent[i], digits), 
+    cat("   ", names(mean_cent)[i], ": ",
+        round(mean_cent[i], digits),
         " (±", round(sd_cent[i], digits), ")\n", sep = "")
   }
 
-  cat("\n  Ellipsoid Volume:\n")
+  cat("\n  Ellipsoid volumes:\n")
   cat("   Mean: ", round(mean_vol, digits), "\n", sep = "")
   cat("   SD:   ", round(sd_vol, digits), "\n", sep = "")
-
-  # Optional: Range of volumes
-  cat("   Range: [", round(min(all_volumes), digits), ", ",
-      round(max(all_volumes), digits), "]\n", sep = "")
 
   cat("\n")
   invisible(x)

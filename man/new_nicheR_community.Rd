@@ -35,10 +35,11 @@ new_nicheR_community(
 \item{seed}{Integer. Seed used for reproducibility (NA if not applicable).}
 }
 \value{
-An object of class \code{nicheR_community}.
-}
-\description{
-Helper function to construct a \code{nicheR_community} object, which
+An object of class \code{nicheR_community}. The object
 aggregates a collection of ellipsoids, the reference niche they were
 derived from, and the metadata of the generation process.
 }
+\description{
+Helper function to construct a \code{nicheR_community} object.
+}
+\keyword{internal}
