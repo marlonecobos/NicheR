@@ -20,7 +20,7 @@
 #'   will result in ellipses that exceed the reference size.
 #' @param thin_background Logical. If TRUE, centroids are sampled more
 #'   uniformly across the background using a grid-based thinning approach.
-#'   Default = TRUE.
+#'   Default = FALSE.
 #' @param resolution Integer. Number of cells per side in the grid to deal with
 #'   point density variation across background. Default = 50.
 #' @param seed Integer. Random seed for reproducibility. Default = 1.
@@ -37,7 +37,7 @@ random_ellipses <- function(object,
                             n = 10,
                             smallest_proportion = 0.1,
                             largest_proportion = 1.0,
-                            thin_background = TRUE,
+                            thin_background = FALSE,
                             resolution = 50,
                             seed = 1) {
   
