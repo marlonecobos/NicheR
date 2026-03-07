@@ -69,7 +69,7 @@
 #' @method predict nicheR_ellipsoid
 #' @export
 predict.nicheR_ellipsoid <- function(object,
-                                     newdata = NULL,
+                                     newdata,
                                      adjust_truncation_level = NULL,
                                      include_suitability = TRUE,
                                      suitability_truncated = FALSE,
@@ -130,49 +130,11 @@ predict.nicheR_ellipsoid <- function(object,
   var_names <- object$var_names
   truncation_level <- object$cl
 
-  # If newdata is NULL, generate virtual environmental samples --------------
-  v_data <- FALSE
 
-  if(is.null(newdata)){
-    v_data <- TRUE
-
-    if(!is.numeric(n_virtual) || length(n_virtual) != 1L ||
-       !is.finite(n_virtual) || n_virtual <= 0){
-      stop("`n_virtual` for creating virtual data must be a single positive number.")
-    }
-    n_virtual <- as.integer(n_virtual)
-
-    if(!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)){
-      stop("seed must be a single finite number.")
-    }
-    set.seed(as.integer(seed))
-
-    newdata <- as.data.frame(virtual_data(object = object,
-                                          n = n_virtual,
-                                          truncate = FALSE))
-
-    # enforce names again after virtual_data()
-    if(is.null(colnames(newdata)) || !all(var_names %in% colnames(newdata))){
-      colnames(newdata) <- var_names
-    }
-
-    verbose_message(verbose,
-      "newdata = NULL: generating ", n_virtual, " virtual samples in E-space.\n",
-      "Returning predictions for those samples as a data.frame.\n",
-      "Set n_virtual = <number> to change sample size.\n"
-    )
-
-  }
-
-  starting_msg <- ifelse(isTRUE(v_data),
-                         paste0("Starting: suitability prediction using virtual data of class: ",
-                                paste(class(newdata), collapse = ", "),
-                                "...\n"),
-                         paste0("Starting: suitability prediction using newdata of class: ",
-                                paste(class(newdata), collapse = ", "),
-                                "...\n"))
-
-  verbose_message(verbose, starting_msg)
+  verbose_message(verbose,
+                  paste0("Starting: suitability prediction using newdata of class: ",
+                         paste(class(newdata), collapse = ", "),
+                         "...\n"))
 
 
   # Cutoff handling ---------------------------------------------------------
@@ -259,9 +221,7 @@ predict.nicheR_ellipsoid <- function(object,
   # keep_data defaulting ----------------------------------------------------
 
   if(is.null(keep_data)){
-    if(v_data){
-      keep_data <- TRUE
-    }else if(inherits(newdata, "SpatRaster")){
+    if(inherits(newdata, "SpatRaster")){
       keep_data <- FALSE
     }else{
       keep_data <- TRUE

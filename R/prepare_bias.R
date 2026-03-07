@@ -32,7 +32,7 @@ prepare_bias <- function(bias_surface,
       template_layer <- bias_list[[1]]
 
       verbose_message(verbose,
-                      "Step: bias_surface is a SpatRaster stack. Using first layer as template surface...\n")
+                      "Step: bias_surface is a SpatRaster. Using first layer as template surface...\n")
     }
 
   }else if(is.list(bias_surface) &&
