@@ -26,7 +26,7 @@
 print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
 
   cat("nicheR Ellipsoid Object\n")
-  cat("----------------------\n")
+  cat("-----------------------\n")
 
   cat("Dimensions:        ", x$dimensions, "D\n", sep = "")
   cat("Chi-square cutoff: ", round(x$chi2_cutoff, digits), "\n", sep = "")
@@ -52,5 +52,73 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
   cat("\nEllipsoid volume:\n")
   print(round(x$volume, digits))
 
+  invisible(x)
+}
+
+
+
+#' Print a nicheR Community Object
+#'
+#' Provides a structured summary of a \code{nicheR_community} object.
+#' Includes the generation metadata, a summary of the reference ellipsoid,
+#' and descriptive statistics (mean and standard deviation) for the
+#' centroids and volumes of the generated community.
+#'
+#' @param x A \code{nicheR_community} object.
+#' @param digits Integer. Number of decimal places used when printing
+#'   numeric values. Default is 3.
+#' @param ... Additional arguments passed to the \code{nicheR_ellipsoid}
+#'   print method.
+#'
+#' @method print nicheR_community
+#' @export
+
+print.nicheR_community <- function(x, digits = 3, ...) {
+
+  cat("nicheR Community Object\n")
+  cat("-----------------------\n\n")
+
+  # 1. Print Generation Details
+  cat("Generation Metadata:\n")
+  print(x$details)
+
+  # 2. Print Reference Ellipsoid
+  # We use the existing print method for the reference object
+  cat("\nReference Ellipsoid Summary:\n")
+  print(x$reference, digits = digits, ...)
+
+  # 3. Community Summary Statistics
+  cat("\nCommunity Summary (n =", x$details$n, "):\n")
+
+  # Extract centroids and volumes from the list of ellipsoids
+  all_centroids <- do.call(rbind, lapply(x$ellipse_community, {
+    function(e) e$centroid
+  }))
+  all_volumes <- vapply(x$ellipse_community, function(e) e$volume, numeric(1))
+
+  # Calculate Descriptive Stats
+  mean_cent <- colMeans(all_centroids)
+  sd_cent   <- apply(all_centroids, 2, sd)
+  mean_vol  <- mean(all_volumes)
+  sd_vol    <- sd(all_volumes)
+
+  cat("  Centroid Positions:\n")
+
+  # Format as: Variable Name | Mean (± SD)
+  for (i in seq_along(mean_cent)) {
+    cat("  ", names(mean_cent)[i], ": ",
+        round(mean_cent[i], digits), 
+        " (±", round(sd_cent[i], digits), ")\n", sep = "")
+  }
+
+  cat("\n  Ellipsoid Volume:\n")
+  cat("   Mean: ", round(mean_vol, digits), "\n", sep = "")
+  cat("   SD:   ", round(sd_vol, digits), "\n", sep = "")
+
+  # Optional: Range of volumes
+  cat("   Range: [", round(min(all_volumes), digits), ", ",
+      round(max(all_volumes), digits), "]\n", sep = "")
+
+  cat("\n")
   invisible(x)
 }

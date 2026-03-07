@@ -45,3 +45,49 @@ new_nicheR_ellipsoid <- function(dimensions, var_names, centroid, cov_matrix,
     class = "nicheR_ellipsoid"
   )
 }
+
+
+
+#' nicheR_community Class Constructor
+#'
+#' @description
+#' Helper function to construct a \code{nicheR_community} object, which
+#' aggregates a collection of ellipsoids, the reference niche they were
+#' derived from, and the metadata of the generation process.
+#'
+#' @param ellipse_community A list of \code{nicheR_ellipsoid} objects.
+#' @param reference The \code{nicheR_ellipsoid} object used as a template.
+#' @param pattern Character. The generation pattern: "random", "nested", or
+#'   "conserved".
+#' @param n Integer. Number of ellipses in the community.
+#' @param smallest_proportion Numeric. Minimum scaling factor used.
+#' @param largest_proportion Numeric. Maximum scaling factor used
+#'   (NA if not applicable).
+#' @param bias Numeric. Bias exponent used (NA if not applicable).
+#' @param seed Integer. Seed used for reproducibility (NA if not applicable).
+#'
+#' @return An object of class \code{nicheR_community}.
+#' @export
+
+new_nicheR_community <- function(ellipse_community, reference, pattern, n,
+                                 smallest_proportion, largest_proportion = NA,
+                                 bias = NA, seed = NA) {
+
+  details <- data.frame(
+    pattern = pattern,
+    n = n,
+    smallest_proportion = smallest_proportion,
+    largest_proportion = largest_proportion,
+    bias = bias,
+    seed = seed
+  )
+  
+  structure(
+    list(
+      details = details,
+      reference = reference,
+      ellipse_community = ellipse_community
+    ),
+    class = "nicheR_community"
+  )
+}
