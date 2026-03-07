@@ -49,6 +49,7 @@
 #' @export
 apply_bias <- function(prepared_bias,
                        prediction,
+                       prediction_layer = NULL,
                        effect_direction = "direct",
                        verbose = TRUE){
 
@@ -69,6 +70,9 @@ apply_bias <- function(prepared_bias,
   if(!inherits(prediction, "SpatRaster")){
     stop("'prediction' must be a terra::SpatRaster.")
   }
+
+  prediction <- resolve_prediction(prediction, prediction_layer)$rast
+
 
   # 1. Extract composite bias surface ----------------------------------------
 
@@ -134,26 +138,12 @@ apply_bias <- function(prepared_bias,
                                 choices = c("direct", "inverse"),
                                 several.ok = TRUE)
 
-  if(length(effect_direction) == 1L){
-    effect_direction <- rep(effect_direction, terra::nlyr(prediction))
+  if(length(effect_direction) > 1) stop("'effect_direction' can only be a length of 1")
 
-    verbose_message(verbose, "Step: applying bias with '",
-                    effect_direction[1],
-                    "' effect to all suitability layer(s)...\n")
+  verbose_message(verbose, "Step: applying bias with '",
+                  effect_direction,
+                  "' effect to to \"", names(prediction), "\" layer...\n")
 
-  }else if(length(effect_direction) != terra::nlyr(prediction)){
-    # recycle to match layers
-    effect_direction <- rep(effect_direction,
-                            length.out = terra::nlyr(prediction))
-
-    verbose_message(verbose, "Step: applying layer-specific bias directions with repetition: ",
-                    paste(effect_direction, collapse = ", "),
-                    "\n")
-  }else{
-    verbose_message(verbose, "Step: applying layer-specific bias directions: ",
-                    paste(effect_direction, collapse = ", "),
-                    "\n")
-  }
 
   # 5. Align bias to prediction grid -------------------------------
 
@@ -169,8 +159,6 @@ apply_bias <- function(prepared_bias,
   }
 
   # 6. Apply bias to each suitable layer -------------------------------------
-
-  verbose_message(verbose, "Step: applying bias to", terra::nlyr(prediction), "prediction layer/s...\n")
 
   out_list <- vector("list", terra::nlyr(prediction))
   formula_entries <- character(terra::nlyr(prediction))

@@ -8,16 +8,17 @@ sample_data <- function(n_occ,
                         method = "suitability",
                         sampling_mask = NULL,
                         seed = 1,
+                        strict = NULL,
                         verbose = TRUE){
 
   gc()
   verbose_message(verbose, "Starting: sample_data()\n")
 
-  sampling <- match.arg(sampling,
+  sampling <- match.arg(tolower(sampling),
                         choices = c("centroid", "edge", "random"),
                         several.ok = FALSE)
 
-  method <- match.arg(method,
+  method <- match.arg(tolower(method),
                       choices = c("suitability", "mahalanobis"),
                       several.ok = FALSE)
 
@@ -34,8 +35,16 @@ sample_data <- function(n_occ,
     stop("'verbose' must be TRUE or FALSE.")
   }
 
+  if(!is.null(strict) && (!is.logical(strict) || length(strict) != 1L || is.na(strict))){
+    stop("'strict' must be TRUE, FALSE, or NULL.")
+  }
+
   eps <- 1e-8
   tol <- 1e-8
+
+  # thresholds for auto-detection of truncation
+  zero_prop_threshold <- 0.25
+  na_prop_threshold <- 0.25
 
   # Resolve prediction input --------------------------------------------------
 
@@ -47,7 +56,7 @@ sample_data <- function(n_occ,
     stop("'sampling_mask' is only supported when 'prediction' resolves to a SpatRaster.")
   }
 
-  # Apply sampling mask (raster only) ----------------------------------------
+  # Apply sampling mask and extract data -------------------------------------
 
   if(resolved$type == "SpatRaster"){
     r <- resolved$rast
@@ -62,10 +71,10 @@ sample_data <- function(n_occ,
       }
     }
 
-    df <- terra::as.data.frame(r, xy = TRUE, na.rm = TRUE)
+    df <- terra::as.data.frame(r, xy = TRUE)
 
     if(nrow(df) == 0L){
-      stop("No non-NA cells available for sampling.")
+      stop("No cells available after extracting the prediction surface.")
     }
 
     pred_cols <- setdiff(names(df), c("x", "y"))
@@ -73,22 +82,61 @@ sample_data <- function(n_occ,
       stop("Unexpected: raster extraction did not produce exactly one prediction column.")
     }
 
-    df$pred <- df[[pred_cols[1]]]
+    pred_name <- pred_cols[1]
+    df$pred <- df[[pred_name]]
 
   } else {
 
     df <- resolved$df
-    df$pred <- df[[resolved$pred_name]]
-    df <- df[is.finite(df$pred), , drop = FALSE]
+    pred_name <- resolved$pred_name
+    df$pred <- df[[pred_name]]
 
     if(nrow(df) == 0L){
-      stop("No finite prediction values available for sampling.")
+      stop("No prediction values available for sampling.")
     }
   }
 
-  df <- df[is.finite(df$pred), , drop = FALSE]
+  # Auto-detect strict if needed ---------------------------------------------
+
+  if(is.null(strict)){
+
+    layer_name_flag <- FALSE
+    if(!is.null(prediction_layer)){
+      layer_name_flag <- grepl("trunc", prediction_layer, ignore.case = TRUE)
+    }
+    if(!is.null(pred_name) && nzchar(pred_name)){
+      layer_name_flag <- layer_name_flag || grepl("trunc", pred_name, ignore.case = TRUE)
+    }
+
+    na_prop <- mean(is.na(df$pred))
+    zero_prop <- mean(!is.na(df$pred) & df$pred == 0)
+
+    strict <- isTRUE(layer_name_flag) ||
+      isTRUE(na_prop >= na_prop_threshold) ||
+      isTRUE(zero_prop >= zero_prop_threshold)
+
+    if(isTRUE(strict)){
+      verbose_message(verbose,
+                      paste0(
+                        "Step: auto-detected a likely truncated prediction surface. ",
+                        "Setting 'strict = TRUE' and removing NA and zero values. ",
+                        "You can override this behavior with the 'strict' argument...\n"
+                      ))
+    } else {
+      strict <- FALSE
+    }
+  }
+
+  # Filter prediction values --------------------------------------------------
+
+  if(isTRUE(strict)){
+    df <- df[!is.na(df$pred) & is.finite(df$pred) & df$pred != 0, , drop = FALSE]
+  } else {
+    df <- df[is.finite(df$pred), , drop = FALSE]
+  }
+
   if(nrow(df) == 0L){
-    stop("No finite prediction values available for sampling.")
+    stop("No valid prediction values available for sampling after filtering.")
   }
 
   # Method-specific value checks ---------------------------------------------
@@ -102,9 +150,11 @@ sample_data <- function(n_occ,
         "Either rescale your prediction to [0,1] or set method = 'mahalanobis'."
       )
     }
+
     # clamp tiny numeric drift
     df$pred[df$pred < 0] <- 0
     df$pred[df$pred > 1] <- 1
+
   } else {
     if(any(df$pred < 0, na.rm = TRUE)){
       stop("method = 'mahalanobis' requires non-negative prediction values. Found values < 0.")
@@ -151,7 +201,7 @@ sample_data <- function(n_occ,
   set.seed(seed)
   idx <- sample.int(nrow(df), size = n_occ, replace = FALSE, prob = w)
 
-  # Return sampled points (drop internal pred column)
+  # Return sampled points
   df$pred <- NULL
   out <- df[idx, , drop = FALSE]
 

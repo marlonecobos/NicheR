@@ -43,24 +43,32 @@ plot_ellipsoid <- function(object,
   if (missing(object) || !inherits(object, "nicheR_ellipsoid")) {
     stop("Please provide a valid 'nicheR_ellipsoid' object.")
   }
+
   if (!is.null(background) && !is.data.frame(background) &&
         !is.matrix(background)) {
     stop("Background must be a 'data.frame' or 'matrix'.")
   }
 
+  if (!is.null(prediction) && !is.data.frame(prediction) &&
+      !is.matrix(prediction)) {
+    stop("Prediction must be a 'data.frame' or 'matrix'.")
+  }
+
   # Calculate ellipse boundaries
-  ell_points <- ellipsoid_boundary_2d(object = object, n_segments = 100,
+  ell_points <- ellipsoid_boundary_2d(object = object,
+                                      n_segments = 100,
                                       dim = dim)
 
   # Background sampling
   if (!is.null(background)) {
+
     if (!is.null(bg_sample) && nrow(background) > bg_sample) {
-      bg_sample_bg <- sample(seq_len(nrow(background)), bg_sample)
+      pts_indx <- sample(seq_len(nrow(background)), bg_sample)
     } else {
-      bg_sample_bg <- seq_len(nrow(background))
+      pts_indx <- seq_len(nrow(background))
     }
 
-    plot(background[bg_sample_bg, c(object$var_names[dim])],
+    plot(background[pts_indx, c(object$var_names[dim])],
          col = adjustcolor(col_bg, alpha.f = alpha_bg),
          pch = pch,
          cex = cex_bg, ...)
@@ -75,14 +83,13 @@ plot_ellipsoid <- function(object,
 
     if(is.null(col_layer)){
 
-      if(nrow(prediction) <= bg_sample){
-        pred_sample <- nrow(prediction)
+      if (!is.null(bg_sample) && nrow(prediction) > bg_sample) {
+        pts_indx <- sample(seq_len(nrow(prediction)), bg_sample)
+      } else {
+        pts_indx <- seq_len(nrow(prediction))
       }
 
-      pred_sample_indx <- sample(1:nrow(prediction), pred_sample)
-
-
-      plot(prediction[pred_sample_indx, c(object$var_names[dim])],
+      plot(prediction[pts_indx, c(object$var_names[dim])],
            col = adjustcolor(col_bg, alpha.f = alpha_bg),
            pch = pch,
            cex = cex_bg, ...)
@@ -97,14 +104,13 @@ plot_ellipsoid <- function(object,
     } else {
 
       # Remove zeros and NAs
-      col_layer_clean <- prediction[ , col_layer]
-      col_layer_clean <- col_layer_clean[col_layer_clean > 0 & !is.na(col_layer_clean)]
+      prediction_clean <- prediction[prediction[ , col_layer] > 0 & !is.na(prediction[ , col_layer]), ]
 
-      if(length(col_layer_clean) <= bg_sample){
-        pred_sample <- length(col_layer_clean)
+      if (!is.null(bg_sample) && nrow(prediction_clean) > bg_sample) {
+        pts_indx <- sample(seq_len(nrow(prediction_clean)), bg_sample)
+      } else {
+        pts_indx <- seq_len(nrow(prediction_clean))
       }
-
-      pred_sample_indx <- sample(1:length(col_layer_clean), pred_sample)
 
       if(is.function(pal)){
         pal <- pal(100)
@@ -115,11 +121,11 @@ plot_ellipsoid <- function(object,
       }
 
 
-      col_indx <- as.numeric(cut(log(col_layer_clean[pred_sample_indx]),
+      col_indx <- as.numeric(cut(log(prediction_clean[pts_indx, col_layer]),
                                  breaks = length(pal),
                                  include.lowest = TRUE))
 
-      plot(prediction[pred_sample_indx, c(object$var_names[dim])],
+      plot(prediction_clean[pts_indx, c(object$var_names[dim])],
            col = pal[col_indx],
            pch = pch,
            cex = cex_bg, ...)
@@ -150,33 +156,32 @@ add_data <- function(data, x, y,
                      pal = heat.colors(100),
                      rev_pal = FALSE,
                      pch = 1,
-                     pts_sample = 1000,
+                     bg_sample = NULL,
                      ...) {
 
   if(is.null(col_layer)){
 
-    if(nrow(data) > pts_sample){
-      pts_idx <- sample(1:nrow(data), pts_sample)
-    }else{
-      pts_idx <- 1:nrow(data)
+    if (!is.null(bg_sample) && nrow(data) > bg_sample) {
+      pts_indx <- sample(seq_len(nrow(data)), bg_sample)
+    } else {
+      pts_indx <- seq_len(nrow(data))
     }
 
 
-    points(data[pts_idx, c(x, y)],
+    points(data[pts_indx, c(x, y)],
            col = adjustcolor(pts_col, alpha.f = pts_alpha),
            pch = pch, ...)
 
   } else {
 
     # Remove zeros and NAs
-    col_layer_clean <- data[  , col_layer]
-    col_layer_clean <- col_layer_clean[col_layer_clean > 0 & !is.na(col_layer_clean)]
+    data_clean <- data[data[  , col_layer] > 0 & !is.na(data[  , col_layer]), ]
 
-    if(length(col_layer_clean) <= pts_sample){
-      pts_sample <- length(col_layer_clean)
+    if (!is.null(bg_sample) && nrow(data_clean) > bg_sample) {
+      pts_indx <- sample(seq_len(nrow(data_clean)), bg_sample)
+    } else {
+      pts_indx <- seq_len(nrow(data_clean))
     }
-
-    pts_idx <- sample(1:length(col_layer_clean), pts_sample)
 
     if(is.function(pal)){
       pal <- pal(100)
@@ -187,11 +192,11 @@ add_data <- function(data, x, y,
     }
 
 
-    col_indx <- as.numeric(cut(log(col_layer_clean[pts_idx]),
+    col_indx <- as.numeric(cut(log(data_clean[pts_indx, col_layer] ),
                                breaks = length(pal),
                                include.lowest = TRUE))
 
-    points(data[pts_idx, c(x, y)],
+    points(data_clean[pts_indx, c(x, y)],
            col = pal[col_indx],
            pch = pch, ...)
 
