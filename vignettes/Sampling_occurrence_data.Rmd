@@ -106,7 +106,7 @@ The sample_data() function allows you to sample points based on suitability or d
 suit_occ_centroid <- sample_data(
   n_occ = 50,
   prediction = pred,
-  prediction_layer = "suitability",
+  prediction_layer = "suitability_trunc",
   sampling = "centroid",
   method = "suitability",
   seed = 123
@@ -203,7 +203,6 @@ virtual_range <- data.frame(bio1 = c(10, 80),
                             bio15 = c(30, 150))
 
 virtual_ell <- build_ellipsoid(range = virtual_range)
-plot_ellipsoid(virtual_ell, main = "Virtual Species Niche")
 
 occ_virtual <- sample_virtual_data(n_occ = 50,
                                    object = virtual_ell,
