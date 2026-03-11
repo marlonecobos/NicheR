@@ -49,7 +49,7 @@ sample_virtual_data <- function(n_occ,
 
   resolved <- resolve_prediction(virtual_prediction, prediction_layer)
 
-  df <- as.data.frame(resolved$rast)
+  df <- terra::as.data.frame(resolved$rast, xy = TRUE, na.rm = TRUE)
   pred_name <- resolved$pred_name
   df$pred <- df[[pred_name]]
 
