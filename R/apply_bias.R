@@ -1,50 +1,53 @@
-#' Apply Sampling Bias to Suitability Surfaces
+#' Apply sampling bias to suitability surfaces
 #'
-#' Applies a prepared composite sampling bias surface to one or more suitability
-#' rasters by multiplication. The bias surface is aligned to the suitability grid
-#' when needed, optionally inverted per suitability layer, and the result is
-#' cropped and masked to the suitability domain.
-#'
-#' @details
-#' This function expects a single-layer composite bias surface (from
-#' \code{\link{prepare_bias}}) and a \code{terra::SpatRaster} of suitability values
-#' (typically the raster output from a prediction step). It performs the following:
-#' \enumerate{
-#'   \item Extracts a single-layer composite bias surface from \code{prepared_bias}.
-#'   \item Verifies both bias and suitability values are within \eqn{[0, 1]}.
-#'   \item Aligns the bias surface to the suitability grid if geometries differ
-#'   (\code{terra::compareGeom()} + \code{terra::resample(method = "near")}).
-#'   \item Applies the bias to each suitability layer via multiplication.
-#'   \item Crops and masks each output layer to the suitability domain.
-#' }
-#'
-#' The output is a product of suitability and bias surfaces and therefore is not
+#' @description
+#' Applies a prepared composite sampling bias surface to a suitability raster
+#' by multiplication. The bias surface is aligned to the suitability grid when
+#' needed and the result is cropped and masked to the suitability domain. The
+#' output is a product of suitability and bias and is therefore no longer
 #' interpretable as a probability.
 #'
-#' @param prepared_bias A single-layer \code{terra::SpatRaster} composite bias
-#'   surface, or the list output returned by \code{\link{prepare_bias}} containing
-#'   \code{composite_surface}.
-#' @param prediction A \code{terra::SpatRaster} containing one or more
-#'   suitability layers with values in \eqn{[0, 1]}.
-#' @param effect_direction Character vector indicating how bias affects each
-#'   suitability layer. Options are \code{"direct"} or \code{"inverse"}.
-#'   A single value is recycled to match the number of suitability layers.
-#'   \code{"inverse"} applies \eqn{1 - bias} before multiplication.
-#' @param verbose Logical. If \code{TRUE}, prints progress messages.
+#' @param prepared_bias A single-layer \code{SpatRaster} composite bias
+#'   surface, or the list output from \code{\link{prepare_bias}} containing
+#'   a \code{composite_surface} element.
+#' @param prediction A \code{SpatRaster} containing one or more suitability
+#'   layers with values in \code{[0, 1]}.
+#' @param prediction_layer Character. Name of the layer to extract from
+#'   \code{prediction} when it contains multiple layers. If \code{NULL}
+#'   (default) and \code{prediction} has a single layer, that layer is used.
+#' @param effect_direction Character. How the bias surface is applied to the
+#'   suitability layer. \code{"direct"} (default) multiplies suitability by
+#'   the bias directly — higher bias increases sampling probability.
+#'   \code{"inverse"} multiplies by \eqn{1 - \text{bias}} — higher bias
+#'   decreases sampling probability.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
 #'
-#' @return
-#' A named list of class \code{"nicheR_biased_suitability"} containing:
-#' \itemize{
-#'   \item One element per input suitability layer, each a single-layer
-#'   \code{terra::SpatRaster} of biased suitability (cropped and masked to the
-#'   suitability domain). Elements are named \code{"<layer>_biased"} and the raster
-#'   layer name includes the applied direction (e.g., \code{"<layer>_biased_direct"}).
-#'   \item \code{combination_formula} Character vector (length = number of
-#'   suitability layers) describing the operation applied to each layer
-#'   (e.g., \code{"suitability * bias"} or \code{"suitability * (1-bias)"}).
+#' @details
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Extracts the composite bias surface from \code{prepared_bias}.
+#'   \item Verifies both bias and suitability values are within \code{[0, 1]}.
+#'   \item Aligns the bias surface to the suitability grid if geometries differ,
+#'   using \code{terra::resample()} with nearest-neighbor interpolation.
+#'   \item Multiplies suitability by the (possibly inverted) bias surface.
+#'   \item Crops and masks the output to the suitability domain.
 #' }
 #'
-#' @seealso \code{\link{prepare_bias}}
+#' @return
+#' A named list of class \code{"nicheR_biased_surface"} containing:
+#' \itemize{
+#'   \item One \code{SpatRaster} per input suitability layer, named
+#'   \code{"<layer>_biased"}. The raster layer name includes the applied
+#'   direction (e.g., \code{"suitability_biased_direct"}).
+#'   \item \code{combination_formula}: a character string describing the
+#'   operation applied (e.g., \code{"suitability * bias"} or
+#'   \code{"suitability * (1-bias)"}).
+#' }
+#'
+#' @seealso \code{\link{prepare_bias}} to build the composite bias surface,
+#'   \code{\link{sample_biased_data}} to sample occurrences from the output.
+#'
+#' @importFrom terra compareGeom resample crop mask global nlyr
 #'
 #' @export
 apply_bias <- function(prepared_bias,
