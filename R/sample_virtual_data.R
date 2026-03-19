@@ -86,6 +86,7 @@ sample_virtual_data <- function(n_occ,
   if(!is.numeric(n_occ) || length(n_occ) != 1L || is.na(n_occ) || n_occ <= 0){
     stop("'n_occ' must be a single positive number.")
   }
+
   n_occ <- as.integer(n_occ)
 
   if(!is.numeric(seed) || length(seed) != 1L || is.na(seed)){
