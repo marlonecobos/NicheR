@@ -9,17 +9,17 @@ update_covariance(varcov_matrix, covariance = 0, tol = 1e-6)
 \arguments{
 \item{varcov_matrix}{A square numerical matrix with variances on diagonal.}
 
-\item{covariance}{A single value to apply to all off-diagonals, or a 
+\item{covariance}{A single value to apply to all off-diagonals, or a
 named vector where names follow the "dim1-dim2" format.}
 
 \item{tol}{Small value to subtract from limits to ensure strict PD.}
 }
 \value{
-A list containing \code{up_mat} (updated matrix) and \code{limits} 
+A list containing \code{up_mat} (updated matrix) and \code{limits}
 (data frame of safe limits for remaining zero-cov pairs).
 }
 \description{
-Updates a variance-covariance matrix with specific values and identifies 
+Updates a variance-covariance matrix with specific values and identifies
 the safe limits for all remaining zero-covariance combinations.
 }
 \examples{

@@ -13,16 +13,16 @@ describing an initial ellipse. Must contain \code{centroid},
 
 \item{n}{Integer. Number of nested ellipses to generate. Default is 10.}
 
-\item{smallest_proportion}{Numeric scalar in \code{(0, 1)}. The scale of the
+\item{smallest_proportion}{Numeric scalar in (0, 1). The scale of the
 smallest ellipse relative to the original. Default is \code{0.1}.}
 
 \item{bias}{Numeric. An exponent controlling the spacing of the nested
 ellipses.
 \itemize{
   \item \code{bias = 1}: Linear spacing (default).
-  \item \code{0 < bias < 1}: Clusters ellipses toward the **border**
+  \item \code{0 < bias < 1}: Clusters ellipses toward the border
   (outer original ellipse).
-  \item \code{bias > 1}: Clusters ellipses toward the **centroid**
+  \item \code{bias > 1}: Clusters ellipses toward the centroid
   (inner smallest ellipse).
 }}
 }
@@ -39,7 +39,7 @@ using a bias exponent to cluster them toward the border or the centroid.
 The largest ellipse corresponds to the original reference, and the
 smallest is that scaled by \code{smallest_proportion}.
 
-The function generates a sequence of scale factors $k$ using the formula:
-$k_i = \text{smaller\_proportion} + (1 - \text{smaller\_proportion}) \ times t_i^{\text{bias}}$,
-where $t_i$ is a linear sequence from 1 down to 0.#' A list of \code{n} "nicheR_ellipsoid" objects.
+The function generates a sequence of scale factors \eqn{k} using the formula:
+\eqn{k_i = \text{smallest\_proportion} + (1 - \text{smallest\_proportion}) \times t_i^{\text{bias}}},
+where \eqn{t_i} is a linear sequence from 1 down to 0.
 }

@@ -12,31 +12,31 @@ covariance_limits(varcov_matrix, tol = 1e-6)
 \item{tol}{Small value to subtract from limits to ensure strict PD.}
 }
 \value{
-A data frame with columns 'min' and 'max', where each row 
-represents a pair of dimensions named using the column names of 
+A data frame with columns \code{min} and \code{max}, where each row
+represents a pair of dimensions named using the column names of
 the input matrix.
 }
 \description{
-Identifies the maximum and minimum covariance values that maintain a 
-positive definite (PD) variance-covariance matrix. For niches with more 
-than two dimensions, it independently shrinks the positive and negative 
-theoretical limits until the "all-maximum" and "all-minimum" covariance 
+Identifies the maximum and minimum covariance values that maintain a
+positive definite (PD) variance-covariance matrix. For niches with more
+than two dimensions, it independently shrinks the positive and negative
+theoretical limits until the "all-maximum" and "all-minimum" covariance
 scenarios are globally valid.
 }
 \details{
-The function begins by calculating the deterministic 2D limits for each 
-pair of variables ($|cov_{ij}| < \sqrt{\sigma_i^2 \sigma_j^2}$). 
+The function begins by calculating the deterministic 2D limits for each
+pair of variables (\eqn{|cov_{ij}| < \sqrt{\sigma_i^2 \cdot \sigma_j^2}}).
 
-In higher dimensions (> 2), satisfying all pairwise limits is necessary 
-but not sufficient to ensure the entire matrix is PD. Specifically, 
-contradictory negative correlations can lead to non-transitivity errors. 
-To provide a "safe zone" for users, the function independently shrinks 
-the maximum and minimum bounds by 1% increments. 
+In higher dimensions (> 2), satisfying all pairwise limits is necessary
+but not sufficient to ensure the entire matrix is PD. Specifically,
+contradictory negative correlations can lead to non-transitivity errors.
+To provide a "safe zone" for users, the function independently shrinks
+the maximum and minimum bounds by 1% increments.
 
-It tests the "all-maximum" and "all-minimum" matrices using Cholesky 
-decomposition. If a test fails, the respective bounds are reduced until 
-a globally valid state is found. This independent approach ensures that 
-geometric constraints in the negative correlation space do not 
+It tests the "all-maximum" and "all-minimum" matrices using Cholesky
+decomposition. If a test fails, the respective bounds are reduced until
+a globally valid state is found. This independent approach ensures that
+geometric constraints in the negative correlation space do not
 unnecessarily penalize the limits in the positive correlation space.
 }
 \examples{
