@@ -42,5 +42,7 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-Depends: 
+Depends:
     R (>= 3.5)
+Imports:
+    terra

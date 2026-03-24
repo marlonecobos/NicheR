@@ -22,7 +22,7 @@ within the confidence limit (\code{cl}) defined in the object.}
 Note: \code{"inverse"} and \code{"uniform"} require \code{truncate = TRUE}.}
 
 \item{seed}{Integer. Random seed for reproducibility. Default = 1.
-Set to NULL for no seeding.}
+Set to \code{NULL} for no seeding.}
 }
 \value{
 A matrix with \code{n} rows and columns corresponding to the
@@ -43,16 +43,16 @@ coordinate system defined by the ellipsoid's covariance structure.
 When \code{truncate = TRUE}, the function generates candidate points
 uniformly distributed within a bounding box (hyper-cube) defined by the
 ellipsoid's \code{axes_coordinates}. Points falling outside the ellipsoid
-(where Mahalanobis distance $Md >$ \code{chi2_cutoff}) are removed.
+(where Mahalanobis distance \eqn{Md >} \code{chi2_cutoff}) are removed.
 
 From this filtered pool, \code{n} points are selected using weighted random
 sampling without replacement. The weights are determined by the \code{effect}
 argument:
 \itemize{
   \item \code{"direct"}: Weights are proportional to the multivariate normal
-  density ($\exp(-0.5 \cdot Md)$), clustering points near the centroid.
+  density (\eqn{\exp(-0.5 \times Md)}), clustering points near the centroid.
   \item \code{"inverse"}: Weights are proportional to the complement of the
-  normal density ($1 - \exp(-0.5 \cdot Md)$), pushing points toward the edges.
+  normal density (\eqn{1 - \exp(-0.5 \times Md)}), pushing points toward the edges.
   \item \code{"uniform"}: All points within the ellipsoid have equal weight,
   resulting in a uniform spatial distribution.
 }

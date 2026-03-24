@@ -1,26 +1,81 @@
-#' Plot a nicheR Ellipsoid
+#' Plot a nicheR ellipsoid in environmental space
 #'
-#' Plots the boundary of a probabilistic ellipsoid in environmental space,
-#' optionally overlaying background points.
+#' @description
+#' Plots the 2D boundary of a \code{nicheR_ellipsoid} object in environmental
+#' space for a chosen pair of dimensions. Optionally overlays background points
+#' or a prediction surface colored by a continuous variable (e.g., suitability).
+#' Use \code{\link{add_data}} and \code{\link{add_ellipsoid}} to layer additional
+#' data onto the plot after calling this function.
 #'
-#' @param object A nicheR ellipsoid object containing \code{centroid},
-#'   \code{cov_matrix}, and \code{chi2_cutoff}.
-#' @param background Optional data frame of background points (rows = observations,
-#'   columns = environmental variables).
-#' @param bg_sample Integer. Number of background points to sample for plotting.
-#'   The default, NULL, plots all background points.
-#' @param lty Line type for ellipsoid boundary.
-#' @param lwd Line width for ellipsoid boundary.
-#' @param col_ell Color for ellipsoid boundary.
-#' @param col_bg Color for background points.
-#' @param pch Plotting symbol for background points.
-#' @param alpha_bg Transparency for background points.
-#' @param alpha_ell Transparency for ellipsoid boundary.
-#' @param cex_ell Expansion factor for ellipsoid line.
-#' @param cex_bg Expansion factor for background points.
-#' @param ... Additional graphical parameters passed to \code{plot()}.
+#' @param object A \code{nicheR_ellipsoid} object containing at least
+#'   \code{centroid}, \code{cov_matrix}, \code{chi2_cutoff}, and
+#'   \code{var_names}.
+#' @param background Optional data frame or matrix of background points to plot
+#'   behind the ellipsoid. Rows are observations, columns are environmental
+#'   variables. If provided, \code{prediction} is ignored.
+#' @param prediction Optional data frame or matrix of prediction values to plot.
+#'   Used when \code{background} is \code{NULL}. Can be colored by a continuous
+#'   variable using \code{col_layer}.
+#' @param dim Integer vector of length 2. Indices of the two dimensions to plot.
+#'   Default is \code{c(1, 2)}.
+#' @param col_layer Character or \code{NULL}. Name of a column in
+#'   \code{prediction} to use for coloring points by a continuous variable.
+#'   If \code{NULL} (default), all prediction points are drawn with
+#'   \code{col_bg}.
+#' @param pal A color palette function or character vector used when
+#'   \code{col_layer} is provided. Default is \code{heat.colors(100)}.
+#' @param rev_pal Logical. If \code{TRUE}, reverses the color palette. Default
+#'   is \code{FALSE}.
+#' @param bg_sample Integer or \code{NULL}. If provided and the number of
+#'   background or prediction rows exceeds this value, a random subsample of
+#'   this size is drawn before plotting. Useful for large data frames. Default
+#'   is \code{NULL} (plot all points).
+#' @param lty Integer. Line type for the ellipsoid boundary. Default is
+#'   \code{1} (solid).
+#' @param lwd Numeric. Line width for the ellipsoid boundary. Default is
+#'   \code{1}.
+#' @param col_ell Character. Color of the ellipsoid boundary line. Default is
+#'   \code{"#000000"} (black).
+#' @param col_bg Character. Color of background or prediction points when
+#'   \code{col_layer} is \code{NULL}. Default is \code{"#8A8A8A"} (grey).
+#' @param pch Integer or character. Point symbol for background or prediction
+#'   points. Default is \code{1}.
+#' @param alpha_bg Numeric in \code{[0, 1]}. Transparency of background or
+#'   prediction points. Default is \code{1} (fully opaque).
+#' @param alpha_ell Numeric in \code{[0, 1]}. Transparency of the ellipsoid
+#'   boundary line. Default is \code{1} (fully opaque).
+#' @param cex_ell Numeric. Size scaling for the ellipsoid boundary line.
+#'   Default is \code{1}.
+#' @param cex_bg Numeric. Size scaling for background or prediction points.
+#'   Default is \code{1}.
+#' @param ... Additional graphical parameters passed to
+#'   \code{\link[graphics]{plot}}.
 #'
-#' @return Invisibly returns \code{NULL}.
+#' @details
+#' The function has three display modes depending on what is provided:
+#' \enumerate{
+#'   \item \strong{Background only} (\code{background} is not \code{NULL}):
+#'   plots background points in \code{col_bg} with the ellipsoid boundary
+#'   overlaid.
+#'   \item \strong{Prediction surface} (\code{background} is \code{NULL},
+#'   \code{prediction} is not \code{NULL}): plots prediction points, optionally
+#'   colored by \code{col_layer} using the log-transformed values mapped onto
+#'   \code{pal}. Zeros and \code{NA}s in \code{col_layer} are removed before
+#'   plotting.
+#'   \item \strong{Ellipsoid only} (both \code{NULL}): plots the ellipsoid
+#'   boundary alone with no background.
+#' }
+#'
+#' @return Called for its side effect of creating a plot. Returns \code{NULL}
+#'   invisibly.
+#'
+#' @seealso \code{\link{add_data}} to overlay occurrence points,
+#'   \code{\link{add_ellipsoid}} to overlay additional ellipsoid boundaries,
+#'   \code{\link{plot_ellipsoid_pairs}} for pairwise plots of all dimensions.
+#'
+#' @importFrom graphics plot lines
+#' @importFrom grDevices adjustcolor heat.colors
+#'
 #' @export
 plot_ellipsoid <- function(object,
                            background = NULL,
@@ -148,6 +203,47 @@ plot_ellipsoid <- function(object,
 
 
 
+#' Add occurrence points oor other data to an existing E-space plot
+#'
+#' @description
+#' Adds points to an existing environmental space plot created with
+#' \code{plot_ellipsoid()}. Points can be plotted with a single color or
+#' colored by a continuous variable (e.g., suitability) using a color palette.
+#'
+#' @param data A data frame containing the points to plot. Must include
+#'   columns matching \code{x} and \code{y}, and \code{col_layer} if provided.
+#' @param x Character. Name of the column to use as the x-axis variable.
+#' @param y Character. Name of the column to use as the y-axis variable.
+#' @param pts_col Character. Color for all points when \code{col_layer} is
+#'   \code{NULL}. Default is \code{"#000000"} (black).
+#' @param pts_alpha Numeric in \code{[0, 1]}. Transparency of points when
+#'   \code{col_layer} is \code{NULL}. Default is \code{1} (fully opaque).
+#' @param col_layer Character or \code{NULL}. Name of a column in \code{data}
+#'   to use for coloring points by a continuous variable. If \code{NULL}
+#'   (default), all points are drawn with \code{pts_col}.
+#' @param pal A color palette function or character vector of colors used when
+#'   \code{col_layer} is provided. Default is \code{heat.colors(100)}.
+#' @param rev_pal Logical. If \code{TRUE}, reverses the color palette before
+#'   applying it. Default is \code{FALSE}.
+#' @param pch Integer or character. Point symbol. Default is \code{1}.
+#' @param bg_sample Integer or \code{NULL}. If provided and \code{nrow(data)}
+#'   exceeds this value, a random subsample of this size is drawn before
+#'   plotting. Useful for large data frames. Default is \code{NULL} (plot all).
+#' @param ... Additional arguments passed to \code{\link[graphics]{points}}.
+#'
+#' @details
+#' When \code{col_layer} is provided, points are colored by the log-transformed
+#' values of that column mapped onto the palette. Zeros and \code{NA}s in
+#' \code{col_layer} are removed before plotting.
+#'
+#' @return Called for its side effect of adding points to the current plot.
+#'   Returns \code{NULL} invisibly.
+#'
+#' @seealso \code{\link{plot_ellipsoid}}, \code{\link{add_ellipsoid}}
+#'
+#' @importFrom graphics points
+#' @importFrom grDevices adjustcolor heat.colors
+#'
 #' @export
 add_data <- function(data, x, y,
                      pts_col = "#000000",
@@ -204,6 +300,37 @@ add_data <- function(data, x, y,
 }
 
 
+#' Add an ellipsoid boundary to an existing E-space plot
+#'
+#' @description
+#' Draws the 2D boundary of a \code{nicheR_ellipsoid} object onto an existing
+#' environmental space plot created with \code{plot_ellipsoid()}. The boundary
+#' is computed as a cross-section of the ellipsoid at the chosen pair of
+#' dimensions.
+#'
+#' @param object A \code{nicheR_ellipsoid} object.
+#' @param dim Integer vector of length 2. Indices of the two dimensions to
+#'   plot. Default is \code{c(1, 2)}.
+#' @param lty Integer. Line type. Default is \code{1} (solid).
+#' @param lwd Numeric. Line width. Default is \code{1}.
+#' @param col_ell Character. Color of the ellipsoid boundary line. Default is
+#'   \code{"#000000"} (black).
+#' @param pch Integer or character. Point symbol (passed through but not used
+#'   by the line). Default is \code{1}.
+#' @param alpha_ell Numeric in \code{[0, 1]}. Transparency of the ellipsoid
+#'   boundary line. Default is \code{1} (fully opaque).
+#' @param cex_ell Numeric. Size scaling for the ellipsoid boundary. Default
+#'   is \code{1}.
+#' @param ... Additional arguments passed to \code{\link[graphics]{lines}}.
+#'
+#' @return Called for its side effect of adding lines to the current plot.
+#'   Returns \code{NULL} invisibly.
+#'
+#' @seealso \code{\link{plot_ellipsoid}}, \code{\link{add_data}}
+#'
+#' @importFrom graphics lines
+#' @importFrom grDevices adjustcolor
+#'
 #' @export
 add_ellipsoid <- function(object,
                           dim = c(1, 2),

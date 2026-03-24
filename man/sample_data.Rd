@@ -2,7 +2,7 @@
 % Please edit documentation in R/sample_data.R
 \name{sample_data}
 \alias{sample_data}
-\title{Sample Occurrence Data from a Prediction Surface}
+\title{Sample occurrence data from a prediction surface}
 \usage{
 sample_data(
   n_occ,
@@ -16,6 +16,68 @@ sample_data(
   verbose = TRUE
 )
 }
+\arguments{
+\item{n_occ}{Integer. Number of occurrence points to sample.}
+
+\item{prediction}{A \code{SpatRaster} or data frame containing the
+prediction surface to sample from.}
+
+\item{prediction_layer}{Character. Name of the layer or column to use as
+the prediction values. Required when \code{prediction} contains multiple
+layers or columns.}
+
+\item{sampling}{Character. Sampling strategy. One of \code{"centroid"}
+(default), \code{"edge"}, or \code{"random"}. Controls where within the
+niche points are preferentially drawn from.}
+
+\item{method}{Character. Weighting method. One of \code{"suitability"}
+(default) or \code{"mahalanobis"}. Must match the type of values in
+\code{prediction_layer}: suitability values must be in \code{[0, 1]},
+Mahalanobis values must be non-negative.}
+
+\item{sampling_mask}{A \code{SpatRaster} or \code{SpatVector} used to
+restrict sampling to a geographic area. Only supported when
+\code{prediction} is a \code{SpatRaster}.}
+
+\item{seed}{Integer. Random seed for reproducibility. Default is \code{1}.}
+
+\item{strict}{Logical or \code{NULL}. If \code{TRUE}, removes \code{NA} and
+zero-valued cells before sampling (recommended with truncated prediction
+layers). If \code{NULL} (default), auto-detected from the layer name and
+the proportion of zeros and \code{NA}s in the prediction values.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
+}
+\value{
+A data frame of sampled occurrence points with the same columns as the
+input \code{prediction} (minus the internal \code{pred} column). If
+\code{prediction} is a \code{SpatRaster}, the output includes \code{x}
+and \code{y} coordinate columns.
+}
 \description{
-Sample Occurrence Data from a Prediction Surface
+Samples \code{n_occ} virtual occurrence points from a suitability or
+Mahalanobis distance prediction surface. Supports centroid, edge, and
+random sampling strategies, and accepts both raster (\code{SpatRaster})
+and data frame inputs.
+}
+\details{
+The \code{sampling} and \code{method} arguments interact to define the
+probability weights used when drawing points:
+\itemize{
+  \item \code{sampling = "centroid"}, \code{method = "suitability"}:
+  weights proportional to suitability — higher near the niche center.
+  \item \code{sampling = "edge"}, \code{method = "suitability"}:
+  weights proportional to \eqn{1 - \text{suitability}} — higher near the
+  niche boundary.
+  \item \code{sampling = "centroid"}, \code{method = "mahalanobis"}:
+  weights inversely proportional to Mahalanobis distance — higher near
+  the centroid.
+  \item \code{sampling = "edge"}, \code{method = "mahalanobis"}:
+  weights proportional to Mahalanobis distance — higher near the boundary.
+  \item \code{sampling = "random"}: equal weights regardless of method.
+}
+
+When \code{strict = NULL}, the function auto-detects truncation by checking
+whether the layer name contains \code{"trunc"} or whether the proportion of
+zeros or \code{NA}s exceeds 25\%.
 }

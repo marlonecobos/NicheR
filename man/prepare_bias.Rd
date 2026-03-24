@@ -2,7 +2,7 @@
 % Please edit documentation in R/prepare_bias.R
 \name{prepare_bias}
 \alias{prepare_bias}
-\title{Prepare Sampling Bias Surfaces}
+\title{Prepare sampling bias surfaces}
 \usage{
 prepare_bias(
   bias_surface,
@@ -14,6 +14,72 @@ prepare_bias(
   verbose = TRUE
 )
 }
+\arguments{
+\item{bias_surface}{A \code{SpatRaster} (single or multi-layer) or a list
+of \code{SpatRaster} objects representing the raw bias layers.}
+
+\item{effect_direction}{Character vector. Direction of effect for each bias
+layer. Each element must be \code{"direct"} (higher values increase
+sampling probability) or \code{"inverse"} (higher values decrease sampling
+probability). Length 1 recycles to all layers. Must otherwise match the
+number of bias layers.}
+
+\item{template_layer}{Optional \code{SpatRaster}. Reference layer used to
+align all bias layers (resolution, extent, CRS). If \code{NULL}
+(default), the finest-resolution bias layer is used as the template.}
+
+\item{include_composite}{Logical. If \code{TRUE} (default), includes the
+composite bias surface in the output.}
+
+\item{include_processed_layers}{Logical. If \code{TRUE}, includes the
+standardized individual layers (after directional transformation) in the
+output. Default is \code{FALSE}.}
+
+\item{mask_na}{Logical. Controls how \code{NA} values are handled when
+combining layers. If \code{TRUE}, uses the intersection of layer extents —
+any pixel with an \code{NA} in any layer becomes \code{NA} in the
+composite. If \code{FALSE} (default), uses the union of extents and
+ignores \code{NA}s where other layers have valid values.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
+}
+\value{
+A named list with some or all of the following elements depending on the
+\code{include_composite} and \code{include_processed_layers} arguments:
+\itemize{
+  \item \code{composite_surface}: A \code{SpatRaster} with the combined
+  bias surface, named \code{"standarized_composite_bias_surface"}.
+  \item \code{processed_layers}: A multi-layer \code{SpatRaster} with the
+  standardized and direction-transformed individual layers.
+  \item \code{combination_formula}: A character string showing the formula
+  used to combine layers (e.g., \code{"sp_richness * (1-nighttime)"}).
+}
+}
 \description{
-Prepare Sampling Bias Surfaces
+Standardizes and combines one or more bias layers into a composite bias
+surface for use in biased occurrence sampling. Each layer is min-max
+normalized to \code{[0, 1]} and assigned a directional effect
+(\code{"direct"} or \code{"inverse"}) before being multiplied together
+into a single composite surface.
+}
+\details{
+Each bias layer is processed as follows:
+\enumerate{
+  \item Resampled and cropped to the template grid if needed.
+  \item Min-max standardized to \code{[0, 1]}.
+  \item Transformed by direction: \code{"direct"} layers are kept as-is;
+  \code{"inverse"} layers are replaced by \eqn{1 - x}.
+}
+
+The composite surface is the product of all transformed layers. If only one
+layer is provided, it is returned as-is.
+
+If both \code{include_composite} and \code{include_processed_layers} are
+\code{FALSE}, the function defaults to \code{include_composite = TRUE} with
+a warning.
+}
+\seealso{
+\code{\link{apply_bias}} to apply the prepared bias surface to a
+  suitability prediction, \code{\link{sample_biased_data}} to sample
+  occurrences from the resulting bias-weighted surface.
 }

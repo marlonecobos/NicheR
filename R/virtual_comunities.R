@@ -30,6 +30,8 @@
 #' An object of class \code{nicheR_community} containing the generated
 #' ellipses, the reference object, and generation metadata.
 #'
+#'@importFrom stats runif
+#'
 #' @export
 
 random_ellipses <- function(object,
@@ -40,7 +42,7 @@ random_ellipses <- function(object,
                             thin_background = FALSE,
                             resolution = 50,
                             seed = 1) {
-  
+
   # Input validation
   if (missing(object)) {
     stop("Argument 'object' is required.")
@@ -69,7 +71,7 @@ random_ellipses <- function(object,
   ref_cov <- object$cov_matrix
   ref_vars <- diag(ref_cov)
   ref_level <- object$cl
-  
+
   # Sample centroids
   if (thin_background) {
     ## Create a grid and assign points to grid cells
@@ -79,19 +81,19 @@ random_ellipses <- function(object,
                    length.out = resolution)
     grid_id <- paste(findInterval(background[, 1], x_range),
                      findInterval(background[, 2], y_range), sep = "_")
-    
+
     thin_idx <- tapply(seq_len(nrow(background)), grid_id, function(x) {
       if(length(x) == 1) return(x) else return(sample(x, 1))
     })
-    
+
     idx <- sample(thin_idx, n, replace = TRUE)
   } else {
     idx <- sample(seq_len(nrow(background)), n, replace = TRUE)
   }
-  
+
   ## Extract centroids for the selected indices
   centroids <- background[idx, , drop = FALSE]
-  
+
   # Generate Ellipses
   rand_ellipses <- lapply(1:n, function(i) {
     ## Randomly scale variances between smallest_proportion and 1.0 of original
@@ -99,23 +101,23 @@ random_ellipses <- function(object,
     v_scales <- runif(2, min = smallest_proportion, max = largest_proportion)
     new_vars <- ref_vars * v_scales
     sds <- sqrt(new_vars)
-    
+
     ## Pick a random covariance
     ## To avoid being too close to the edge use a multiplier of 0.9
     rho <- runif(1, min = -0.9, max = 0.9)
     new_cov_val <- rho * sds[1] * sds[2]
-    
+
     ## Reconstruct the variance-covariance matrix
     new_varcov <- matrix(c(new_vars[1], new_cov_val,
                            new_cov_val, new_vars[2]), nrow = 2)
-    
+
     ## Centroid
     cent <- centroids[i, ]
 
     ## Name covariance matrix and centroid for downstream use
     colnames(new_varcov) <- rownames(new_varcov) <- colnames(ref_cov)
     names(cent) <- colnames(ref_cov)
-    
+
     ellipsoid_calculator(cov_matrix = new_varcov, centroid = cent,
                          cl = ref_level, verbose = FALSE)
   })
@@ -146,15 +148,15 @@ random_ellipses <- function(object,
 #'    describing an initial ellipse. Must contain \code{centroid},
 #'    \code{cov_matrix}, and \code{cl}.
 #' @param n Integer. Number of nested ellipses to generate. Default is 10.
-#' @param smallest_proportion Numeric scalar in \code{(0, 1)}. The scale of the
+#' @param smallest_proportion Numeric scalar in (0, 1). The scale of the
 #'    smallest ellipse relative to the original. Default is \code{0.1}.
 #' @param bias Numeric. An exponent controlling the spacing of the nested
 #'    ellipses.
 #'    \itemize{
 #'      \item \code{bias = 1}: Linear spacing (default).
-#'      \item \code{0 < bias < 1}: Clusters ellipses toward the **border**
+#'      \item \code{0 < bias < 1}: Clusters ellipses toward the border
 #'      (outer original ellipse).
-#'      \item \code{bias > 1}: Clusters ellipses toward the **centroid**
+#'      \item \code{bias > 1}: Clusters ellipses toward the centroid
 #'      (inner smallest ellipse).
 #'    }
 #'
@@ -166,10 +168,10 @@ random_ellipses <- function(object,
 #' The largest ellipse corresponds to the original reference, and the
 #' smallest is that scaled by \code{smallest_proportion}.
 #'
-#' The function generates a sequence of scale factors $k$ using the formula:
-#' $k_i = \text{smaller\_proportion} + (1 - \text{smaller\_proportion}) \ times t_i^{\text{bias}}$,
-#' where $t_i$ is a linear sequence from 1 down to 0.#' A list of \code{n} "nicheR_ellipsoid" objects.
-#' 
+#' The function generates a sequence of scale factors \eqn{k} using the formula:
+#' \eqn{k_i = \text{smallest\_proportion} + (1 - \text{smallest\_proportion}) \times t_i^{\text{bias}}},
+#' where \eqn{t_i} is a linear sequence from 1 down to 0.
+#'
 #' @export
 
 nested_ellipses <- function(object,
@@ -189,12 +191,12 @@ nested_ellipses <- function(object,
   if (!is.numeric(bias) || length(bias) != 1L || bias <= 0) {
     stop("'bias' must be a single numeric value > 0.")
   }
-  
+
   # Generate biased scale factors
   # t goes from 1 to 0. Raising it to 'bias' shifts the distribution
   t <- seq(1, 0, length.out = n)
   scales <- smallest_proportion + (1 - smallest_proportion) * (t^bias)
-  
+
   # Generate nested ellipses
   ell_list <- lapply(scales, function(k) {
     scaled_cov <- (k^2) * object$cov_matrix
@@ -202,7 +204,7 @@ nested_ellipses <- function(object,
                          centroid = object$centroid,
                          cl = object$cl, verbose = FALSE)
   })
-  
+
   return(new_nicheR_community(
     ellipse_community = ell_list,
     reference = object,
@@ -252,6 +254,8 @@ nested_ellipses <- function(object,
 #' ellipses is influenced by the proximity to the reference and the density
 #' of the background points.
 #'
+#'@importFrom stats runif
+#'
 #' @export
 
 conserved_ellipses <- function(object,
@@ -285,13 +289,13 @@ conserved_ellipses <- function(object,
   if (!is.null(seed)) {
     set.seed(seed)
   }
-  
+
   # Extract reference metrics
   background <- as.matrix(background)
   ref_cov  <- object$cov_matrix
   ref_vars <- diag(ref_cov)
   ref_level <- object$cl
-  
+
   # Background boundaries for reflection logic
   bg_mvnd <- predict.nicheR_ellipsoid(object, background, verbose = FALSE)
   bg_prob <- bg_mvnd$suitability  # this is MVND at each background point
@@ -303,20 +307,20 @@ conserved_ellipses <- function(object,
                    length.out = resolution)
     y_range <- seq(min(background[, 2]), max(background[, 2]),
                    length.out = resolution)
-    
+
     grid_id <- paste(findInterval(background[, 1], x_range),
                      findInterval(background[, 2], y_range), sep = "_")
-    
+
     ## Select one representative index per grid cell
     thin_idx <- tapply(seq_len(nrow(background)), grid_id, function(x) {
       if(length(x) == 1) return(x) else return(sample(x, 1))
     })
-    
+
     ## Subset both background and the associated probabilities
     background <- background[thin_idx, , drop = FALSE]
     bg_prob <- bg_prob[thin_idx]
   }
-  
+
   # Sample centroids with bias toward the reference centroid
   if (sum(bg_prob) > 0) {
     cent_samp <- sample(seq_len(nrow(background)), size = n,
@@ -325,7 +329,7 @@ conserved_ellipses <- function(object,
   } else {
     stop("'background' has points too far from the reference in 'object'.")
   }
-  
+
   # Generate Ellipses
   results <- lapply(1:n, function(i) {
     ## Randomly scale variances between smallest_proportion and 1.0 of original
@@ -333,12 +337,12 @@ conserved_ellipses <- function(object,
     v_scales <- runif(2, min = smallest_proportion, max = largest_proportion)
     new_vars <- ref_vars * v_scales
     sds <- sqrt(new_vars)
-    
+
     ## Pick a random covariance
     ## To avoid being too close to the edge use a multiplier of 0.9
     rho <- runif(1, min = -0.9, max = 0.9)
     new_cov_val <- rho * sds[1] * sds[2]
-    
+
     ## Reconstruct the variance-covariance matrix
     new_varcov <- matrix(c(new_vars[1], new_cov_val,
                            new_cov_val, new_vars[2]), nrow = 2)

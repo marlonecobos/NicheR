@@ -72,15 +72,42 @@ ellipsoid_volume <- function(n_dimensions, semi_axes_lengths) {
 
 #' Update covariances in a nicheR ellipsoid and recompute metrics
 #'
-#' @param x A `nicheR_ellipsoid` object from `build_ellipsoid()`.
-#' @param covariance Either a single numeric (applied to all off-diagonals) or a
-#'   named numeric vector with names like `"var1-var2"`.
-#' @param tol Small positive number used by covariance limit helpers.
-#' @param verbose Logical; print brief progress messages.
+#' @description
+#' Updates one or more off-diagonal covariance values in a
+#' \code{nicheR_ellipsoid} object and recomputes all ellipsoid metrics
+#' (centroid, semi-axes, volume, etc.) from the new covariance matrix. This
+#' allows iterative niche shaping by adjusting the rotation and correlation
+#' structure of the ellipsoid without rebuilding it from scratch.
 #'
-#' @return A new `nicheR_ellipsoid` object with updated covariance matrix and
-#'   recomputed ellipsoid metrics. Also includes remaining safe limits for any
-#'   still-zero covariances.
+#' @param object A \code{nicheR_ellipsoid} object, typically created with
+#'   \code{\link{build_ellipsoid}}.
+#' @param covariance Either a single numeric value applied to all off-diagonal
+#'   elements, or a named numeric vector where names identify the variable pair
+#'   in the format \code{"var1-var2"} (e.g., \code{c("bio_1-bio_12" = 0.3)}).
+#' @param tol Small positive number used as tolerance when computing safe
+#'   covariance limits for positive definiteness. Default is \code{1e-6}.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
+#'
+#' @details
+#' Covariance values control the orientation and correlation structure of the
+#' ellipsoid in environmental space. Setting a positive covariance between two
+#' variables tilts the ellipsoid so that high values of one variable tend to
+#' co-occur with high values of the other. Negative covariance tilts it in the
+#' opposite direction.
+#'
+#' The updated covariance matrix must remain positive definite — if the
+#' requested value would violate this, use \code{\link{covariance_limits}} to
+#' find the safe range before calling this function.
+#'
+#' @return A \code{nicheR_ellipsoid} object with the updated covariance matrix
+#'   and recomputed ellipsoid metrics. An additional element
+#'   \code{cov_limits_remaining} is attached, giving the remaining safe
+#'   covariance limits for any variable pairs that still have zero covariance.
+#'
+#' @seealso \code{\link{build_ellipsoid}} to create the initial ellipsoid,
+#'   \code{\link{covariance_limits}} to find valid covariance ranges before
+#'   updating.
+#'
 #' @export
 update_ellipsoid_covariance <- function(object,
                                         covariance,
@@ -105,10 +132,31 @@ update_ellipsoid_covariance <- function(object,
 }
 
 
-#' Resolves user input when to many columns or layers
+#' Resolve prediction input to a canonical form
 #'
+#' @description
+#' Internal helper that normalizes the \code{prediction} argument accepted by
+#' sampling functions into a consistent list with a type tag, a resolved data
+#' frame or raster, and the name of the prediction column or layer. Handles
+#' \code{data.frame}, single- and multi-layer \code{SpatRaster}, and list
+#' inputs.
 #'
-#' @export
+#' @param prediction A \code{SpatRaster}, \code{data.frame}, or list containing
+#'   the prediction surface.
+#' @param prediction_layer Character. Name of the column or layer to extract.
+#'   Required when \code{prediction} contains multiple layers or columns.
+#'
+#' @return A named list with three elements:
+#' \itemize{
+#'   \item \code{type}: Character. One of \code{"data.frame"} or
+#'   \code{"SpatRaster"}.
+#'   \item \code{df} or \code{rast}: The resolved data frame or single-layer
+#'   \code{SpatRaster}.
+#'   \item \code{pred_name}: Character. The name of the resolved prediction
+#'   column or layer.
+#' }
+#'
+#' @noRd
 resolve_prediction <- function(prediction, prediction_layer){
 
   # ---- Case 1: prediction is a data.frame -----------------------------------

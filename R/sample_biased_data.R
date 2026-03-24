@@ -1,3 +1,51 @@
+#' Sample occurrence data from a bias-weighted prediction surface
+#'
+#' @description
+#' Samples \code{n_occ} virtual occurrence points using the bias-weighted
+#' prediction values directly as sampling probabilities. Unlike
+#' \code{sample_data()}, there is no sampling strategy argument — the
+#' prediction layer values themselves define where points are drawn from,
+#' making this function suited for simulating realistically biased occurrence
+#' records.
+#'
+#' @param n_occ Integer. Number of occurrence points to sample.
+#' @param prediction A \code{SpatRaster} or data frame containing the
+#'   bias-weighted prediction surface to sample from.
+#' @param prediction_layer Character. Name of the layer or column to use as
+#'   sampling weights. Required when \code{prediction} contains multiple
+#'   layers or columns.
+#' @param sampling_mask A \code{SpatRaster} or \code{SpatVector} used to
+#'   restrict sampling to a geographic area. Only supported when
+#'   \code{prediction} is a \code{SpatRaster}.
+#' @param seed Integer. Random seed for reproducibility. Default is \code{1}.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
+#' @param strict Logical or \code{NULL}. If \code{TRUE}, removes \code{NA} and
+#'   zero-valued cells before sampling. If \code{NULL} (default),
+#'   auto-detected from the layer name and the proportion of zeros and
+#'   \code{NA}s in the prediction values.
+#'
+#' @details
+#' Prediction values are used directly as sampling weights, so they must be
+#' non-negative. Higher values correspond to higher sampling probability,
+#' reflecting areas of greater bias (e.g., higher detectability or observer
+#' effort). This is in contrast to \code{sample_data()}, which transforms
+#' prediction values according to a \code{sampling} and \code{method}
+#' argument.
+#'
+#' Auto-detection of \code{strict} follows the same logic as
+#' \code{sample_data()}: it is set to \code{TRUE} if the layer name contains
+#' \code{"trunc"} or if the proportion of zeros or \code{NA}s exceeds 25\%.
+#'
+#' @return
+#' A data frame of sampled occurrence points with the same columns as the
+#' input \code{prediction} (minus the internal \code{pred} column). If
+#' \code{prediction} is a \code{SpatRaster}, the output includes \code{x}
+#' and \code{y} coordinate columns.
+#'
+#' @seealso \code{\link{sample_data}} for unbiased sampling with explicit
+#'   strategy and method control, \code{\link{apply_bias}} for generating
+#'   the bias-weighted prediction surface used as input here.
+#'
 #' @export
 sample_biased_data <- function(n_occ,
                                prediction,
