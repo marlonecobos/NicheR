@@ -138,7 +138,7 @@ This function acts as the data-frame equivalent to `sample_data()`. It inherentl
 
 <br>
 
-## Key Arguments:
+## Key Arguments
 
 -   **`virtual_prediction`**: The data frame output from the `predict()` function.
 
