@@ -212,7 +212,7 @@ add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_12", pts_col = "r
 
 # Plot 2: Suit Truncated | Random | Strict = TRUE
 plot_ellipsoid(ell, dim = c(1, 2), pch = ".", col_bg = "#9a9797", 
-               xlab = "Bio1", ylab = "Bio12", main = "Virtual Suit Trunc | Random | Strict = TRUE")
+               xlab = "Bio1", ylab = "Bio12", main = "Virtual Suitability Trunc | Random | Strict = TRUE")
 add_data(occ_virt_suit_trunc_rand, x = "bio_1", y = "bio_12", pts_col = "orange", pch = 20)
 add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_12", pts_col = "red", pch = 15, cex = 1.5)
 
@@ -224,7 +224,7 @@ add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_12", pts_col = "r
 
 # Plot 4: Mahalanobis Truncated | Centroid | Strict = TRUE
 plot_ellipsoid(ell, dim = c(1, 2), pch = ".", col_bg = "#9a9797", 
-               xlab = "Bio1", ylab = "Bio12", main = "Virt Maha Trunc | Centroid | Strict = TRUE")
+               xlab = "Bio1", ylab = "Bio12", main = "Virt Mahalanobis Trunc | Centroid | Strict = TRUE")
 add_data(occ_virt_maha_trunc_cent, x = "bio_1", y = "bio_12", pts_col = "orange", pch = 20)
 add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_12", pts_col = "red", pch = 15, cex = 1.5)
 
@@ -246,7 +246,7 @@ add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_15", pts_col = "r
 
 # Plot 2: Suit Truncated | Random | Strict = TRUE
 plot_ellipsoid(ell, dim = c(1, 3), pch = ".", col_bg = "#9a9797", 
-               xlab = "Bio1", ylab = "Bio15", main = "Virtual Suit Trunc | Random | Strict = TRUE")
+               xlab = "Bio1", ylab = "Bio15", main = "Virtual Suitability Trunc | Random | Strict = TRUE")
 add_data(occ_virt_suit_trunc_rand, x = "bio_1", y = "bio_15", pts_col = "orange", pch = 20)
 add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_15", pts_col = "red", pch = 15, cex = 1.5)
 
@@ -258,7 +258,7 @@ add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_15", pts_col = "r
 
 # Plot 4: Mahalanobis Truncated | Centroid | Strict = TRUE
 plot_ellipsoid(ell, dim = c(1, 3), pch = ".", col_bg = "#9a9797", 
-               xlab = "Bio1", ylab = "Bio15", main = "Virt Maha Trunc | Centroid | Strict = TRUE")
+               xlab = "Bio1", ylab = "Bio15", main = "Virt Mahalanobis Trunc | Centroid | Strict = TRUE")
 add_data(occ_virt_maha_trunc_cent, x = "bio_1", y = "bio_15", pts_col = "orange", pch = 20)
 add_data(as.data.frame(t(ell$centroid)), x = "bio_1", y = "bio_15", pts_col = "red", pch = 15, cex = 1.5)
 
