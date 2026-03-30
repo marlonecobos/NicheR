@@ -143,7 +143,7 @@ plot_ellipsoid <- function(object,
     pts_xy <- background[pts_indx, c(object$var_names[dim]), drop = FALSE]
     lims   <- if (!is.null(fixed_lims)) fixed_lims else safe_lims(pts_xy, ell_points)
 
-    plot(pts_xy[[1L]], pts_xy[[2L]],
+    plot(pts_xy,
          col = adjustcolor(col_bg, alpha.f = alpha_bg),
          pch = pch,
          cex = cex_bg,
@@ -169,7 +169,7 @@ plot_ellipsoid <- function(object,
       pts_xy <- prediction[pts_indx, c(object$var_names[dim]), drop = FALSE]
       lims   <- if (!is.null(fixed_lims)) fixed_lims else safe_lims(pts_xy, ell_points)
 
-      plot(pts_xy[[1L]], pts_xy[[2L]],
+      plot(pts_xy,
            col = adjustcolor(col_bg, alpha.f = alpha_bg),
            pch = pch,
            cex = cex_bg,
@@ -193,7 +193,7 @@ plot_ellipsoid <- function(object,
         pal <- rev(pal)
       }
 
-      # Split on col_layer: inside = non-NA and non-zero, outside = zero or NA.
+      # Split on col_layer: inside = non-NA and non-zero, outside = zero or NA
       # Zeros arise from suitability_trunc outside the ellipsoid;
       # NAs arise from Mahalanobis_trunc outside the ellipsoid.
       # Both cases get col_bg. Limits use the full prediction so the view
@@ -226,27 +226,23 @@ plot_ellipsoid <- function(object,
       lims <- if (!is.null(fixed_lims)) fixed_lims else
         safe_lims(prediction[ , c(object$var_names[dim]), drop = FALSE], ell_points)
 
-      # Open the device with plot.default using explicit x/y vectors so
-      # xlim and ylim are always respected. plot() on a data frame dispatches
-      # to plot.data.frame which ignores xlim/ylim and sizes axes to the data
-      # it receives, collapsing the view to just the outside or inside region.
-      plot(lims$xlim, lims$ylim,
+
+
+      plot(prediction[ , c(object$var_names[dim]), drop = FALSE],
            type = "n",
            xlim = lims$xlim,
            ylim = lims$ylim, ...)
 
       # Outside points first (grey, behind), then inside (colored)
       if (nrow(pred_outside) > 0L) {
-        points(pred_outside[pts_indx_out, 1L],
-               pred_outside[pts_indx_out, 2L],
+        points(pred_outside[pts_indx_out, , drop = FALSE],
                col = adjustcolor(col_bg, alpha.f = alpha_bg),
                pch = pch,
                cex = cex_bg)
       }
 
       if (nrow(pred_inside) > 0L) {
-        points(pred_inside[pts_indx_in, 1L],
-               pred_inside[pts_indx_in, 2L],
+        points(pred_inside[pts_indx_in, , drop = FALSE],
                col = pal[col_indx],
                pch = pch,
                cex = cex_bg)
@@ -339,14 +335,6 @@ add_data <- function(data, x, y,
 
   } else {
 
-    # Remove NAs only; zeros are valid (e.g., truncated suitability outside the ellipsoid)
-    data_clean <- data[!is.na(data[ , col_layer]), ]
-
-    if (!is.null(bg_sample) && nrow(data_clean) > bg_sample) {
-      pts_indx <- sample(seq_len(nrow(data_clean)), bg_sample)
-    } else {
-      pts_indx <- seq_len(nrow(data_clean))
-    }
 
     if(is.function(pal)){
       pal <- pal(100)
@@ -356,11 +344,27 @@ add_data <- function(data, x, y,
       pal <- rev(pal)
     }
 
-    col_indx <- map_to_pal(data_clean[pts_indx, col_layer], length(pal))
+    col_vals   <- data[ , col_layer]
+    is_outside <- is.na(col_vals) | col_vals == 0
+    is_inside  <- !is_outside
 
-    points(data_clean[pts_indx, c(x, y)],
+    pred_inside  <- data[is_inside, c(x, y), drop = FALSE]
+
+    # Subsample inside points if requested
+    if (!is.null(bg_sample) && nrow(pred_inside) > bg_sample) {
+      pts_indx_in <- sample(seq_len(nrow(pred_inside)), bg_sample)
+    } else {
+      pts_indx_in <- seq_len(nrow(pred_inside))
+    }
+
+
+    col_indx <- map_to_pal(col_vals[is_inside][pts_indx_in], length(pal))
+
+
+    points(pred_inside[pts_indx_in, , drop = FALSE],
            col = pal[col_indx],
-           pch = pch, cex = cex, ...)
+           pch = pch,
+           cex = cex, ...)
 
   }
 }
@@ -418,6 +422,7 @@ add_ellipsoid <- function(object,
         cex = cex_ell, ...)
 
 }
+
 
 #' Generate 2D ellipsoid boundary points for plotting
 #'
@@ -567,6 +572,8 @@ plot_ellipsoid_pairs <- function(object,
 
   invisible(NULL)
 }
+
+
 
 
 
