@@ -577,7 +577,20 @@ plot_ellipsoid_pairs <- function(object,
 
 
 # Helper: map a numeric vector to palette indices via linear min-max scaling
-# Internal
+#
+#' Map numeric values to palette indices
+#'
+#' Rescales a numeric vector linearly from its observed range onto integer
+#' indices in \code{[1, pal_len]} for use in palette lookups. When all values
+#' are identical, returns the middle index for every element.
+#'
+#' @param vals Numeric vector of values to map.
+#' @param pal_len Integer. Length of the target palette.
+#'
+#' @return Integer vector of the same length as \code{vals}, with values in
+#'   \code{[1, pal_len]}.
+#'
+#' @keywords internal
 map_to_pal <- function(vals, pal_len) {
   vmin <- min(vals, na.rm = TRUE)
   vmax <- max(vals, na.rm = TRUE)
@@ -587,9 +600,25 @@ map_to_pal <- function(vals, pal_len) {
   as.integer(ceiling((vals - vmin) / (vmax - vmin) * (pal_len - 1L))) + 1L
 }
 
-# Helper: compute xlim/ylim that covers both a data matrix and ell_points,
-# so the ellipsoid boundary is never clipped by the data extent.
-# Internal
+
+
+# Helper: compute xlim/ylim that covers both a data matrix and ell_points
+#
+#' Compute safe axis limits covering data and ellipsoid boundary
+#'
+#' Returns x and y ranges that span both a matrix of data points and a
+#' data frame of ellipsoid boundary points, so the ellipsoid boundary is
+#' never clipped by the data extent when passed to \code{plot()}.
+#'
+#' @param pts_xy A data frame or matrix with at least two columns. The first
+#'   column is used for x, the second for y.
+#' @param ell_xy A data frame or matrix of ellipsoid boundary points with the
+#'   same column structure as \code{pts_xy}.
+#'
+#' @return A named list with elements \code{xlim} and \code{ylim}, each a
+#'   numeric vector of length 2.
+#'
+#' @keywords internal
 safe_lims <- function(pts_xy, ell_xy) {
   all_x <- c(pts_xy[, 1], ell_xy[, 1])
   all_y <- c(pts_xy[, 2], ell_xy[, 2])
