@@ -4,10 +4,20 @@
 \alias{plot_ellipsoid_pairs}
 \title{Plot all pairwise 2D ellipsoid projections}
 \usage{
-plot_ellipsoid_pairs(object, ...)
+plot_ellipsoid_pairs(object, background = NULL, prediction = NULL, ...)
 }
 \arguments{
 \item{object}{A \code{nicheR_ellipsoid} object.}
+
+\item{background}{Optional data frame or matrix of background points passed
+to each \code{plot_ellipsoid()} call. When provided, global axis limits
+are computed from the range of all variables in \code{background} combined
+with all pairwise ellipsoid boundaries.}
+
+\item{prediction}{Optional data frame or matrix of prediction values passed
+to each \code{plot_ellipsoid()} call. Used when \code{background} is
+\code{NULL}. Global limits are computed from the range of all variables
+in \code{prediction}.}
 
 \item{...}{Additional graphical arguments passed to \code{plot_ellipsoid()}.}
 }
@@ -16,5 +26,18 @@ Invisibly returns \code{NULL}.
 }
 \description{
 Plots all pairwise two-dimensional slices of a \code{nicheR_ellipsoid}
-in a multi-panel layout using \code{plot_ellipsoid()}.
+in a multi-panel layout using \code{plot_ellipsoid()}. When \code{background}
+or \code{prediction} is supplied, axis limits are computed once from the
+global range of all variables and shared across every panel, so projections
+are directly comparable without distortion from per-panel rescaling.
+}
+\details{
+Global limits are computed per variable across the full data and all
+ellipsoid boundary projections, then passed to each panel via the
+\code{fixed_lims} argument of \code{plot_ellipsoid()}. This prevents
+individual panels from rescaling to their own data extent, which would make
+niche widths appear identical across dimensions even when they differ. If
+neither \code{background} nor \code{prediction} is provided, each panel
+shows only the ellipsoid boundary and limits come from that boundary alone,
+which is the intended behavior for a boundary-only view.
 }

@@ -660,12 +660,10 @@ par(mfrow = c(1, 2), cex = 0.7)
 
 terra::plot(trunc_rast$Mahalanobis_trunc,
             axes = FALSE, box = TRUE, mar = marsr,
-            col  = blue_pal,
             main = "Mahalanobis Trunc. (D\u00b2)")
 
 terra::plot(trunc_rast$suitability_trunc,
             axes = FALSE, box = TRUE, mar = marsr,
-            col  = vir_pal,
             main = "Suitability Trunc.")
 ```
 

@@ -10,7 +10,6 @@ add_ellipsoid(
   lty = 1,
   lwd = 1,
   col_ell = "#000000",
-  pch = 1,
   alpha_ell = 1,
   cex_ell = 1,
   ...
@@ -28,9 +27,6 @@ plot. Default is \code{c(1, 2)}.}
 
 \item{col_ell}{Character. Color of the ellipsoid boundary line. Default is
 \code{"#000000"} (black).}
-
-\item{pch}{Integer or character. Point symbol (passed through but not used
-by the line). Default is \code{1}.}
 
 \item{alpha_ell}{Numeric in \code{[0, 1]}. Transparency of the ellipsoid
 boundary line. Default is \code{1} (fully opaque).}

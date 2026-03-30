@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_utilities.R
 \name{add_data}
 \alias{add_data}
-\title{Add occurrence points oor other data to an existing E-space plot}
+\title{Add occurrence points or other data to an existing E-space plot}
 \usage{
 add_data(
   data,
@@ -14,6 +14,7 @@ add_data(
   pal = hcl.colors(100, palette = "Viridis"),
   rev_pal = FALSE,
   pch = 1,
+  cex = 1,
   bg_sample = NULL,
   ...
 )
@@ -44,6 +45,8 @@ applying it. Default is \code{FALSE}.}
 
 \item{pch}{Integer or character. Point symbol. Default is \code{1}.}
 
+\item{cex}{Numeric. Size scaling for points. Default is \code{1}.}
+
 \item{bg_sample}{Integer or \code{NULL}. If provided and \code{nrow(data)}
 exceeds this value, a random subsample of this size is drawn before
 plotting. Useful for large data frames. Default is \code{NULL} (plot all).}
@@ -60,9 +63,10 @@ Adds points to an existing environmental space plot created with
 colored by a continuous variable (e.g., suitability) using a color palette.
 }
 \details{
-When \code{col_layer} is provided, points are colored by the log-transformed
-values of that column mapped onto the palette. Zeros and \code{NA}s in
-\code{col_layer} are removed before plotting.
+When \code{col_layer} is provided, points are colored by the values of that
+column mapped onto the palette. \code{NA}s in \code{col_layer} are removed
+before plotting; zeros are retained as valid values (e.g., truncated
+suitability predictions outside the ellipsoid boundary).
 }
 \seealso{
 \code{\link{plot_ellipsoid}}, \code{\link{add_ellipsoid}}

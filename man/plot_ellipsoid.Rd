@@ -22,6 +22,7 @@ plot_ellipsoid(
   alpha_ell = 1,
   cex_ell = 1,
   cex_bg = 1,
+  fixed_lims = NULL,
   ...
 )
 }
@@ -84,6 +85,13 @@ Default is \code{1}.}
 \item{cex_bg}{Numeric. Size scaling for background or prediction points.
 Default is \code{1}.}
 
+\item{fixed_lims}{A named list with elements \code{xlim} and \code{ylim},
+each a numeric vector of length 2. When provided, overrides the limits
+computed by \code{safe_lims()}. Intended for use by
+\code{\link{plot_ellipsoid_pairs}} to enforce consistent axis scales across
+panels, but can also be set manually by the user. Default is \code{NULL}
+(limits computed from data).}
+
 \item{...}{Additional graphical parameters passed to
 \code{\link[graphics]{plot}}.}
 }
@@ -106,9 +114,12 @@ The function has three display modes depending on what is provided:
   overlaid.
   \item \strong{Prediction surface} (\code{background} is \code{NULL},
   \code{prediction} is not \code{NULL}): plots prediction points, optionally
-  colored by \code{col_layer} using the log-transformed values mapped onto
-  \code{pal}. Zeros and \code{NA}s in \code{col_layer} are removed before
-  plotting.
+  colored by \code{col_layer} using values mapped onto \code{pal}.
+  When \code{col_layer} is provided, points outside the ellipsoid (zero or
+  \code{NA} in \code{col_layer}, as produced by truncated prediction types)
+  are drawn in \code{col_bg} behind the colored interior points. Axis limits
+  are computed from the full \code{prediction} extent so the view is never
+  collapsed to the ellipsoid interior.
   \item \strong{Ellipsoid only} (both \code{NULL}): plots the ellipsoid
   boundary alone with no background.
 }
