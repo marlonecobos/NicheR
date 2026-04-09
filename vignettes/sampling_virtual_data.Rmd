@@ -2,7 +2,7 @@
 title: "Sampling occurrence data with virtual data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Sampling occurrence data}
+  %\VignetteIndexEntry{Sampling occurrence data with virtual data}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
