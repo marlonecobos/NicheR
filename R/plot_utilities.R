@@ -307,7 +307,7 @@ plot_ellipsoid <- function(object,
 #' @seealso \code{\link{plot_ellipsoid}}, \code{\link{add_ellipsoid}}
 #'
 #' @importFrom graphics points
-#' @importFrom grDevices hcl.colors adjustcolor#'
+#' @importFrom grDevices hcl.colors adjustcolor
 #'
 #' @export
 add_data <- function(data, x, y,

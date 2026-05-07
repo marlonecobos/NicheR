@@ -63,12 +63,15 @@ Also applied to prediction points.}
 
 \item{fixed_lims}{Named list with \code{xlim}, \code{ylim}, and \code{zlim}.}
 
-\item{xlab, }{ylab, zlab Axis labels. The default, \code{NULL}, uses
-the variable names.}
+\item{xlab}{x-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
+
+\item{ylab}{y-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
+
+\item{zlab}{z-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
 
 \item{...}{Additional graphical parameters.}
 }
 \description{
-Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with 
+Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with
 support for background points or suitability surfaces.
 }

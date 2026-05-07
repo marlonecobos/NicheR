@@ -32,5 +32,5 @@ The function formats and rounds key quantities for readability but does
 not modify the underlying object.
 }
 \seealso{
-\code{\link{build_ellipsoid}} and \code{\link{generate_community}}
+\code{\link{build_ellipsoid}}
 }
