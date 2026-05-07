@@ -24,6 +24,7 @@ Cobos
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Background

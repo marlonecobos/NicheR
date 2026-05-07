@@ -5,6 +5,6 @@
 ^README\.Rmd$
 ^LICENSE\.md$
 ^\.github$
-^doc$
+^docs$
 ^Meta$
 ^_pkgdown\.yml$
