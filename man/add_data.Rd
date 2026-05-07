@@ -77,10 +77,10 @@ ell <- build_ellipsoid(range = range_df)
     system.file("extdata/ma_bios.tif", package = "nicheR"))
   back_df <- as.data.frame(ma_bios, xy = TRUE)
 
-  pred_df <- nicheR::predict(ell,
-                             newdata = back_df,
-                             include_suitability = TRUE,
-                             include_mahalanobis = FALSE)
+  pred_df <- predict(ell,
+                     newdata = back_df,
+                     include_suitability = TRUE,
+                     include_mahalanobis = FALSE)
 
   # Open base plot then add centroid as a cross
   nicheR::plot_ellipsoid(ell,

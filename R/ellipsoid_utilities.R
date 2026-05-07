@@ -158,14 +158,14 @@ ellipsoid_calculator <- function(cov_matrix,
 #'   \code{\link{ellipsoid_calculator}}
 #'
 #' @examples
-#' range_df <- data.frame(bio_1  = c(22, 28),
+#' range_df <- data.frame(bio_1 = c(22, 28),
 #'                        bio_12 = c(1000, 3500))
 #' ell <- nicheR::build_ellipsoid(range = range_df)
 #'
 #' ell$volume
 #'
 #' # or recalculate
-#' nicheR::ellipsoid_volume(n_dimensions = ell$dimesnions, semi_axes_lengths = ell$semi_axes_lengths)
+#' nicheR::ellipsoid_volume(n_dimensions = ell$dimensions, semi_axes_lengths = ell$semi_axes_lengths)
 #'
 #' @export
 ellipsoid_volume <- function(n_dimensions, semi_axes_lengths) {
