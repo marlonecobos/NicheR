@@ -47,7 +47,7 @@
 #'   the bias-weighted prediction surface used as input here.
 #'
 #' @examples
-#' \donttest {
+#' \donttest{
 #' range_df <- data.frame(bio_1  = c(22, 28),
 #'                        bio_12 = c(1000, 3500),
 #'                        bio_15 = c(50, 70))

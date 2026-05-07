@@ -64,7 +64,7 @@ Auto-detection of \code{strict} follows the same logic as
 \code{"trunc"} or if the proportion of zeros or \code{NA}s exceeds 25\%.
 }
 \examples{
-\donttest {
+\donttest{
 range_df <- data.frame(bio_1  = c(22, 28),
                        bio_12 = c(1000, 3500),
                        bio_15 = c(50, 70))
