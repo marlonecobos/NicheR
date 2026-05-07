@@ -5,7 +5,7 @@
 #' @name print
 #' @aliases print,nicheR_nicheR_ellipsoid-method
 #' @aliases print,nicheR_nicheR_community-method
-#' 
+#'
 #' @rdname print
 #'
 #' @param x An object of the classes \code{"nicheR_ellipsoid"} or
@@ -21,7 +21,7 @@
 #' @return
 #' The input object \code{x}, returned invisibly.
 #'
-#' @seealso \code{\link{build_ellipsoid}} and \code{\link{generate_community}}
+#' @seealso \code{\link{build_ellipsoid}}
 #'
 #' @method print nicheR_ellipsoid
 #' @export
@@ -230,20 +230,20 @@ predict.nicheR_ellipsoid <- function(object,
                                      keep_data = NULL,
                                      verbose = TRUE,
                                      ...){
-  
+
   # Basic object checks -----------------------------------------------------
-  
+
   if(!inherits(object, "nicheR_ellipsoid")){
     stop("'object' must be a nicheR_ellipsoid produced by build_ellipsoid().")
   }
-  
+
   required_fields <- c("dimensions", "centroid", "cov_matrix", "Sigma_inv",
                        "cl", "var_names")
   missing_fields <- required_fields[!required_fields %in% names(object)]
   if(length(missing_fields) > 0){
     stop("object is missing required fields: ", paste(missing_fields, collapse = ", "))
   }
-  
+
   if(!is.numeric(object$centroid) || length(object$centroid) != object$dimensions){
     stop("object$centroid must be a numeric vector of length object$dimensions.")
   }
@@ -258,9 +258,9 @@ predict.nicheR_ellipsoid <- function(object,
   if(!is.character(object$var_names) || length(object$var_names) != object$dimensions){
     stop("object$var_names must be a character vector of length object$dimensions.")
   }
-  
+
   # Sanity checks for inclusions -------------------------------------------
-  
+
   if(!is.logical(include_suitability) || length(include_suitability) != 1L){
     stop("include_suitability must be TRUE/FALSE.")
   }
@@ -273,22 +273,22 @@ predict.nicheR_ellipsoid <- function(object,
   if(!is.logical(mahalanobis_truncated) || length(mahalanobis_truncated) != 1L){
     stop("mahalanobis_truncated must be TRUE/FALSE.")
   }
-  
+
   # Core object attributes --------------------------------------------------
-  
+
   dimensions <- object$dimensions
   mu <- object$centroid
   Sigma_inv <- object$Sigma_inv
   var_names <- object$var_names
   truncation_level <- object$cl
-  
+
   verbose_message(verbose,
                   paste0("Starting: suitability prediction using newdata of class: ",
                          paste(class(newdata), collapse = ", "),
                          "...\n"))
-  
+
   # Cutoff handling ---------------------------------------------------------
-  
+
   if(is.null(adjust_truncation_level)){
     truncation_threshold <- stats::qchisq(truncation_level, df = dimensions)
   }else{
@@ -300,9 +300,9 @@ predict.nicheR_ellipsoid <- function(object,
     truncation_threshold <- stats::qchisq(adjust_truncation_level, df = dimensions)
     truncation_level <- adjust_truncation_level
   }
-  
+
   # Coerce newdata ----------------------------------------------------------
-  
+
   if(inherits(newdata, c("RasterLayer", "RasterStack", "RasterBrick"))){
     newdata <- terra::rast(newdata)
   }else if(inherits(newdata, "SpatRaster")){
@@ -312,9 +312,9 @@ predict.nicheR_ellipsoid <- function(object,
   }else{
     stop("'newdata' must be a SpatRaster, Raster*, data.frame, tibble, or matrix.")
   }
-  
+
   # Variable matching -------------------------------------------------------
-  
+
   if(inherits(newdata, "SpatRaster")){
     nd_names <- names(newdata)
     if(is.null(nd_names)) stop("SpatRaster newdata must have named layers.")
@@ -322,11 +322,11 @@ predict.nicheR_ellipsoid <- function(object,
     nd_names <- names(newdata)
     if(is.null(nd_names)) stop("newdata must have column names matching object$var_names.")
   }
-  
+
   used_vars <- intersect(var_names, nd_names)
   missing_vars <- setdiff(var_names, nd_names)
   extra_vars <- setdiff(nd_names, var_names)
-  
+
   if(length(used_vars) == 0){
     stop("No matching predictor variables found.\n",
          "Variables expected: ", paste(var_names, collapse = ", "))
@@ -335,49 +335,49 @@ predict.nicheR_ellipsoid <- function(object,
     stop("newdata is missing required predictor variables: ",
          paste(missing_vars, collapse = ", "))
   }
-  
+
   spatial_names <- c("x", "y", "lon", "lat", "longitude", "latitude")
   spatial_cols <- character(0)
-  
+
   if(!inherits(newdata, "SpatRaster")){
     coords_lower <- tolower(colnames(newdata))
     spatial_cols <- colnames(newdata)[coords_lower %in% spatial_names]
-    
+
     if(length(spatial_cols) > 0){
       verbose_message(verbose, "Step: Identified spatial columns: ",
                       paste(spatial_cols, collapse = ", "), "\n")
       extra_vars <- setdiff(extra_vars, spatial_cols)
     }
   }
-  
+
   if(length(extra_vars) > 0){
     verbose_message(verbose, "Step: Ignoring extra predictor columns: ",
                     paste(extra_vars, collapse = ", "), "\n")
   }
-  
+
   verbose_message(verbose, "Step: Using ", length(var_names),
                   " predictor variables: ",
                   paste(var_names, collapse = ", "), "\n")
-  
+
   # Subset and reorder ------------------------------------------------------
-  
+
   if(inherits(newdata, "SpatRaster")){
     newdata <- newdata[[var_names]]
   }else{
     newdata <- newdata[, c(spatial_cols, var_names), drop = FALSE]
   }
-  
+
   # keep_data defaulting ----------------------------------------------------
-  
+
   if(is.null(keep_data)){
     keep_data <- !inherits(newdata, "SpatRaster")
   }
   if(!is.logical(keep_data) || length(keep_data) != 1L){
     stop("keep_data must be TRUE or FALSE.")
   }
-  
+
   # Predict: SpatRaster -----------------------------------------------------
-  
+
   if(inherits(newdata, "SpatRaster")){
     D2 <- terra::app(newdata, fun = function(v){
       if(anyNA(v) || any(!is.finite(v))) return(NA_real_)
@@ -385,45 +385,45 @@ predict.nicheR_ellipsoid <- function(object,
       as.numeric(t(d) %*% Sigma_inv %*% d)
     })
     names(D2) <- "Mahalanobis"
-    
+
     out_rast <- list()
-    
+
     if(isTRUE(include_mahalanobis)) out_rast$Mahalanobis <- D2
-    
+
     if(isTRUE(include_suitability)){
       S <- exp(-0.5 * D2)
       names(S) <- "suitability"
       out_rast$suitability <- S
     }
-    
+
     if(isTRUE(mahalanobis_truncated)){
       Mt <- D2
       Mt[!is.na(Mt) & Mt > truncation_threshold] <- NA_real_
       names(Mt) <- "Mahalanobis_trunc"
       out_rast$Mahalanobis_trunc <- Mt
     }
-    
+
     if(isTRUE(suitability_truncated)){
       St <- exp(-0.5 * D2)
       St[!is.na(St) & D2 > truncation_threshold] <- 0
       names(St) <- "suitability_trunc"
       out_rast$suitability_trunc <- St
     }
-    
+
     out_rast <- if(isTRUE(keep_data)){
       c(newdata, terra::rast(out_rast))
     }else{
       terra::rast(out_rast)
     }
-    
+
     verbose_message(verbose,
                     "Done: Prediction completed successfully. Returned raster layers: ",
                     paste(names(out_rast), collapse = ", "), "\n")
     return(out_rast)
   }
-  
+
   # Predict: data.frame -----------------------------------------------------
-  
+
   if(length(spatial_cols) > 0){
     out_df <- if(isTRUE(keep_data)){
       newdata[, c(spatial_cols, var_names), drop = FALSE]
@@ -437,42 +437,42 @@ predict.nicheR_ellipsoid <- function(object,
       data.frame(row_id = seq_len(nrow(newdata)))
     }
   }
-  
+
   cc <- stats::complete.cases(newdata[, var_names, drop = FALSE])
   if(!any(cc)) stop("All rows contain NA in predictor columns.")
-  
+
   pts <- as.matrix(newdata[cc, var_names, drop = FALSE])
   diffs <- sweep(pts, 2, mu, "-")
   D2v <- rowSums((diffs %*% Sigma_inv) * diffs)
-  
+
   if(isTRUE(include_mahalanobis)){
     out_df$Mahalanobis <- NA_real_
     out_df$Mahalanobis[cc] <- D2v
   }
-  
+
   if(isTRUE(include_suitability)){
     out_df$suitability <- NA_real_
     out_df$suitability[cc] <- exp(-0.5 * D2v)
   }
-  
+
   if(isTRUE(mahalanobis_truncated)){
     out_df$Mahalanobis_trunc <- NA_real_
     out_df$Mahalanobis_trunc[cc] <- ifelse(D2v <= truncation_threshold,
                                            D2v, NA_real_)
   }
-  
+
   if(isTRUE(suitability_truncated)){
     s <- exp(-0.5 * D2v)
     out_df$suitability_trunc <- NA_real_
     out_df$suitability_trunc[cc] <- ifelse(D2v <= truncation_threshold, s, 0)
   }
-  
+
   if("row_id" %in% names(out_df)) out_df$row_id <- NULL
-  
+
   verbose_message(verbose,
                   "Done: Prediction completed successfully. Returned columns: ",
                   paste(colnames(out_df), collapse = ", "), "\n")
-  
+
   class(out_df) <- c("nicheR_prediction", class(out_df))
   out_df
 }

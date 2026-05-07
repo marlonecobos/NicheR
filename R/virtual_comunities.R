@@ -30,7 +30,7 @@
 #' An object of class \code{nicheR_community} containing the generated
 #' ellipses, the reference object, and generation metadata.
 #'
-#'@importFrom stats runif
+#' @importFrom stats runif
 #'
 #' @export
 
@@ -173,7 +173,6 @@ random_ellipses <- function(object,
 #' where \eqn{t_i} is a linear sequence from 1 down to 0.
 #'
 #' @export
-
 nested_ellipses <- function(object,
                             n = 10,
                             smallest_proportion = 0.1,
@@ -257,7 +256,6 @@ nested_ellipses <- function(object,
 #'@importFrom stats runif
 #'
 #' @export
-
 conserved_ellipses <- function(object,
                                background,
                                n = 10,

@@ -83,7 +83,7 @@
 #'   \code{\link{plot_ellipsoid_pairs}} for pairwise plots of all dimensions.
 #'
 #' @importFrom graphics plot lines
-#' @importFrom grDevices adjustcolor
+#' @importFrom grDevices hcl.colors adjustcolor
 #'
 #' @export
 plot_ellipsoid <- function(object,
@@ -307,7 +307,7 @@ plot_ellipsoid <- function(object,
 #' @seealso \code{\link{plot_ellipsoid}}, \code{\link{add_ellipsoid}}
 #'
 #' @importFrom graphics points
-#' @importFrom grDevices adjustcolor
+#' @importFrom grDevices hcl.colors adjustcolor#'
 #'
 #' @export
 add_data <- function(data, x, y,

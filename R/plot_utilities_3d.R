@@ -1,7 +1,7 @@
 #' Plot a nicheR ellipsoid in 3D environmental space
 #'
 #' @description
-#' Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with 
+#' Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with
 #' support for background points or suitability surfaces.
 #'
 #' @param object A \code{nicheR_ellipsoid} object constructed with at least
@@ -25,9 +25,12 @@
 #'    Also applied to prediction points.
 #' @param col_bg Color for background points.
 #' @param fixed_lims Named list with \code{xlim}, \code{ylim}, and \code{zlim}.
-#' @param xlab, ylab, zlab Axis labels. The default, \code{NULL}, uses
-#'    the variable names.
+#' @param xlab x-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
+#' @param ylab y-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
+#' @param zlab z-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
 #' @param ... Additional graphical parameters.
+#'
+#'@importFrom grDevices hcl.colors adjustcolor
 #'
 #' @export
 
