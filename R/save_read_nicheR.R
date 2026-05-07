@@ -15,6 +15,22 @@
 #' @return
 #' No return value. Saves the object to the specified path.
 #'
+#' @examples
+#' # Build a simple ellipsoid to save
+#' range_df <- data.frame(bio_1  = c(15, 25),
+#'                        bio_12 = c(500, 1500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' # Save to a temporary file
+#' tmp <- tempfile(fileext = ".rds")
+#' save_nicheR(ell, file = tmp)
+#'
+#' # Overwrite the same file
+#' save_nicheR(ell, file = tmp, overwrite = TRUE)
+#'
+#' \dontshow{file.remove(tmp)}
+#'
+#'
 #' @export
 
 save_nicheR <- function(object, file, overwrite = FALSE, ...) {
@@ -52,6 +68,21 @@ save_nicheR <- function(object, file, overwrite = FALSE, ...) {
 #'
 #' @seealso
 #' \code{\link{save_nicheR}}
+#'
+#' @examples
+#' # Build and save an ellipsoid first
+#' range_df <- data.frame(bio_1  = c(15, 25),
+#'                        bio_12 = c(500, 1500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' tmp <- tempfile(fileext = ".rds")
+#' save_nicheR(ell, file = tmp)
+#'
+#' # Read it back
+#' ell_loaded <- read_nicheR(tmp)
+#' ell_loaded
+#'
+#' \dontshow{file.remove(tmp)}
 #'
 #' @export
 

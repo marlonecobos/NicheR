@@ -61,6 +61,27 @@
 #'   suitability prediction, \code{\link{sample_biased_data}} to sample
 #'   occurrences from the resulting bias-weighted surface.
 #'
+#' @examples
+#' \donttest{
+#' bias_rast <- terra::rast(
+#'   system.file("extdata/ma_biases.tif", package = "nicheR"))
+#'
+#' # Single layer, direct effect (higher values increase sampling probability)
+#' bias_single <- nicheR::prepare_bias(bias_surface = bias_rast[[1]],
+#'                             effect_direction = "direct")
+#' bias_single$composite_surface
+#'
+#' # Two layers: first direct, second inverse
+#' bias_two <- nicheR::prepare_bias(
+#'   bias_surface = bias_rast[[c(1, 2)]],
+#'   effect_direction = c("direct", "inverse"),
+#'   include_processed_layers = TRUE)
+#'
+#' bias_two$combination_formula
+#' terra::plot(bias_two$processed_layers)
+#' terra::plot(bias_two$composite_surface)
+#' }
+#'
 #' @export
 prepare_bias <- function(bias_surface,
                          effect_direction = c("direct", "inverse"),

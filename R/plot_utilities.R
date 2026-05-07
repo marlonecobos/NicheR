@@ -85,6 +85,55 @@
 #' @importFrom graphics plot lines
 #' @importFrom grDevices hcl.colors adjustcolor
 #'
+#' @examples
+#' range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
+#' ell <- nicheR::build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#' # Mode 1: ellipsoid boundary only
+#' nicheR::plot_ellipsoid(ell,
+#'                        col_ell = "#e10000", lwd = 2,
+#'                        xlab = "Bio1 (Mean Annual Temperature)",
+#'                        ylab = "Bio12 (Annual Precipitation)")
+#'
+#' # Mode 2: with background points
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#' back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#' nicheR::plot_ellipsoid(ell,
+#'                        background = back_df,
+#'                        col_ell = "#e10000", col_bg = "grey70",
+#'                        lwd = 2, pch = 20, cex_bg = 0.4,
+#'                        xlab = "Bio1", ylab = "Bio12")
+#'
+#' # Mode 3: prediction colored by suitability
+#' pred_df <- predict(ell,
+#'                    newdata = back_df,
+#'                    include_suitability = TRUE,
+#'                    include_mahalanobis = FALSE)
+#'
+#' nicheR::plot_ellipsoid(ell,
+#'                        prediction = pred_df,
+#'                        col_layer = "suitability",
+#'                        col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.4,
+#'                        xlab = "Bio1", ylab = "Bio12")
+#'
+#' # Mode 3b: truncated suitability, outside points shown in grey
+#' pred_trunc <- predict(ell,
+#'                       newdata = back_df,
+#'                       include_suitability = FALSE,
+#'                       include_mahalanobis = FALSE,
+#'                       suitability_truncated = TRUE)
+#'
+#' nicheR::plot_ellipsoid(ell,
+#'                        prediction = pred_trunc,
+#'                        col_layer = "suitability_trunc",
+#'                        col_bg  = "#d4d4d4",
+#'                        col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.4,
+#'                        xlab = "Bio1", ylab = "Bio12")
+#' }
+#'
 #' @export
 plot_ellipsoid <- function(object,
                            background = NULL,
@@ -309,6 +358,44 @@ plot_ellipsoid <- function(object,
 #' @importFrom graphics points
 #' @importFrom grDevices hcl.colors adjustcolor
 #'
+#' @examples
+#' range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#'   ma_bios <- terra::rast(
+#'     system.file("extdata/ma_bios.tif", package = "nicheR"))
+#'   back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#'   pred_df <- nicheR::predict(ell,
+#'                              newdata = back_df,
+#'                              include_suitability = TRUE,
+#'                              include_mahalanobis = FALSE)
+#'
+#'   # Open base plot then add centroid as a cross
+#'   nicheR::plot_ellipsoid(ell,
+#'                          background = back_df,
+#'                          col_ell = "#e10000", col_bg = "grey80",
+#'                          lwd = 2, pch = 20, cex_bg = 0.4,
+#'                          xlab = "Bio1", ylab = "Bio12")
+#'
+#'   nicheR::add_data(as.data.frame(t(ell$centroid)),
+#'                    x = "bio_1", y = "bio_12",
+#'                    pts_col = "#e10000", pch = 8, cex = 1.5, lwd = 2)
+#'
+#'   # Add points colored by suitability on top of background
+#'   nicheR::plot_ellipsoid(ell,
+#'                          background = back_df,
+#'                          col_ell = "#e10000", col_bg = "grey80",
+#'                          lwd = 2, pch = 20, cex_bg = 0.4,
+#'                          xlab = "Bio1", ylab = "Bio12")
+#'
+#'   nicheR::add_data(pred_df,
+#'                    x = "bio_1", y = "bio_12",
+#'                    col_layer = "suitability",
+#'                    pch = 20, cex = 0.5)
+#' }
+#'
 #' @export
 add_data <- function(data, x, y,
                      pts_col = "#000000",
@@ -398,6 +485,39 @@ add_data <- function(data, x, y,
 #'
 #' @importFrom graphics lines
 #' @importFrom grDevices adjustcolor
+#'
+#'
+#' @examples
+#' range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#' back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#' # Open a muted plot, then overlay the ellipsoid prominently
+#' nicheR::plot_ellipsoid(ell,
+#'                        background = back_df,
+#'                        col_ell = "grey70", col_bg = "grey80",
+#'                        lwd = 1, pch = 20, cex_bg = 0.3,
+#'                        xlab = "Bio1", ylab = "Bio12")
+#'
+#' nicheR::add_ellipsoid(ell, col_ell = "#e10000", lwd = 2)
+#'
+#' # Compare two ellipsoids on the same plot
+#' range_df2 <- data.frame(bio_1 = c(10, 20), bio_12 = c(800, 1800))
+#' ell2 <- nicheR::build_ellipsoid(range = range_df2)
+#'
+#' nicheR::plot_ellipsoid(ell,
+#'                        background = back_df,
+#'                        col_ell = "#e10000", col_bg = "grey80",
+#'                        lwd = 2, pch = 20, cex_bg = 0.3,
+#'                        xlab = "Bio1", ylab = "Bio12",
+#'                        main = "Two ellipsoids")
+#'
+#' nicheR::add_ellipsoid(ell2, col_ell = "#0004d5", lwd = 2)
+#' }
 #'
 #' @export
 add_ellipsoid <- function(object,
@@ -511,6 +631,40 @@ ellipsoid_boundary_2d <- function(object,
 #'
 #' @importFrom graphics par
 #' @importFrom utils combn
+#'
+#' @examples
+#' range_df <- data.frame(bio_1 = c(15, 25),
+#'                        bio_12 = c(500, 1500),
+#'                        bio_15 = c(60, 80))
+#' ell3d <- nicheR::build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#' # Boundary only
+#' nicheR::plot_ellipsoid_pairs(ell3d, col_ell = "#e10000", lwd = 2)
+#'
+#' # With background: global limits shared across all panels
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#' back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#' nicheR::plot_ellipsoid_pairs(ell3d,
+#'                              background = back_df,
+#'                              col_ell = "#e10000", col_bg = "grey70",
+#'                              lwd = 2, pch = 20, cex_bg = 0.3)
+#'
+#' # With truncated suitability predictions
+#' pred_trunc <- predict(ell3d,
+#'                       newdata = back_df[, ell3d$var_names],
+#'                       include_suitability = FALSE,
+#'                       include_mahalanobis = FALSE,
+#'                       suitability_truncated = TRUE)
+#'
+#' nicheR::plot_ellipsoid_pairs(ell3d,
+#'                              prediction = pred_trunc,
+#'                              col_layer  = "suitability_trunc",
+#'                              col_bg  = "#d4d4d4",
+#'                              col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.3)
+#' }
 #'
 #' @export
 plot_ellipsoid_pairs <- function(object,

@@ -1,154 +1,4 @@
-#' Print method for nicheR objects
-#'
-#' Provides a concise summary of \code{nicheR} objects.
-#'
-#' @name print
-#' @aliases print,nicheR_nicheR_ellipsoid-method
-#' @aliases print,nicheR_nicheR_community-method
-#'
-#' @rdname print
-#'
-#' @param x An object of the classes \code{"nicheR_ellipsoid"} or
-#'   \code{"nicheR_community"}.
-#' @param digits Integer. Number of decimal places used when printing numeric
-#'   values. Default is 3.
-#' @param ... Additional arguments.
-#'
-#' @details
-#' The function formats and rounds key quantities for readability but does
-#' not modify the underlying object.
-#'
-#' @return
-#' The input object \code{x}, returned invisibly.
-#'
-#' @seealso \code{\link{build_ellipsoid}}
-#'
-#' @method print nicheR_ellipsoid
-#' @export
-
-print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
-
-  cat("nicheR Ellipsoid Object\n")
-  cat("-----------------------\n")
-
-  cat("Dimensions:        ", x$dimensions, "D\n", sep = "")
-  cat("Chi-square cutoff: ", round(x$chi2_cutoff, digits), "\n", sep = "")
-
-  cat("Centroid (mu):     ",
-      paste(round(x$centroid, digits), collapse = ", "),
-      "\n", sep = "")
-
-  cat("\nCovariance matrix:\n")
-  print(round(x$cov_matrix, digits))
-
-  cat("\nCovariance Limits:\n")
-  cov_lims <- x$cov_limits
-  rownames(cov_lims) <- apply(
-    combn(x$var_names, 2), 2,
-    function(pair) paste(pair, collapse = "-")
-  )
-  print(round(cov_lims, digits))
-
-  cat("\nEllipsoid semi-axis lengths:\n  ",
-      paste(round(x$semi_axes_lengths, digits), collapse = ", "),
-      "\n", sep = "")
-
-  cat("\nEllipsoid axis endpoints:\n")
-
-  for(i in seq_len(x$dimensions)){
-    cat(ifelse(i == 1, "", "\n"), " Axis ", i, ":\n", sep = "")
-    print(round(x$axes_coordinates[[i]], digits))
-  }
-
-  cat("\nEllipsoid volume:  ", round(x$volume, digits), "\n", sep = "")
-
-  cat("\n")
-  invisible(x)
-}
-
-
-
-#' @rdname print
-#' @method print nicheR_community
-#' @importFrom stats sd
-#' @export
-
-print.nicheR_community <- function(x, digits = 3, ...) {
-
-  cat("nicheR Community Object\n")
-  cat("-----------------------\n")
-
-  # Generation details
-  cat("Generation Metadata:\n")
-  cat("  Pattern:            ", x$details$pattern, "\n", sep = "")
-  cat("  Number of ellipses: ", x$details$n, "\n", sep = "")
-  cat("  Smallest prop.:     ", round(x$details$smallest_proportion, digits),
-      "\n", sep = "")
-
-  ## Only print these if they aren't NA
-  if (!is.na(x$details$largest_proportion)) {
-    cat("  Largest prop.:      ", round(x$details$largest_proportion, digits),
-        "\n", sep = "")
-  }
-  if (!is.na(x$details$bias)) {
-    cat("  Bias exponent:      ", round(x$details$bias, digits), "\n", sep = "")
-  }
-  if (!is.na(x$details$thin_background)) {
-    cat("  Thin background:    ", x$details$thin_background, "\n", sep = "")
-  }
-  if (!is.na(x$details$resolution)) {
-    cat("  Resolution:         ", x$details$resolution, "\n", sep = "")
-  }
-  if (!is.na(x$details$seed)) {
-    cat("  Random seed:        ", x$details$seed, "\n", sep = "")
-  }
-
-  # Reference ellipsoid summary
-  cat("\nReference ellipsoid summary:\n")
-  cat("  Dimensions:        ", x$reference$dimensions, "D\n", sep = "")
-  cat("  Variables:         ", paste(x$reference$var_names, collapse = ", "),
-      "\n", sep = "")
-  cat("  Centroid (mu):     ",
-      paste(round(x$reference$centroid, digits), collapse = ", "),
-      "\n", sep = "")
-  cat("  Ellipsoid volume:  ", round(x$reference$volume, digits),
-      "\n", sep = "")
-
-  # A few community summary statistics
-  cat("\nCommunity summary (n =", x$details$n, "):\n")
-
-  ## Extract centroids and volumes from the list of ellipsoids
-  all_centroids <- do.call(rbind, lapply(x$ellipse_community, function(e) {
-    e$centroid
-  }))
-  all_volumes <- vapply(x$ellipse_community, function(e) e$volume, numeric(1))
-
-  ## Calculate descriptive stats
-  mean_cent <- colMeans(all_centroids)
-  sd_cent   <- apply(all_centroids, 2, sd)
-  mean_vol  <- mean(all_volumes)
-  sd_vol    <- sd(all_volumes)
-
-  ## Print centroids
-  cat("  Centroid positions | mean (+/-SD):\n")
-  for (i in seq_along(mean_cent)) {
-    cat("   ", names(mean_cent)[i], ": ",
-        round(mean_cent[i], digits),
-        " (+/-", round(sd_cent[i], digits), ")\n", sep = "")
-  }
-
-  ## Print volumes
-  cat("\n  Ellipsoid volumes:\n")
-  cat("   Mean: ", round(mean_vol, digits), "\n", sep = "")
-  cat("   SD:   ", round(sd_vol, digits), "\n", sep = "")
-
-  cat("\n")
-  invisible(x)
-}
-
-
-
-# Predict methods ------------------------------------------------------
+# Predict Methods ------------------------------------------------------
 
 #' Predict suitability and Mahalanobis distance from a nicheR ellipsoid
 #'
@@ -219,6 +69,49 @@ print.nicheR_community <- function(x, digits = 3, ...) {
 #' @importFrom stats qchisq complete.cases
 #' @importFrom terra rast app
 #'
+#' @examples
+#' range_df <- data.frame(bio_1 = c(22, 28),
+#'                        bio_12 = c(1000, 3500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#' back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#' # Default: Mahalanobis distance and suitability, data frame input
+#' pred_df <- predict(ell,
+#'                    newdata = back_df)
+#' head(pred_df)
+#'
+#' # All four outputs at once
+#' pred_all <- predict(ell,
+#'                     newdata = back_df,
+#'                     include_mahalanobis = TRUE,
+#'                     include_suitability = TRUE,
+#'                     mahalanobis_truncated = TRUE,
+#'                     suitability_truncated = TRUE)
+#' colnames(pred_all)
+#'
+#' nicheR::plot_ellipsoid(object = ell, prediction = pred_all)
+#'#' nicheR::plot_ellipsoid(object = ell, prediction = pred_all, col_layer = "suitability")
+#'
+#' # Raster input: returns a SpatRaster
+#' pred_rast <- predict(ell,
+#'                      newdata = ma_bios[[ell$var_names]],
+#'                      include_suitability = TRUE,
+#'                      suitability_truncated = TRUE)
+#' pred_rast
+#'
+#'terra::plot(pred_rast)
+#'
+#' # Adjust truncation level without refitting
+#' pred_80 <- predict(ell,
+#'                    newdata = back_df,
+#'                    suitability_truncated   = TRUE,
+#'                    adjust_truncation_level = 0.80)
+#' nicheR::plot_ellipsoid(object = ell, prediction = pred_80, col_layer = "suitability_trunc")
+#'}
 #' @export
 predict.nicheR_ellipsoid <- function(object,
                                      newdata,
@@ -584,3 +477,165 @@ predict.nicheR_community <- function(object,
     return(cbind(as.data.frame(newdata), results_df))
   }
 }
+
+
+
+
+# Print Method ------------------------------------------------------------
+
+
+
+
+#' Print method for nicheR objects
+#'
+#' Provides a concise summary of \code{nicheR} objects.
+#'
+#' @name print
+#' @aliases print,nicheR_nicheR_ellipsoid-method
+#' @aliases print,nicheR_nicheR_community-method
+#'
+#' @rdname print
+#'
+#' @param x An object of the classes \code{"nicheR_ellipsoid"} or
+#'   \code{"nicheR_community"}.
+#' @param digits Integer. Number of decimal places used when printing numeric
+#'   values. Default is 3.
+#' @param ... Additional arguments.
+#'
+#' @details
+#' The function formats and rounds key quantities for readability but does
+#' not modify the underlying object.
+#'
+#' @return
+#' The input object \code{x}, returned invisibly.
+#'
+#' @seealso \code{\link{build_ellipsoid}}
+#'
+#' @examples
+#' range_df <- data.frame(bio_1  = c(22, 28),
+#'                        bio_12 = c(1000, 3500))
+#' ell <- build_ellipsoid(range = range_df)
+#' print(ell)
+#'
+#' @method print nicheR_ellipsoid
+#' @export
+print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
+
+  cat("nicheR Ellipsoid Object\n")
+  cat("-----------------------\n")
+
+  cat("Dimensions:        ", x$dimensions, "D\n", sep = "")
+  cat("Chi-square cutoff: ", round(x$chi2_cutoff, digits), "\n", sep = "")
+
+  cat("Centroid (mu):     ",
+      paste(round(x$centroid, digits), collapse = ", "),
+      "\n", sep = "")
+
+  cat("\nCovariance matrix:\n")
+  print(round(x$cov_matrix, digits))
+
+  cat("\nCovariance Limits:\n")
+  cov_lims <- x$cov_limits
+  rownames(cov_lims) <- apply(
+    combn(x$var_names, 2), 2,
+    function(pair) paste(pair, collapse = "-")
+  )
+  print(round(cov_lims, digits))
+
+  cat("\nEllipsoid semi-axis lengths:\n  ",
+      paste(round(x$semi_axes_lengths, digits), collapse = ", "),
+      "\n", sep = "")
+
+  cat("\nEllipsoid axis endpoints:\n")
+
+  for(i in seq_len(x$dimensions)){
+    cat(ifelse(i == 1, "", "\n"), " Axis ", i, ":\n", sep = "")
+    print(round(x$axes_coordinates[[i]], digits))
+  }
+
+  cat("\nEllipsoid volume:  ", round(x$volume, digits), "\n", sep = "")
+
+  cat("\n")
+  invisible(x)
+}
+
+
+
+#' @rdname print
+#' @method print nicheR_community
+#' @importFrom stats sd
+#' @export
+
+print.nicheR_community <- function(x, digits = 3, ...) {
+
+  cat("nicheR Community Object\n")
+  cat("-----------------------\n")
+
+  # Generation details
+  cat("Generation Metadata:\n")
+  cat("  Pattern:            ", x$details$pattern, "\n", sep = "")
+  cat("  Number of ellipses: ", x$details$n, "\n", sep = "")
+  cat("  Smallest prop.:     ", round(x$details$smallest_proportion, digits),
+      "\n", sep = "")
+
+  ## Only print these if they aren't NA
+  if (!is.na(x$details$largest_proportion)) {
+    cat("  Largest prop.:      ", round(x$details$largest_proportion, digits),
+        "\n", sep = "")
+  }
+  if (!is.na(x$details$bias)) {
+    cat("  Bias exponent:      ", round(x$details$bias, digits), "\n", sep = "")
+  }
+  if (!is.na(x$details$thin_background)) {
+    cat("  Thin background:    ", x$details$thin_background, "\n", sep = "")
+  }
+  if (!is.na(x$details$resolution)) {
+    cat("  Resolution:         ", x$details$resolution, "\n", sep = "")
+  }
+  if (!is.na(x$details$seed)) {
+    cat("  Random seed:        ", x$details$seed, "\n", sep = "")
+  }
+
+  # Reference ellipsoid summary
+  cat("\nReference ellipsoid summary:\n")
+  cat("  Dimensions:        ", x$reference$dimensions, "D\n", sep = "")
+  cat("  Variables:         ", paste(x$reference$var_names, collapse = ", "),
+      "\n", sep = "")
+  cat("  Centroid (mu):     ",
+      paste(round(x$reference$centroid, digits), collapse = ", "),
+      "\n", sep = "")
+  cat("  Ellipsoid volume:  ", round(x$reference$volume, digits),
+      "\n", sep = "")
+
+  # A few community summary statistics
+  cat("\nCommunity summary (n =", x$details$n, "):\n")
+
+  ## Extract centroids and volumes from the list of ellipsoids
+  all_centroids <- do.call(rbind, lapply(x$ellipse_community, function(e) {
+    e$centroid
+  }))
+  all_volumes <- vapply(x$ellipse_community, function(e) e$volume, numeric(1))
+
+  ## Calculate descriptive stats
+  mean_cent <- colMeans(all_centroids)
+  sd_cent   <- apply(all_centroids, 2, sd)
+  mean_vol  <- mean(all_volumes)
+  sd_vol    <- sd(all_volumes)
+
+  ## Print centroids
+  cat("  Centroid positions | mean (+/-SD):\n")
+  for (i in seq_along(mean_cent)) {
+    cat("   ", names(mean_cent)[i], ": ",
+        round(mean_cent[i], digits),
+        " (+/-", round(sd_cent[i], digits), ")\n", sep = "")
+  }
+
+  ## Print volumes
+  cat("\n  Ellipsoid volumes:\n")
+  cat("   Mean: ", round(mean_vol, digits), "\n", sep = "")
+  cat("   SD:   ", round(sd_vol, digits), "\n", sep = "")
+
+  cat("\n")
+  invisible(x)
+}
+

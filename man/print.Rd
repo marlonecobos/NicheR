@@ -31,6 +31,13 @@ Provides a concise summary of \code{nicheR} objects.
 The function formats and rounds key quantities for readability but does
 not modify the underlying object.
 }
+\examples{
+range_df <- data.frame(bio_1  = c(22, 28),
+                       bio_12 = c(1000, 3500))
+ell <- build_ellipsoid(range = range_df)
+print(ell)
+
+}
 \seealso{
 \code{\link{build_ellipsoid}}
 }

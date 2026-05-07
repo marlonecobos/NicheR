@@ -16,6 +16,22 @@ The saved \code{nicheR_ellipsoid} or \code{nicheR_community} object.
 A wrapper around \code{\link[base]{readRDS}} to load saved nicheR
 objects back into the R environment.
 }
+\examples{
+# Build and save an ellipsoid first
+range_df <- data.frame(bio_1  = c(15, 25),
+                       bio_12 = c(500, 1500))
+ell <- build_ellipsoid(range = range_df)
+
+tmp <- tempfile(fileext = ".rds")
+save_nicheR(ell, file = tmp)
+
+# Read it back
+ell_loaded <- read_nicheR(tmp)
+ell_loaded
+
+\dontshow{file.remove(tmp)}
+
+}
 \seealso{
 \code{\link{save_nicheR}}
 }

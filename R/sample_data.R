@@ -56,6 +56,46 @@
 #' \code{prediction} is a \code{SpatRaster}, the output includes \code{x}
 #' and \code{y} coordinate columns.
 #'
+#' @examples
+#' range_df <- data.frame(bio_1  = c(22, 28),
+#'                        bio_12 = c(1000, 3500))
+#' ell <- build_ellipsoid(range = range_df)
+#'
+#' \donttest{
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#' back_df <- as.data.frame(ma_bios, xy = TRUE)
+#'
+#' pred_df <- predict(ell,
+#'                    newdata = back_df,
+#'                    include_suitability = TRUE,
+#'                    include_mahalanobis = FALSE,
+#'                    suitability_truncated = TRUE)
+#'
+#' # Centroid strategy: samples cluster near the niche center
+#' occ_centroid <- nicheR::sample_data(n_occ = 100,
+#'                             prediction = pred_df,
+#'                             prediction_layer = "suitability_trunc",
+#'                             sampling = "centroid",
+#'                             method = "suitability",
+#'                             strict = TRUE)
+#' head(occ_centroid)
+#'
+#' # Edge strategy: samples spread toward the niche boundary
+#' occ_edge <- nicheR::sample_data(n_occ = 100,
+#'                         prediction = pred_df,
+#'                         prediction_layer = "suitability_trunc",
+#'                         sampling = "edge",
+#'                         method = "mahalanobis",
+#'                         strict = TRUE)
+#'
+#' # Random strategy: samples distributed uniformly across suitable area
+#' occ_random <- nicheR::sample_data(n_occ = 100,
+#'                           prediction = pred_df,
+#'                           prediction_layer = "suitability_trunc",
+#'                           sampling = "random")
+#' }
+#'
 #' @export
 sample_data <- function(n_occ,
                         prediction,

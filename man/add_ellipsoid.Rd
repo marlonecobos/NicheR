@@ -46,6 +46,39 @@ environmental space plot created with \code{plot_ellipsoid()}. The boundary
 is computed as a cross-section of the ellipsoid at the chosen pair of
 dimensions.
 }
+\examples{
+range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
+ell <- build_ellipsoid(range = range_df)
+
+\donttest{
+ma_bios <- terra::rast(
+  system.file("extdata/ma_bios.tif", package = "nicheR"))
+back_df <- as.data.frame(ma_bios, xy = TRUE)
+
+# Open a muted plot, then overlay the ellipsoid prominently
+nicheR::plot_ellipsoid(ell,
+                       background = back_df,
+                       col_ell = "grey70", col_bg = "grey80",
+                       lwd = 1, pch = 20, cex_bg = 0.3,
+                       xlab = "Bio1", ylab = "Bio12")
+
+nicheR::add_ellipsoid(ell, col_ell = "#e10000", lwd = 2)
+
+# Compare two ellipsoids on the same plot
+range_df2 <- data.frame(bio_1 = c(10, 20), bio_12 = c(800, 1800))
+ell2 <- nicheR::build_ellipsoid(range = range_df2)
+
+nicheR::plot_ellipsoid(ell,
+                       background = back_df,
+                       col_ell = "#e10000", col_bg = "grey80",
+                       lwd = 2, pch = 20, cex_bg = 0.3,
+                       xlab = "Bio1", ylab = "Bio12",
+                       main = "Two ellipsoids")
+
+nicheR::add_ellipsoid(ell2, col_ell = "#0004d5", lwd = 2)
+}
+
+}
 \seealso{
 \code{\link{plot_ellipsoid}}, \code{\link{add_data}}
 }

@@ -94,3 +94,47 @@ For tabular inputs, coordinate columns (e.g., \code{x}, \code{y},
 \code{lon}, \code{lat}) are detected and retained when
 \code{keep_data = TRUE}. Extra non-predictor columns are ignored.
 }
+\examples{
+range_df <- data.frame(bio_1 = c(22, 28),
+                       bio_12 = c(1000, 3500))
+ell <- build_ellipsoid(range = range_df)
+
+\donttest{
+ma_bios <- terra::rast(
+  system.file("extdata/ma_bios.tif", package = "nicheR"))
+back_df <- as.data.frame(ma_bios, xy = TRUE)
+
+# Default: Mahalanobis distance and suitability, data frame input
+pred_df <- predict(ell,
+                   newdata = back_df)
+head(pred_df)
+
+# All four outputs at once
+pred_all <- predict(ell,
+                    newdata = back_df,
+                    include_mahalanobis = TRUE,
+                    include_suitability = TRUE,
+                    mahalanobis_truncated = TRUE,
+                    suitability_truncated = TRUE)
+colnames(pred_all)
+
+nicheR::plot_ellipsoid(object = ell, prediction = pred_all)
+#' nicheR::plot_ellipsoid(object = ell, prediction = pred_all, col_layer = "suitability")
+
+# Raster input: returns a SpatRaster
+pred_rast <- predict(ell,
+                     newdata = ma_bios[[ell$var_names]],
+                     include_suitability = TRUE,
+                     suitability_truncated = TRUE)
+pred_rast
+
+terra::plot(pred_rast)
+
+# Adjust truncation level without refitting
+pred_80 <- predict(ell,
+                   newdata = back_df,
+                   suitability_truncated   = TRUE,
+                   adjust_truncation_level = 0.80)
+nicheR::plot_ellipsoid(object = ell, prediction = pred_80, col_layer = "suitability_trunc")
+}
+}

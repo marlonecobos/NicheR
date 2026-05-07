@@ -46,9 +46,17 @@ The ellipsoid contour is defined using a chi-square cutoff
 \eqn{c^2 = \chi^2_{n}(\mathrm{cl})}, where \eqn{n} is the number of variables.
 }
 \examples{
-rng <- data.frame(bio1 = c(10, 20),
-                  bio2 = c(20, 30))
-ell <- build_ellipsoid(range = rng, cl = 0.95, verbose = FALSE)
-print(ell)
+# Two-dimensional ellipsoid from environmental ranges
+range_df <- data.frame(bio_1  = c(22, 28),
+                       bio_12 = c(1000, 3500))
+ell2d <- build_ellipsoid(range = range_df)
+ell2d
+
+# Three-dimensional ellipsoid
+range_3d <- data.frame(bio_1  = c(22, 28),
+                       bio_12 = c(1000, 3500),
+                       bio_15 = c(50, 70))
+ell3d <- build_ellipsoid(range = range_3d)
+ell3d
 
 }

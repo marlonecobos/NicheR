@@ -63,6 +63,39 @@ Auto-detection of \code{strict} follows the same logic as
 \code{sample_data()}: it is set to \code{TRUE} if the layer name contains
 \code{"trunc"} or if the proportion of zeros or \code{NA}s exceeds 25\%.
 }
+\examples{
+\donttest {
+range_df <- data.frame(bio_1  = c(22, 28),
+                       bio_12 = c(1000, 3500),
+                       bio_15 = c(50, 70))
+ell <- nicheR::build_ellipsoid(range = range_df)
+
+ma_bios <- terra::rast(
+  system.file("extdata/ma_bios.tif", package = "nicheR"))
+
+pred_rast <- predict(ell,
+                     newdata               = ma_bios[[ell$var_names]],
+                     include_suitability   = TRUE,
+                     suitability_truncated = TRUE)
+
+bias_rast <- terra::rast(
+  system.file("extdata/ma_biases.tif", package = "nicheR"))
+
+bias <- nicheR::prepare_bias(bias_surface     = bias_rast[[1]],
+                     effect_direction = "direct")
+
+biased_pred <- nicheR::apply_bias(prepared_bias    = bias,
+                          prediction       = pred_rast,
+                          prediction_layer = "suitability")
+
+occ_biased <- nicheR::sample_biased_data(n_occ = 100,
+                                         prediction = biased_pred,
+                                         prediction_layer = "suitability_biased_direct")
+
+head(occ_biased)
+}
+
+}
 \seealso{
 \code{\link{sample_data}} for unbiased sampling with explicit
   strategy and method control, \code{\link{apply_bias}} for generating

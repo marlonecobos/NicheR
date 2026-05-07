@@ -43,6 +43,21 @@ The updated covariance matrix must remain positive definite — if the
 requested value would violate this, use \code{\link{covariance_limits}} to
 find the safe range before calling this function.
 }
+\examples{
+range_df <- data.frame(bio_1  = c(22, 28),
+                       bio_12 = c(1000, 3500))
+ell <- build_ellipsoid(range = range_df)
+
+# Check covariance allowed covariance range
+ell$cov_limits
+
+# Introduce a negative correlation between bio_1 and bio_12
+cov_limits <- c("bio_1-bio_12" = -100)
+ell_corr <- update_ellipsoid_covariance(object = ell,
+                                          covariance =  cov_limits)
+ell_corr
+
+}
 \seealso{
 \code{\link{build_ellipsoid}} to create the initial ellipsoid,
   \code{\link{covariance_limits}} to find valid covariance ranges before

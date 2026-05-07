@@ -46,6 +46,38 @@
 #'   strategy and method control, \code{\link{apply_bias}} for generating
 #'   the bias-weighted prediction surface used as input here.
 #'
+#' @examples
+#' \donttest {
+#' range_df <- data.frame(bio_1  = c(22, 28),
+#'                        bio_12 = c(1000, 3500),
+#'                        bio_15 = c(50, 70))
+#' ell <- nicheR::build_ellipsoid(range = range_df)
+#'
+#' ma_bios <- terra::rast(
+#'   system.file("extdata/ma_bios.tif", package = "nicheR"))
+#'
+#' pred_rast <- predict(ell,
+#'                      newdata               = ma_bios[[ell$var_names]],
+#'                      include_suitability   = TRUE,
+#'                      suitability_truncated = TRUE)
+#'
+#' bias_rast <- terra::rast(
+#'   system.file("extdata/ma_biases.tif", package = "nicheR"))
+#'
+#' bias <- nicheR::prepare_bias(bias_surface     = bias_rast[[1]],
+#'                      effect_direction = "direct")
+#'
+#' biased_pred <- nicheR::apply_bias(prepared_bias    = bias,
+#'                           prediction       = pred_rast,
+#'                           prediction_layer = "suitability")
+#'
+#' occ_biased <- nicheR::sample_biased_data(n_occ = 100,
+#'                                          prediction = biased_pred,
+#'                                          prediction_layer = "suitability_biased_direct")
+#'
+#' head(occ_biased)
+#' }
+#'
 #' @export
 sample_biased_data <- function(n_occ,
                                prediction,
