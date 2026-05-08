@@ -2,7 +2,7 @@ Ellipsoid-Based Virtual Niches and Visualization
 ================
 Mariana Castaneda-Guzman, Connor Hughes, Paanwaris Paansri, Marlon E.
 Cobos
-<img src='man/figures/logo.png' align='right' height='25%' width='25%'/>
+<img src='man/figures/nicheR_lg.png' align='right' height='25%' width='25%'/>
 
 - [Background](#background)
 - [Package description](#package-description)
@@ -24,7 +24,6 @@ Cobos
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml)
-[![R-CMD-check](https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Background
@@ -261,10 +260,13 @@ vignette("creating_ellipsoid_based_niches")
 vignette("predict")
 
 # Guide to sampling occurrence data from virtual niches
-vignette("generating_occurrence")
+vignette("sampling_occurrence_data")
+
+# Guide to virtual occurrence sampling from simulated data
+vignette("sampling_virtual_data")
 
 # Guide to preparing and applying sampling bias
-vignette("bias")
+vignette("sampling_bias_data")
 
 # Guide to simulating virtual communities
 vignette("virtual_communities")
