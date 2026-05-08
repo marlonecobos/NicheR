@@ -101,3 +101,55 @@ suitability predictions outside the ellipsoid boundary).
 
 [`plot_ellipsoid`](https://castanedam.github.io/nicheR/reference/plot_ellipsoid.md),
 [`add_ellipsoid`](https://castanedam.github.io/nicheR/reference/add_ellipsoid.md)
+
+## Examples
+
+``` r
+range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
+ell <- build_ellipsoid(range = range_df)
+#> Starting: building ellipsoidal niche from ranges...
+#> Step: computing covariance matrix...
+#> Step: computing additional ellipsoidal niche metrics...
+#> Done: created ellipsoidal niche.
+
+# \donttest{
+  ma_bios <- terra::rast(
+    system.file("extdata/ma_bios.tif", package = "nicheR"))
+  back_df <- as.data.frame(ma_bios, xy = TRUE)
+
+  pred_df <- predict(ell,
+                     newdata = back_df,
+                     include_suitability = TRUE,
+                     include_mahalanobis = FALSE)
+#> Starting: suitability prediction using newdata of class: data.frame...
+#> Step: Identified spatial columns: x, y
+#> Step: Ignoring extra predictor columns: bio_5, bio_6, bio_7, bio_13, bio_14, bio_15
+#> Step: Using 2 predictor variables: bio_1, bio_12
+#> Done: Prediction completed successfully. Returned columns: x, y, bio_1, bio_12, suitability
+
+  # Open base plot then add centroid as a cross
+  nicheR::plot_ellipsoid(ell,
+                         background = back_df,
+                         col_ell = "#e10000", col_bg = "grey80",
+                         lwd = 2, pch = 20, cex_bg = 0.4,
+                         xlab = "Bio1", ylab = "Bio12")
+
+  nicheR::add_data(as.data.frame(t(ell$centroid)),
+                   x = "bio_1", y = "bio_12",
+                   pts_col = "#e10000", pch = 8, cex = 1.5, lwd = 2)
+
+
+  # Add points colored by suitability on top of background
+  nicheR::plot_ellipsoid(ell,
+                         background = back_df,
+                         col_ell = "#e10000", col_bg = "grey80",
+                         lwd = 2, pch = 20, cex_bg = 0.4,
+                         xlab = "Bio1", ylab = "Bio12")
+
+  nicheR::add_data(pred_df,
+                   x = "bio_1", y = "bio_12",
+                   col_layer = "suitability",
+                   pch = 20, cex = 0.5)
+
+# }
+```
