@@ -5,6 +5,9 @@
 #' defined by the centroid and covariance matrix of a \code{nicheR_ellipsoid}
 #' object.
 #'
+#' @usage
+#' virtual_data(object, n = 100, truncate = FALSE, effect = "direct", seed = 1)
+#'
 #' @param object A \code{nicheR_ellipsoid} object containing at least
 #'   \code{centroid} and \code{cov_matrix}.
 #' @param n Integer. The number of virtual points to generate. Default = 100.
@@ -46,9 +49,22 @@
 #' A matrix with \code{n} rows and columns corresponding to the
 #' environmental variables (dimensions) of the input \code{object}.
 #'
-#'@importFrom stats runif rnorm
+#' @importFrom stats runif rnorm
 #'
 #' @export
+#'
+#' @examples
+#' # Loading data
+#' ## Reference niche
+#' data("ref_ellipse", package = "nicheR")
+#'
+#' # Generate virtual data from the reference niche
+#' vdata_direct <- virtual_data(ref_ellipse, n = 100, effect = "direct")
+#' vdata_inverse <- virtual_data(ref_ellipse, n = 100, effect = "inverse")
+#'
+#' # Check a sample of the generated data
+#' head(vdata_direct)
+#' head(vdata_inverse)
 
 virtual_data <- function(object,
                          n = 100,

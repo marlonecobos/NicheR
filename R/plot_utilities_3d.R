@@ -4,6 +4,15 @@
 #' Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with
 #' support for background points or suitability surfaces.
 #'
+#' @usage
+#' plot_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, aspect = TRUE,
+#'                   background = NULL, prediction = NULL, col_layer = NULL,
+#'                   pal = hcl.colors(100, palette = "Viridis"),
+#'                   rev_pal = FALSE, bg_sample = NULL, col_ell = "#8b0000",
+#'                   alpha_ell = 1, alpha_bg = 1, col_bg = "#8A8A8A",
+#'                   fixed_lims = NULL, xlab = NULL, ylab = NULL,
+#'                   zlab = NULL, ...)
+#'
 #' @param object A \code{nicheR_ellipsoid} object constructed with at least
 #'    3 dimensions.
 #' @param dim Integer vector of length 3. Indices of dimensions to plot.
@@ -25,14 +34,35 @@
 #'    Also applied to prediction points.
 #' @param col_bg Color for background points.
 #' @param fixed_lims Named list with \code{xlim}, \code{ylim}, and \code{zlim}.
-#' @param xlab x-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
-#' @param ylab y-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
-#' @param zlab z-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.
+#' @param xlab x-axis label. The default, \code{NULL}, uses elliposid object
+#'    variable names, if any found.
+#' @param ylab y-axis label. The default, \code{NULL}, uses elliposid object
+#'    variable names, if any found.
+#' @param zlab z-axis label. The default, \code{NULL}, uses elliposid object
+#'    variable names, if any found.
 #' @param ... Additional graphical parameters.
 #'
-#'@importFrom grDevices hcl.colors adjustcolor
+#' @importFrom grDevices hcl.colors adjustcolor
 #'
 #' @export
+#'
+#' @examples
+#' # Building an ellipsoid
+#' ## Define ranges for three variables
+#' range <- data.frame(bio_1  = c(22, 32),
+#'                     bio_12 = c(800, 4200),
+#'                     bio_15 = c(45, 115))
+#'
+#' ## Build the ellipsoid
+#' ell5 <- build_ellipsoid(range = range)
+#' ell5$cov_limits
+#'
+#' ell5 <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+#'                                             "bio_1-bio_15" = 0,
+#'                                             "bio_12-bio_15" = -3000))
+#'
+#' # Plot the ellipsoid in 3D
+#' plot_ellipsoid_3d(ell5)
 
 plot_ellipsoid_3d <- function(object,
                               dim = c(1, 2, 3),
@@ -134,6 +164,9 @@ plot_ellipsoid_3d <- function(object,
 
 #' Add data to an existing 3D E-space plot
 #'
+#' @usage
+#' add_data_3d(data, dim = c(1, 2, 3), col_layer = NULL, alpha = 1, ...)
+#'
 #' @param data A data frame or matrix containing the points.
 #' @param dim Integer vector of length 3. Indices of dimensions to plot.
 #' @param col_layer Character or \code{NULL}. Column for coloring.
@@ -141,6 +174,28 @@ plot_ellipsoid_3d <- function(object,
 #' @param ... Additional arguments passed to \code{rgl::points3d}.
 #'
 #' @export
+#'
+#' @examples
+#' # Building an ellipsoid
+#' ## Define ranges for three variables
+#' range <- data.frame(bio_1  = c(22, 32),
+#'                     bio_12 = c(800, 4200),
+#'                     bio_15 = c(45, 115))
+#'
+#' ## Build the ellipsoid
+#' ell5 <- build_ellipsoid(range = range)
+#' ell5$cov_limits
+#'
+#' ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+#'                                              "bio_1-bio_15" = 0,
+#'                                              "bio_12-bio_15" = -3000))
+#'
+#' # Plot the ellipsoid in 3D
+#' plot_ellipsoid_3d(ell5u)
+#'
+#' #' # Add background points
+#' add_data_3d(back_data[, c(3, 7, 10)], col = "#8A8A8A")
+
 add_data_3d <- function(data,
                         dim = c(1, 2, 3),
                         col_layer = NULL,
@@ -164,6 +219,10 @@ add_data_3d <- function(data,
 
 #' Add an ellipsoid to an existing 3D E-space plot
 #'
+#' @usage
+#' add_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, col_ell = "#8b0000",
+#'                   alpha_ell = 1, ...)
+#'
 #' @param object A \code{nicheR_ellipsoid} object.
 #' @param dim Integer vector of length 3.
 #' @param wire Logical. If \code{TRUE}, plots wireframe, otherwise plots a
@@ -175,6 +234,28 @@ add_data_3d <- function(data,
 #'    \code{rgl::shade3d}.
 #'
 #' @export
+#'
+#' @examples
+#' # Building an ellipsoid
+#' ## Define ranges for three variables
+#' range <- data.frame(bio_1  = c(22, 32),
+#'                     bio_12 = c(800, 4200),
+#'                     bio_15 = c(45, 115))
+#'
+#' ## Build the ellipsoid
+#' ell5 <- build_ellipsoid(range = range)
+#' ell5$cov_limits
+#'
+#' ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+#'                                              "bio_1-bio_15" = 0,
+#'                                              "bio_12-bio_15" = -3000))
+#'
+#' # Plot the ellipsoid in 3D
+#' plot_ellipsoid_3d(ell5u)
+#'
+#' # Add the original ellipsoid as a wireframe
+#' add_ellipsoid_3d(ell5, wire = TRUE, col = "#0e008b")
+
 add_ellipsoid_3d <- function(object,
                              dim = c(1, 2, 3),
                              wire = FALSE,

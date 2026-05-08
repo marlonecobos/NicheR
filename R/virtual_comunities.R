@@ -5,6 +5,11 @@
 #' cloud. Covariance matrices are built using random rotations and scaled
 #' eigenvalues restricted by user-defined limits.
 #'
+#' @usage
+#' random_ellipses(object, background, n = 10, smallest_proportion = 0.1,
+#'                 largest_proportion = 1.0, thin_background = FALSE,
+#'                 resolution = 50, seed = 1)
+#'
 #' @param object A nicheR_ellipsoid object used as a reference ellipse
 #'   (the biggest to be generated), and containing at least
 #'   \code{covariance_matrix} and \code{cl}.
@@ -33,6 +38,19 @@
 #' @importFrom stats runif
 #'
 #' @export
+#'
+#' @examples
+#' # Loading data
+#' ## Reference niche
+#' data("ref_ellipse", package = "nicheR")
+#'
+#' ## Background data
+#' data("back_data", package = "nicheR")
+#'
+#' # Generate random ellipses
+#' rand_comm <- random_ellipses(object = ref_ellipse,
+#'                              background = back_data[, c(3, 7)],
+#'                              n = 10)
 
 random_ellipses <- function(object,
                             background,
@@ -144,6 +162,9 @@ random_ellipses <- function(object,
 #' reference ellipse. The distribution of the nested ellipses can be controlled
 #' using a bias exponent to cluster them toward the border or the centroid.
 #'
+#' @usage
+#' nested_ellipses(object, n = 10, smallest_proportion = 0.1, bias = 1)
+#'
 #' @param object An object of class "nicheR_ellipsoid"
 #'    describing an initial ellipse. Must contain \code{centroid},
 #'    \code{cov_matrix}, and \code{cl}.
@@ -173,6 +194,15 @@ random_ellipses <- function(object,
 #' where \eqn{t_i} is a linear sequence from 1 down to 0.
 #'
 #' @export
+#'
+#' @examples
+#' # Loading data
+#' ## Reference niche
+#' data("ref_ellipse", package = "nicheR")
+#'
+#' # Generate nested ellipses
+#' nested_comm <- nested_ellipses(object = ref_ellipse, n = 10)
+
 nested_ellipses <- function(object,
                             n = 10,
                             smallest_proportion = 0.1,
@@ -224,6 +254,11 @@ nested_ellipses <- function(object,
 #' by their proximity to the centroid to a reference niche. Includes an option
 #' to thin the background to reduce centroid sampling bias due to point-density.
 #'
+#' @usage
+#' conserved_ellipses(object, background, n = 10, smallest_proportion = 0.1,
+#'                   largest_proportion = 1.0, thin_background = FALSE,
+#'                   resolution = 100, seed = 1)
+#'
 #' @param object A nicheR_ellipsoid object used as the reference. This is will
 #'    be considered the "largest" ellipse to be generated.
 #' @param background Matrix or Dataframe. The 2D point cloud (coordinates)
@@ -253,9 +288,23 @@ nested_ellipses <- function(object,
 #' ellipses is influenced by the proximity to the reference and the density
 #' of the background points.
 #'
-#'@importFrom stats runif
+#' @importFrom stats runif
 #'
 #' @export
+#'
+#' @examples
+#' # Loading data
+#' ## Reference niche
+#' data("ref_ellipse", package = "nicheR")
+#'
+#' ## Background data
+#' data("back_data", package = "nicheR")
+#'
+#' # Generate conserved ellipses
+#' conserved_comm <- conserved_ellipses(object = ref_ellipse,
+#'                                     background = back_data[, c(3, 7)],
+#'                                     n = 10)
+
 conserved_ellipses <- function(object,
                                background,
                                n = 10,
