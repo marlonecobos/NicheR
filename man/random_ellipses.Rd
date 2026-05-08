@@ -4,16 +4,9 @@
 \alias{random_ellipses}
 \title{Generate random ellipses constrained by a point cloud and a reference ellipse}
 \usage{
-random_ellipses(
-  object,
-  background,
-  n = 10,
-  smallest_proportion = 0.1,
-  largest_proportion = 1,
-  thin_background = FALSE,
-  resolution = 50,
-  seed = 1
-)
+random_ellipses(object, background, n = 10, smallest_proportion = 0.1,
+                largest_proportion = 1.0, thin_background = FALSE,
+                resolution = 50, seed = 1)
 }
 \arguments{
 \item{object}{A nicheR_ellipsoid object used as a reference ellipse
@@ -52,4 +45,17 @@ ellipses, the reference object, and generation metadata.
 Creates n random ellipses with centroids sampled from an irregular point
 cloud. Covariance matrices are built using random rotations and scaled
 eigenvalues restricted by user-defined limits.
+}
+\examples{
+# Loading data
+## Reference niche
+data("ref_ellipse", package = "nicheR")
+
+## Background data
+data("back_data", package = "nicheR")
+
+# Generate random ellipses
+rand_comm <- random_ellipses(object = ref_ellipse,
+                             background = back_data[, c(3, 7)],
+                             n = 10)
 }

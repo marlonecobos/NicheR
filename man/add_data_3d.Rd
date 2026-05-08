@@ -20,3 +20,24 @@ add_data_3d(data, dim = c(1, 2, 3), col_layer = NULL, alpha = 1, ...)
 \description{
 Add data to an existing 3D E-space plot
 }
+\examples{
+# Building an ellipsoid
+## Define ranges for three variables
+range <- data.frame(bio_1  = c(22, 32),
+                    bio_12 = c(800, 4200),
+                    bio_15 = c(45, 115))
+
+## Build the ellipsoid
+ell5 <- build_ellipsoid(range = range)
+ell5$cov_limits
+
+ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+                                             "bio_1-bio_15" = 0,
+                                             "bio_12-bio_15" = -3000))
+
+# Plot the ellipsoid in 3D
+plot_ellipsoid_3d(ell5u)
+
+#' # Add background points
+add_data_3d(back_data[, c(3, 7, 10)], col = "#8A8A8A")
+}

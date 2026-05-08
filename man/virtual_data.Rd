@@ -57,3 +57,16 @@ argument:
   resulting in a uniform spatial distribution.
 }
 }
+\examples{
+# Loading data
+## Reference niche
+data("ref_ellipse", package = "nicheR")
+
+# Generate virtual data from the reference niche
+vdata_direct <- virtual_data(ref_ellipse, n = 100, effect = "direct")
+vdata_inverse <- virtual_data(ref_ellipse, n = 100, effect = "inverse")
+
+# Check a sample of the generated data
+head(vdata_direct)
+head(vdata_inverse)
+}

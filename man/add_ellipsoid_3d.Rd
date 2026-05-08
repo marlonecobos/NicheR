@@ -4,14 +4,8 @@
 \alias{add_ellipsoid_3d}
 \title{Add an ellipsoid to an existing 3D E-space plot}
 \usage{
-add_ellipsoid_3d(
-  object,
-  dim = c(1, 2, 3),
-  wire = FALSE,
-  col_ell = "#800000",
-  alpha_ell = 1,
-  ...
-)
+add_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, col_ell = "#8b0000",
+                  alpha_ell = 1, ...)
 }
 \arguments{
 \item{object}{A \code{nicheR_ellipsoid} object.}
@@ -31,4 +25,25 @@ shaded volume. Default is \code{FALSE}.}
 }
 \description{
 Add an ellipsoid to an existing 3D E-space plot
+}
+\examples{
+# Building an ellipsoid
+## Define ranges for three variables
+range <- data.frame(bio_1  = c(22, 32),
+                    bio_12 = c(800, 4200),
+                    bio_15 = c(45, 115))
+
+## Build the ellipsoid
+ell5 <- build_ellipsoid(range = range)
+ell5$cov_limits
+
+ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+                                             "bio_1-bio_15" = 0,
+                                             "bio_12-bio_15" = -3000))
+
+# Plot the ellipsoid in 3D
+plot_ellipsoid_3d(ell5u)
+
+# Add the original ellipsoid as a wireframe
+add_ellipsoid_3d(ell5, wire = TRUE, col = "#0e008b")
 }

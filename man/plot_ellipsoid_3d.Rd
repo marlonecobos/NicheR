@@ -4,27 +4,13 @@
 \alias{plot_ellipsoid_3d}
 \title{Plot a nicheR ellipsoid in 3D environmental space}
 \usage{
-plot_ellipsoid_3d(
-  object,
-  dim = c(1, 2, 3),
-  wire = FALSE,
-  aspect = TRUE,
-  background = NULL,
-  prediction = NULL,
-  col_layer = NULL,
-  pal = hcl.colors(100, palette = "Viridis"),
-  rev_pal = FALSE,
-  bg_sample = NULL,
-  col_ell = "#8b0000",
-  alpha_ell = 1,
-  alpha_bg = 1,
-  col_bg = "#8A8A8A",
-  fixed_lims = NULL,
-  xlab = NULL,
-  ylab = NULL,
-  zlab = NULL,
-  ...
-)
+plot_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, aspect = TRUE,
+                  background = NULL, prediction = NULL, col_layer = NULL,
+                  pal = hcl.colors(100, palette = "Viridis"),
+                  rev_pal = FALSE, bg_sample = NULL, col_ell = "#8b0000",
+                  alpha_ell = 1, alpha_bg = 1, col_bg = "#8A8A8A",
+                  fixed_lims = NULL, xlab = NULL, ylab = NULL,
+                  zlab = NULL, ...)
 }
 \arguments{
 \item{object}{A \code{nicheR_ellipsoid} object constructed with at least
@@ -63,15 +49,36 @@ Also applied to prediction points.}
 
 \item{fixed_lims}{Named list with \code{xlim}, \code{ylim}, and \code{zlim}.}
 
-\item{xlab}{x-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
+\item{xlab}{x-axis label. The default, \code{NULL}, uses elliposid object
+variable names, if any found.}
 
-\item{ylab}{y-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
+\item{ylab}{y-axis label. The default, \code{NULL}, uses elliposid object
+variable names, if any found.}
 
-\item{zlab}{z-axis label. The default, \code{NULL}, uses elliposid object variable names, if any found.}
+\item{zlab}{z-axis label. The default, \code{NULL}, uses elliposid object
+variable names, if any found.}
 
 \item{...}{Additional graphical parameters.}
 }
 \description{
 Creates an interactive 3D plot of a \code{nicheR_ellipsoid} object with
 support for background points or suitability surfaces.
+}
+\examples{
+# Building an ellipsoid
+## Define ranges for three variables
+range <- data.frame(bio_1  = c(22, 32),
+                    bio_12 = c(800, 4200),
+                    bio_15 = c(45, 115))
+
+## Build the ellipsoid
+ell5 <- build_ellipsoid(range = range)
+ell5$cov_limits
+
+ell5 <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
+                                            "bio_1-bio_15" = 0,
+                                            "bio_12-bio_15" = -3000))
+
+# Plot the ellipsoid in 3D
+plot_ellipsoid_3d(ell5)
 }
