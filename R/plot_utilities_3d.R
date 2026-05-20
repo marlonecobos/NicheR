@@ -62,8 +62,9 @@
 #'                                             "bio_12-bio_15" = -3000))
 #'
 #' # Plot the ellipsoid in 3D
+#' \dontrun{
 #' plot_ellipsoid_3d(ell5)
-
+#' }
 plot_ellipsoid_3d <- function(object,
                               dim = c(1, 2, 3),
                               wire = FALSE,
@@ -189,13 +190,13 @@ plot_ellipsoid_3d <- function(object,
 #' ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
 #'                                              "bio_1-bio_15" = 0,
 #'                                              "bio_12-bio_15" = -3000))
-#'
+#'\dontrun{
 #' # Plot the ellipsoid in 3D
 #' plot_ellipsoid_3d(ell5u)
 #'
-#' #' # Add background points
+#' # Add background points
 #' add_data_3d(back_data[, c(3, 7, 10)], col = "#8A8A8A")
-
+#' }
 add_data_3d <- function(data,
                         dim = c(1, 2, 3),
                         col_layer = NULL,
@@ -249,13 +250,13 @@ add_data_3d <- function(data,
 #' ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
 #'                                              "bio_1-bio_15" = 0,
 #'                                              "bio_12-bio_15" = -3000))
-#'
+#'\dontrun{
 #' # Plot the ellipsoid in 3D
 #' plot_ellipsoid_3d(ell5u)
 #'
 #' # Add the original ellipsoid as a wireframe
 #' add_ellipsoid_3d(ell5, wire = TRUE, col = "#0e008b")
-
+#' }
 add_ellipsoid_3d <- function(object,
                              dim = c(1, 2, 3),
                              wire = FALSE,
