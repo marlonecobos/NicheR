@@ -80,5 +80,7 @@ ell5 <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
                                             "bio_12-bio_15" = -3000))
 
 # Plot the ellipsoid in 3D
+\dontrun{
 plot_ellipsoid_3d(ell5)
+}
 }

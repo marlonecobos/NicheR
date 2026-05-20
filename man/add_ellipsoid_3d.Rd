@@ -40,10 +40,11 @@ ell5$cov_limits
 ell5u <- update_ellipsoid_covariance(ell5, c("bio_1-bio_12" = 200,
                                              "bio_1-bio_15" = 0,
                                              "bio_12-bio_15" = -3000))
-
+\dontrun{
 # Plot the ellipsoid in 3D
 plot_ellipsoid_3d(ell5u)
 
 # Add the original ellipsoid as a wireframe
 add_ellipsoid_3d(ell5, wire = TRUE, col = "#0e008b")
+}
 }
