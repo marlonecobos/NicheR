@@ -7,6 +7,11 @@
 #' (\code{"direct"} or \code{"inverse"}) before being multiplied together
 #' into a single composite surface.
 #'
+#' @usage prepare_bias(bias_surface, effect_direction = c("direct", "inverse"),
+#'                     template_layer = NULL, include_composite = TRUE,
+#'                     include_processed_layers = FALSE, mask_na = FALSE,
+#'                     verbose = TRUE)
+#'
 #' @param bias_surface A \code{SpatRaster} (single or multi-layer) or a list
 #'   of \code{SpatRaster} objects representing the raw bias layers.
 #' @param effect_direction Character vector. Direction of effect for each bias
@@ -62,25 +67,25 @@
 #'   occurrences from the resulting bias-weighted surface.
 #'
 #' @examples
-#' \donttest{
-#' bias_rast <- terra::rast(
-#'   system.file("extdata/ma_biases.tif", package = "nicheR"))
+#' pred_rast <- terra::rast(system.file("extdata/predictions_rast.tif",
+#'                                      package = "nicheR"))
+#'
+#' bias_rast <- terra::rast(system.file("extdata/ma_biases.tif",
+#'                                      package = "nicheR"))
 #'
 #' # Single layer, direct effect (higher values increase sampling probability)
-#' bias_single <- nicheR::prepare_bias(bias_surface = bias_rast[[1]],
+#' bias_single <- prepare_bias(bias_surface = bias_rast[[1]],
 #'                             effect_direction = "direct")
 #' bias_single$composite_surface
 #'
 #' # Two layers: first direct, second inverse
-#' bias_two <- nicheR::prepare_bias(
-#'   bias_surface = bias_rast[[c(1, 2)]],
-#'   effect_direction = c("direct", "inverse"),
-#'   include_processed_layers = TRUE)
+#' bias_two <- prepare_bias( bias_surface = bias_rast[[c(1, 2)]],
+#'                           effect_direction = c("direct", "inverse"),
+#'                           include_processed_layers = TRUE)
 #'
 #' bias_two$combination_formula
 #' terra::plot(bias_two$processed_layers)
 #' terra::plot(bias_two$composite_surface)
-#' }
 #'
 #' @export
 prepare_bias <- function(bias_surface,

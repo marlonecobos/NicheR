@@ -18,8 +18,7 @@ Numeric. Geometric volume (or hypervolume) of the ellipsoid.
 \description{
 Computes the geometric volume (area in 2D, volume in 3D, hypervolume in higher
 dimensions) of a \eqn{p}-dimensional ellipsoid defined by its semi-axis lengths.
-}
-\details{
+
 For semi-axes \eqn{a_1, \dots, a_p}, the volume is:
 \deqn{
 V_p = \frac{\pi^{p/2}}{\Gamma(p/2 + 1)} \prod_{i=1}^{p} a_i

@@ -1,5 +1,6 @@
 #' Build a probabilistic ellipsoidal niche from ranges
 #'
+#' @description
 #' Builds an ellipsoidal niche in multivariate environmental space using a
 #' multivariate normal (MVN) contour defined by a constant Mahalanobis distance.
 #' The ellipsoid is parameterized from user-provided variable ranges by deriving
@@ -20,6 +21,9 @@
 #'
 #' The ellipsoid contour is defined using a chi-square cutoff
 #' \eqn{c^2 = \chi^2_{n}(\mathrm{cl})}, where \eqn{n} is the number of variables.
+#'
+#' @usage build_ellipsoid(range, cl = 0.99,
+#'                        verbose = TRUE)
 #'
 #' @param range A 2-row \code{matrix} or \code{data.frame} of bounds, with variables
 #'   as columns. Rows may be ordered as min/max or max/min. Column names are required

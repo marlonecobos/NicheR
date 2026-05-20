@@ -5,6 +5,8 @@
 #' or \code{nicheR_community} objects to a file. Includes a safety check
 #' for overwriting existing files and ensures the file extension is .rds.
 #'
+#' @usage save_nicheR(object, file, overwrite = FALSE, ...)
+#'
 #' @param object A \code{nicheR_ellipsoid} or \code{nicheR_community} object.
 #' @param file Character. The connection or name of the file where the
 #'   object will be saved (usually ending in ".rds").
@@ -60,6 +62,8 @@ save_nicheR <- function(object, file, overwrite = FALSE, ...) {
 #' @description
 #' A wrapper around \code{\link[base]{readRDS}} to load saved nicheR
 #' objects back into the R environment.
+#'
+#' @usage read_nicheR(file)
 #'
 #' @param file Character. The path to the file to be read.
 #'

@@ -4,7 +4,8 @@
 \alias{build_ellipsoid}
 \title{Build a probabilistic ellipsoidal niche from ranges}
 \usage{
-build_ellipsoid(range, cl = 0.99, verbose = TRUE)
+build_ellipsoid(range, cl = 0.99,
+                       verbose = TRUE)
 }
 \arguments{
 \item{range}{A 2-row \code{matrix} or \code{data.frame} of bounds, with variables

@@ -4,7 +4,9 @@
 \alias{update_ellipsoid_covariance}
 \title{Update covariances in a nicheR ellipsoid and recompute metrics}
 \usage{
-update_ellipsoid_covariance(object, covariance, tol = 1e-06, verbose = TRUE)
+update_ellipsoid_covariance(object, covariance,
+                                   tol = 1e-6,
+                                   verbose = TRUE)
 }
 \arguments{
 \item{object}{A \code{nicheR_ellipsoid} object, typically created with

@@ -44,6 +44,7 @@ with the ability to expand the resulting ranges by a percentage.
 df <- data.frame(var1 = c(0, 10), var2 = c(50, 100))
 ranges_from_data(df, expand_min = list(var1 = 10),
                  expand_max = list(var2 = 20))
+
 # From statistics
 m <- c(var1 = 10, var2 = 100)
 s <- c(var1 = 2, var2 = 15)

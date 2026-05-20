@@ -4,27 +4,14 @@
 \alias{plot_ellipsoid}
 \title{Plot a nicheR ellipsoid in environmental space}
 \usage{
-plot_ellipsoid(
-  object,
-  background = NULL,
-  prediction = NULL,
-  dim = c(1, 2),
-  col_layer = NULL,
-  pal = hcl.colors(100, palette = "Viridis"),
-  rev_pal = FALSE,
-  bg_sample = NULL,
-  lty = 1,
-  lwd = 1,
-  col_ell = "#000000",
-  col_bg = "#8A8A8A",
-  pch = 1,
-  alpha_bg = 1,
-  alpha_ell = 1,
-  cex_ell = 1,
-  cex_bg = 1,
-  fixed_lims = NULL,
-  ...
-)
+plot_ellipsoid(object, background = NULL, prediction = NULL,
+               dim = c(1, 2), col_layer = NULL,
+               pal = hcl.colors(100, palette = "Viridis"), rev_pal = FALSE,
+               bg_sample = NULL,
+               lty = 1, lwd = 1, col_ell = "#000000",col_bg = "#8A8A8A",
+               pch = 1, alpha_bg = 1, alpha_ell = 1,
+               cex_ell = 1, cex_bg = 1,
+               fixed_lims = NULL,...)
 }
 \arguments{
 \item{object}{A \code{nicheR_ellipsoid} object containing at least
@@ -125,57 +112,45 @@ The function has three display modes depending on what is provided:
 }
 }
 \examples{
-range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
-ell <- nicheR::build_ellipsoid(range = range_df)
+data("ref_ellipse", package = "nicheR")
+data("back_data", package = "nicheR")
 
-\donttest{
 # Mode 1: ellipsoid boundary only
-nicheR::plot_ellipsoid(ell,
-                       col_ell = "#e10000", lwd = 2,
-                       xlab = "Bio1 (Mean Annual Temperature)",
-                       ylab = "Bio12 (Annual Precipitation)")
+plot_ellipsoid(ref_ellipse,
+               col_ell = "#e10000", lwd = 2,
+               xlab = "Bio1 (Mean Annual Temperature)",
+               ylab = "Bio12 (Annual Precipitation)")
 
 # Mode 2: with background points
-ma_bios <- terra::rast(
-  system.file("extdata/ma_bios.tif", package = "nicheR"))
-back_df <- as.data.frame(ma_bios, xy = TRUE)
-
-nicheR::plot_ellipsoid(ell,
-                       background = back_df,
-                       col_ell = "#e10000", col_bg = "grey70",
-                       lwd = 2, pch = 20, cex_bg = 0.4,
-                       xlab = "Bio1", ylab = "Bio12")
+plot_ellipsoid(ref_ellipse,
+               background = back_data,
+               col_ell = "#e10000", col_bg = "grey70",
+               lwd = 2, pch = 20, cex_bg = 0.4,
+               xlab = "Bio1", ylab = "Bio12")
 
 # Mode 3: prediction colored by suitability
-pred_df <- predict(ell,
-                   newdata = back_df,
-                   include_suitability = TRUE,
-                   include_mahalanobis = FALSE)
+pred_df <- utils::read.csv(system.file("extdata", "predictions_virt.csv", package = "nicheR"))
 
-nicheR::plot_ellipsoid(ell,
-                       prediction = pred_df,
-                       col_layer = "suitability",
-                       col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.4,
-                       xlab = "Bio1", ylab = "Bio12")
+plot_ellipsoid(ref_ellipse,
+               prediction = pred_df,
+               col_layer = "suitability",
+               bg_sample = 1000,
+               col_ell = "#e10000", lwd = 2,
+               pch = 20, cex_bg = 0.4,
+               xlab = "Bio1", ylab = "Bio12")
 
 # Mode 3b: truncated suitability, outside points shown in grey
-pred_trunc <- predict(ell,
-                      newdata = back_df,
-                      include_suitability = FALSE,
-                      include_mahalanobis = FALSE,
-                      suitability_truncated = TRUE)
-
-nicheR::plot_ellipsoid(ell,
-                       prediction = pred_trunc,
-                       col_layer = "suitability_trunc",
-                       col_bg  = "#d4d4d4",
-                       col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.4,
-                       xlab = "Bio1", ylab = "Bio12")
-}
+plot_ellipsoid(ref_ellipse,
+               prediction = pred_df,
+               col_layer = "suitability_trunc",
+               col_bg  = "#d4d4d4",
+               col_ell = "#e10000", lwd = 2, pch = 20, cex_bg = 0.4,
+               xlab = "Bio1", ylab = "Bio12")
 
 }
 \seealso{
 \code{\link{add_data}} to overlay occurrence points,
   \code{\link{add_ellipsoid}} to overlay additional ellipsoid boundaries,
-  \code{\link{plot_ellipsoid_pairs}} for pairwise plots of all dimensions.
+  \code{\link{plot_ellipsoid_pairs}} for pairwise plots of all dimensions
+  \code{vignette("plotting_vignette", package = "nicheR")}
 }

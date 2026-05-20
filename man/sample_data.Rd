@@ -4,17 +4,10 @@
 \alias{sample_data}
 \title{Sample occurrence data from a prediction surface}
 \usage{
-sample_data(
-  n_occ,
-  prediction,
-  prediction_layer = NULL,
-  sampling = "centroid",
-  method = "suitability",
-  sampling_mask = NULL,
-  seed = 1,
-  strict = NULL,
-  verbose = TRUE
-)
+sample_data(n_occ, prediction, prediction_layer = NULL,
+                   sampling = "centroid", method = "suitability",
+                   sampling_mask = NULL, seed = 1, strict = NULL,
+                   verbose = TRUE)
 }
 \arguments{
 \item{n_occ}{Integer. Number of occurrence points to sample.}
@@ -82,23 +75,11 @@ whether the layer name contains \code{"trunc"} or whether the proportion of
 zeros or \code{NA}s exceeds 25\%.
 }
 \examples{
-range_df <- data.frame(bio_1  = c(22, 28),
-                       bio_12 = c(1000, 3500))
-ell <- build_ellipsoid(range = range_df)
-
-\donttest{
-ma_bios <- terra::rast(
-  system.file("extdata/ma_bios.tif", package = "nicheR"))
-back_df <- as.data.frame(ma_bios, xy = TRUE)
-
-pred_df <- predict(ell,
-                   newdata = back_df,
-                   include_suitability = TRUE,
-                   include_mahalanobis = FALSE,
-                   suitability_truncated = TRUE)
+pred_df <- utils::read.csv(system.file("extdata/predictions_virt.csv",
+                                     package = "nicheR"))
 
 # Centroid strategy: samples cluster near the niche center
-occ_centroid <- nicheR::sample_data(n_occ = 100,
+occ_centroid <- sample_data(n_occ = 100,
                             prediction = pred_df,
                             prediction_layer = "suitability_trunc",
                             sampling = "centroid",
@@ -107,7 +88,7 @@ occ_centroid <- nicheR::sample_data(n_occ = 100,
 head(occ_centroid)
 
 # Edge strategy: samples spread toward the niche boundary
-occ_edge <- nicheR::sample_data(n_occ = 100,
+occ_edge <- sample_data(n_occ = 100,
                         prediction = pred_df,
                         prediction_layer = "suitability_trunc",
                         sampling = "edge",
@@ -115,10 +96,9 @@ occ_edge <- nicheR::sample_data(n_occ = 100,
                         strict = TRUE)
 
 # Random strategy: samples distributed uniformly across suitable area
-occ_random <- nicheR::sample_data(n_occ = 100,
+occ_random <- sample_data(n_occ = 100,
                           prediction = pred_df,
                           prediction_layer = "suitability_trunc",
                           sampling = "random")
-}
 
 }

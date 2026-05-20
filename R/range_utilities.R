@@ -1,5 +1,6 @@
 #' Compute variable ranges from data or statistics with optional expansion
 #'
+#' @description
 #' These functions compute the minimum and maximum values for variables,
 #' either directly from a dataset or based on normal distribution parameters,
 #' with the ability to expand the resulting ranges by a percentage.
@@ -27,12 +28,14 @@
 NULL
 
 #' @rdname range_utilities
-#' @export
+#'
 #' @examples
 #' # From data
 #' df <- data.frame(var1 = c(0, 10), var2 = c(50, 100))
 #' ranges_from_data(df, expand_min = list(var1 = 10),
 #'                  expand_max = list(var2 = 20))
+#'
+#' @export
 
 ranges_from_data <- function(data, expand_min = NULL, expand_max = NULL) {
   # Initial structural check

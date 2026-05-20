@@ -4,20 +4,11 @@
 \alias{add_data}
 \title{Add occurrence points or other data to an existing E-space plot}
 \usage{
-add_data(
-  data,
-  x,
-  y,
-  pts_col = "#000000",
-  pts_alpha = 1,
-  col_layer = NULL,
-  pal = hcl.colors(100, palette = "Viridis"),
-  rev_pal = FALSE,
-  pch = 1,
-  cex = 1,
-  bg_sample = NULL,
-  ...
-)
+add_data(data, x, y,
+                pts_col = "#000000",pts_alpha  = 1,
+                col_layer = NULL,
+                pal = hcl.colors(100, palette = "Viridis"), rev_pal = FALSE,
+                pch = 1, cex = 1, bg_sample = NULL, ...)
 }
 \arguments{
 \item{data}{A data frame containing the points to plot. Must include
@@ -69,42 +60,27 @@ before plotting; zeros are retained as valid values (e.g., truncated
 suitability predictions outside the ellipsoid boundary).
 }
 \examples{
-range_df <- data.frame(bio_1 = c(15, 25), bio_12 = c(500, 1500))
-ell <- build_ellipsoid(range = range_df)
+data("ref_ellipse", package = "nicheR")
+data("back_data", package = "nicheR")
 
-\donttest{
-  ma_bios <- terra::rast(
-    system.file("extdata/ma_bios.tif", package = "nicheR"))
-  back_df <- as.data.frame(ma_bios, xy = TRUE)
+# Open base plot then add centroid as a cross
+plot_ellipsoid(ref_ellipse,
+               background = back_data,
+               col_ell = "#e10000", col_bg = "grey80",
+               lwd = 2, pch = 20, cex_bg = 0.4,
+               xlab = "Bio1", ylab = "Bio12")
 
-  pred_df <- predict(ell,
-                     newdata = back_df,
-                     include_suitability = TRUE,
-                     include_mahalanobis = FALSE)
-
-  # Open base plot then add centroid as a cross
-  nicheR::plot_ellipsoid(ell,
-                         background = back_df,
-                         col_ell = "#e10000", col_bg = "grey80",
-                         lwd = 2, pch = 20, cex_bg = 0.4,
-                         xlab = "Bio1", ylab = "Bio12")
-
-  nicheR::add_data(as.data.frame(t(ell$centroid)),
-                   x = "bio_1", y = "bio_12",
-                   pts_col = "#e10000", pch = 8, cex = 1.5, lwd = 2)
-
-  # Add points colored by suitability on top of background
-  nicheR::plot_ellipsoid(ell,
-                         background = back_df,
-                         col_ell = "#e10000", col_bg = "grey80",
-                         lwd = 2, pch = 20, cex_bg = 0.4,
-                         xlab = "Bio1", ylab = "Bio12")
-
-  nicheR::add_data(pred_df,
-                   x = "bio_1", y = "bio_12",
-                   col_layer = "suitability",
-                   pch = 20, cex = 0.5)
-}
+# Add points colored by suitability on top of background
+pred_df <- utils::read.csv(system.file("extdata", "predictions_virt.csv", package = "nicheR"))
+plot_ellipsoid(ref_ellipse,
+               background = back_data,
+               col_ell = "#e10000", col_bg = "grey80",
+               lwd = 2, pch = 20, cex_bg = 0.4,
+               xlab = "Bio1", ylab = "Bio12")
+add_data(pred_df,
+         x = "bio_1", y = "bio_12",
+         col_layer = "suitability",
+         pch = 20, cex = 0.5)
 
 }
 \seealso{

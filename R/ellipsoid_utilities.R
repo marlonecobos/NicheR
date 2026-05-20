@@ -19,6 +19,9 @@ verbose_message <- function(verbose, ...) {
 #' defined by a centroid and covariance matrix, including semi-axis lengths,
 #' axis vertices, and hypervolume for a chi-square confidence contour.
 #'
+#' @usage ellipsoid_calculator(cov_matrix, centroid,
+#'                            cl, verbose = TRUE)
+#'
 #' @details
 #' The ellipsoid boundary is defined by the constant Mahalanobis distance contour:
 #' \deqn{(x - \mu)^\top \Sigma^{-1} (x - \mu) = c^2,}
@@ -52,7 +55,9 @@ verbose_message <- function(verbose, ...) {
 #'
 #' @examples
 #' cm <- matrix(c(11.11, 0,
-#'                0, 17777.78), nrow = 2, byrow = TRUE)
+#'                0, 17777.78),
+#'              nrow = 2,
+#'              byrow = TRUE)
 #' colnames(cm) <- rownames(cm) <- c("var1", "var2")
 #' ctr <- c(20, 600)
 #' ell <- ellipsoid_calculator(cov_matrix = cm, centroid = ctr, cl = 0.95, verbose = FALSE)
@@ -135,7 +140,8 @@ ellipsoid_calculator <- function(cov_matrix,
 
 #' Compute ellipsoid hypervolume
 #'
-#' Computes the geometric volume (area in 2D, volume in 3D, hypervolume in higher
+#' @description
+#'  Computes the geometric volume (area in 2D, volume in 3D, hypervolume in higher
 #' dimensions) of a \eqn{p}-dimensional ellipsoid defined by its semi-axis lengths.
 #'
 #' For semi-axes \eqn{a_1, \dots, a_p}, the volume is:
@@ -147,6 +153,8 @@ ellipsoid_calculator <- function(cov_matrix,
 #'
 #' In probabilistic niche models, semi-axis lengths are typically derived from
 #' covariance eigenvalues and a chi-square cutoff.
+#'
+#' @usage ellipsoid_volume(n_dimensions, semi_axes_lengths)
 #'
 #' @param n_dimensions Integer. Number of dimensions \eqn{p}.
 #' @param semi_axes_lengths Numeric vector of length \code{n_dimensions}
@@ -208,6 +216,10 @@ ellipsoid_volume <- function(n_dimensions, semi_axes_lengths) {
 #' (centroid, semi-axes, volume, etc.) from the new covariance matrix. This
 #' allows iterative niche shaping by adjusting the rotation and correlation
 #' structure of the ellipsoid without rebuilding it from scratch.
+#'
+#' @usage update_ellipsoid_covariance(object, covariance,
+#'                                    tol = 1e-6,
+#'                                    verbose = TRUE)
 #'
 #' @param object A \code{nicheR_ellipsoid} object, typically created with
 #'   \code{\link{build_ellipsoid}}.
@@ -300,6 +312,7 @@ update_ellipsoid_covariance <- function(object,
 #'   column or layer.
 #' }
 #'
+#' @keywords internal
 #' @noRd
 resolve_prediction <- function(prediction, prediction_layer){
 

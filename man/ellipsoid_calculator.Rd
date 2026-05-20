@@ -4,7 +4,8 @@
 \alias{ellipsoid_calculator}
 \title{Calculate n-dimensional ellipsoid metrics}
 \usage{
-ellipsoid_calculator(cov_matrix, centroid, cl, verbose = TRUE)
+ellipsoid_calculator(cov_matrix, centroid,
+                           cl, verbose = TRUE)
 }
 \arguments{
 \item{cov_matrix}{A square, numeric covariance matrix \eqn{\Sigma}. Must be SPD.
@@ -48,7 +49,9 @@ Axis vertices are computed along each eigenvector direction as
 }
 \examples{
 cm <- matrix(c(11.11, 0,
-               0, 17777.78), nrow = 2, byrow = TRUE)
+               0, 17777.78),
+             nrow = 2,
+             byrow = TRUE)
 colnames(cm) <- rownames(cm) <- c("var1", "var2")
 ctr <- c(20, 600)
 ell <- ellipsoid_calculator(cov_matrix = cm, centroid = ctr, cl = 0.95, verbose = FALSE)

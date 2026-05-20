@@ -64,7 +64,8 @@ data("ref_ellipse", package = "nicheR")
 
 # Generate virtual data from the reference niche
 vdata_direct <- virtual_data(ref_ellipse, n = 100, effect = "direct")
-vdata_inverse <- virtual_data(ref_ellipse, n = 100, effect = "inverse")
+vdata_inverse <- virtual_data(ref_ellipse, n = 100,
+                              effect = "inverse", truncate = TRUE)
 
 # Check a sample of the generated data
 head(vdata_direct)

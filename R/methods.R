@@ -382,7 +382,6 @@ predict.nicheR_ellipsoid <- function(object,
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom terra rast
 #' @export
-
 predict.nicheR_community <- function(object,
                                      newdata,
                                      prediction = "Mahalanobis",
@@ -488,6 +487,7 @@ predict.nicheR_community <- function(object,
 
 #' Print method for nicheR objects
 #'
+#' @description
 #' Provides a concise summary of \code{nicheR} objects.
 #'
 #' @name print
@@ -565,7 +565,6 @@ print.nicheR_ellipsoid <- function(x, digits = 3, ...) {
 #' @method print nicheR_community
 #' @importFrom stats sd
 #' @export
-
 print.nicheR_community <- function(x, digits = 3, ...) {
 
   cat("nicheR Community Object\n")

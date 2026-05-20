@@ -4,7 +4,7 @@
 \alias{add_ellipsoid_3d}
 \title{Add an ellipsoid to an existing 3D E-space plot}
 \usage{
-add_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, col_ell = "#8b0000",
+add_ellipsoid_3d(object, dim = c(1, 2, 3), wire = FALSE, col_ell = "#800000",
                   alpha_ell = 1, ...)
 }
 \arguments{
