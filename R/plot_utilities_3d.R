@@ -34,11 +34,11 @@
 #'    Also applied to prediction points.
 #' @param col_bg Color for background points.
 #' @param fixed_lims Named list with \code{xlim}, \code{ylim}, and \code{zlim}.
-#' @param xlab x-axis label. The default, \code{NULL}, uses elliposid object
+#' @param xlab x-axis label. The default, \code{NULL}, uses ellipsoid object
 #'    variable names, if any found.
-#' @param ylab y-axis label. The default, \code{NULL}, uses elliposid object
+#' @param ylab y-axis label. The default, \code{NULL}, uses ellipsoid object
 #'    variable names, if any found.
-#' @param zlab z-axis label. The default, \code{NULL}, uses elliposid object
+#' @param zlab z-axis label. The default, \code{NULL}, uses ellipsoid object
 #'    variable names, if any found.
 #' @param ... Additional graphical parameters.
 #'

@@ -43,7 +43,7 @@ Real-world biodiversity data is rarely collected systematically. Biologists ofte
 
 The `nicheR` package allows you to simulate these spatial sampling biases. This workflow involves two steps:
 
-1.  **`prepare_bias()`**: Standardizing raw environmental or anthropogenic covariates into probability-scaling surfaces.
+1.  **`prepare_bias()`**: Standardizing raw environmental or anthropocentric covariates into probability-scaling surfaces.
 
 2.  **`apply_bias()`**: Mathematically fusing those bias surfaces with your habitat suitability predictions.
 

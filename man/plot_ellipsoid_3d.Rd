@@ -49,13 +49,13 @@ Also applied to prediction points.}
 
 \item{fixed_lims}{Named list with \code{xlim}, \code{ylim}, and \code{zlim}.}
 
-\item{xlab}{x-axis label. The default, \code{NULL}, uses elliposid object
+\item{xlab}{x-axis label. The default, \code{NULL}, uses ellipsoid object
 variable names, if any found.}
 
-\item{ylab}{y-axis label. The default, \code{NULL}, uses elliposid object
+\item{ylab}{y-axis label. The default, \code{NULL}, uses ellipsoid object
 variable names, if any found.}
 
-\item{zlab}{z-axis label. The default, \code{NULL}, uses elliposid object
+\item{zlab}{z-axis label. The default, \code{NULL}, uses ellipsoid object
 variable names, if any found.}
 
 \item{...}{Additional graphical parameters.}

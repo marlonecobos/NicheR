@@ -8,3 +8,4 @@
 ^docs$
 ^Meta$
 ^_pkgdown\.yml$
+^cran-comments\.md$

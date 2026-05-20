@@ -52,7 +52,7 @@ The `nicheR` package allows you to simulate how a species might be distributed b
 
 2.  **Geographic Occurrence Data:** Acting as a "virtual ecologist" to generate presence points across a physical landscape (G-Space) based on theoretical preferences.
 
-3.  **Biased Occurrence Data:** Introducing real-world collection bias (e.g., ninghttime light, proximity to roads, species richness, land use land cover) to see how human sampling effort distorts our view of a species' niche.
+3.  **Biased Occurrence Data:** Introducing real-world collection bias (e.g., nighttime light, proximity to roads, species richness, land use land cover) to see how human sampling effort distorts our view of a species' niche.
 
 <br>
 
