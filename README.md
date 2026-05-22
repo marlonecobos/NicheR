@@ -181,7 +181,7 @@ this surface to simulate non-random, biased occurrence sampling.
 
 > For details on bias surface construction, directional effects, and how
 > bias interacts with predictions and sampling, see the [Sampling bias
-> data](https://castanedam.github.io/nicheR/articles/sampling_bias_data.html)
+> data](https://castanedam.github.io/nicheR/articles/bias.html)
 > vignette.
 
 <br>
@@ -201,7 +201,7 @@ centroid.
 > For a full guide to sampling strategies, methods, strict
 > vs. non-strict modes, and biased sampling workflows, see the [Sampling
 > occurrence
-> data](https://castanedam.github.io/nicheR/articles/sampling_occurrence_data.html)
+> data](https://castanedam.github.io/nicheR/articles/generating_occurrence.html)
 > vignette.
 
 <br>
