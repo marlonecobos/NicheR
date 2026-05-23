@@ -34,10 +34,10 @@ Description: Provides a robust set of tools for researchers and modelers to
     areas, simulation of species occurrence points with various sampling
     strategies, and visualization of niche boundaries and simulated occurrences
     in both environmental and geographic space. Inspired by methodologies in
-    NicheA and the virtualspecies R package, nicheR aims to streamline the
+    'NicheA' and the 'virtualspecies' R package, 'nicheR' aims to streamline the
     process of niche conceptualization and data generation for ecological studies.
-URL: https://github.com/castanedaM/NicheR, https://castanedam.github.io/nicheR/
-BugReports: https://github.com/castanedaM/NicheR/issues
+URL: https://github.com/castanedaM/nicheR, https://castanedam.github.io/nicheR/
+BugReports: https://github.com/castanedaM/nicheR/issues
 Depends:
     R (>= 3.5)
 Imports:
