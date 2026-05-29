@@ -33,9 +33,17 @@ Description: Provides a robust set of tools for researchers and modelers to
     It enables the identification and extraction of suitable environmental
     areas, simulation of species occurrence points with various sampling
     strategies, and visualization of niche boundaries and simulated occurrences
-    in both environmental and geographic space. Inspired by methodologies in
+    in both environmental and geographic space. Inspired by methodologies in 
     'NicheA' and the 'virtualspecies' R package, 'nicheR' aims to streamline the
-    process of niche conceptualization and data generation for ecological studies.
+    process of niche conceptualization and data generation for ecological studies. 
+    Methodological and theoretical basis for the methods implementet here can be found in:
+    Peterson et al. (2011) <https://www.degruyter.com/princetonup/view/title/506966>,
+    Etherington et al. (2009) <doi:10.1111/j.1365-2699.2008.02041.x>, 
+    Qiao et al. (2015) <doi:10.1111/ecog.01961>,
+    Nuñez-Penichet et al. (2021) <doi:10.21425/F5FBG52142>,
+    Cobos & Perterson (2022) <doi:10.17161/bi.v17i.15985>,
+    Alkishe et al. (2022) <doi:10.5194/we-22-33-2022>.
+    Leroy et al. (2015) <doi:10.1111/ecog.01388>
 URL: https://github.com/castanedaM/nicheR, https://castanedam.github.io/nicheR/
 BugReports: https://github.com/castanedaM/nicheR/issues
 Depends:

@@ -68,6 +68,10 @@ getwd()
 
 # Define new directory
 #setwd("YOUR/DIRECTORY")  # modify if setting a new directory
+
+# Saving original plotting parameters
+original_par <- par(no.readonly = TRUE)
+
 ```
 
 <br>
@@ -411,6 +415,11 @@ Alternatively, `plot_ellipsoid_pairs()` produces all pairwise projections at onc
 ```{r plot_pairs}
 plot_ellipsoid_pairs(ell5, background = bios_df, pch = ".", cex_bg = 1.5,
                      col_bg = "gray50", lwd = 3, lty = 6, col_ell = "blue")
+```
+
+```{r par_reset}
+# Reset plotting parameters
+par(original_par)
 ```
 
 <br>
