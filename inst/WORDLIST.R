@@ -1,3 +1,0 @@
-NicheA
-nicheR
-virtualspecies
