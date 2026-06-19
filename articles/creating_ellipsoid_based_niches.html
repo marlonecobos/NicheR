@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Creating Ellipsoid Based Niches • nicheR</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Creating Ellipsoid Based Niches">
 </head>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nicheR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/castanedaM/NicheR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/castanedaM/nicheR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -68,10 +68,11 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Creating Ellipsoid Based Niches</h1>
+
+      <h1>Creating Ellipsoid Based Niches</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/castanedaM/NicheR/blob/master/vignettes/creating_ellipsoid_based_niches.Rmd" class="external-link"><code>vignettes/creating_ellipsoid_based_niches.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/castanedaM/nicheR/blob/master/vignettes/creating_ellipsoid_based_niches.Rmd" class="external-link"><code>vignettes/creating_ellipsoid_based_niches.Rmd</code></a></small>
       <div class="d-none name"><code>creating_ellipsoid_based_niches.Rmd</code></div>
     </div>
 
@@ -112,7 +113,7 @@ Hutchinsonian concept of the ecological niche by representing the set of
 environmental conditions under which a species can persist as an
 n-dimensional hypervolume in multivariate environmental space.
 Ellipsoids are well-suited to this task because they are a
-straightforward and interpatable way of capturing the shape, size, and
+straightforward and interpretable way of capturing the shape, size, and
 orientation of a species’ niche, including correlations between
 environmental variables.</p>
 <p>The main functions covered in this vignette are:</p>
@@ -158,14 +159,17 @@ necessary).</p>
 <code>package::function()</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load packages</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/castanedaM/NicheR" class="external-link">nicheR</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/castanedaM/nicheR" class="external-link">nicheR</a></span><span class="op">)</span></span>
 <span><span class="co">#library(terra)</span></span>
 <span></span>
 <span><span class="co"># Current directory</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Define new directory</span></span>
-<span><span class="co">#setwd("YOUR/DIRECTORY")  # modify if setting a new directory</span></span></code></pre></div>
+<span><span class="co">#setwd("YOUR/DIRECTORY")  # modify if setting a new directory</span></span>
+<span></span>
+<span><span class="co"># Saving original plotting parameters</span></span>
+<span><span class="va">original_par</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>no.readonly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><br></p>
 </div>
 <div class="section level2">
@@ -219,7 +223,8 @@ environmental conditions, there is a direct relationship between the two
 concepts and once a niche is defined in E-space it can be projected onto
 G-space to identify which locations on a real landscape fall within the
 species’ tolerances. This projection from E-space to G-space is what
-produces a map of predicted suitable habitat, and is covered in the <a href="link">Making Predictions vignette</a>.</p>
+produces a map of predicted suitable habitat, and is covered in the <a href="https://castanedam.github.io/nicheR/articles/predict.html">Making
+Predictions vignette</a>.</p>
 <p>The foundation of niche modeling in <code>nicheR</code> is the
 ellipsoid, which represents the set of environmental conditions a
 species can tolerate. An ellipsoid in environmental space is defined by
@@ -359,7 +364,7 @@ much of the available environmental space the species may be predicted
 to occupy. Note: Background data is not a strict requirement for
 defining an ellipsoid niche in <code>nicheR</code>; niches can also be
 defined purely in theoretical space without reference to any background
-data. For a walkthrough of that alternative approach, see <a href="link">this vignette</a>.</p>
+data.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ellipsoid.html">plot_ellipsoid</a></span><span class="op">(</span><span class="va">ell</span>, background <span class="op">=</span> <span class="va">bios_df</span>, dim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="creating_ellipsoid_based_niches_files/figure-html/plot_bg-1.png" class="r-plt" alt="" width="95%"></p>
@@ -514,10 +519,10 @@ environmental requirements.</p>
 <p>Plotting both species together shows how they appear in the available
 environmental space. Species 1 (green) occupies a broad warm-climate
 niche with wide precipitation tolerance, avoiding only the warmest and
-driest conditions due to the covaraince between those variables. Species
+driest conditions due to the covariance between those variables. Species
 2 (brown) is shifted toward cooler, wetter environments with a similar
 covariance structure, but its niche falls in a region of the background
-that is less represented in our background data, meaning that dispite a
+that is less represented in our background data, meaning that despite a
 similar niche volume, this species is realistically more limited within
 the actual environment of our study region.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
@@ -555,14 +560,14 @@ character: a warm-adapted specialist restricted to dry environments.</p>
 <span><span class="co">#&gt; Step: computing ellipsoid metrics...</span></span>
 <span><span class="co">#&gt; Done: updated ellipsoidal niche metrics</span></span></code></pre></div>
 <p><br></p>
-<p>Adding this third species to the plot shows its uniquness compared to
-the other two species. While the first two species follow a broadly
+<p>Adding this third species to the plot shows its uniqueness compared
+to the other two species. While the first two species follow a broadly
 wet-warm axis, this species (orange) is specialized toward the warm, dry
 corner of the environmental space. While its thermal tolerances are
-still relativly wide, its explicitly specialized to dry environments.
+still relatively wide, its explicitly specialized to dry environments.
 Its niche volume is smaller and its covariance is much lower than in the
-other two species (showing as a less extreem tilt), reflecting only a
-slight tendency to tolerate marginally warmer conditions in comprably
+other two species (showing as a less extreme tilt), reflecting only a
+slight tendency to tolerate marginally warmer conditions in comparably
 wetter environments.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ellipsoid.html">plot_ellipsoid</a></span><span class="op">(</span><span class="va">ell2</span>, background <span class="op">=</span> <span class="va">bios_df</span>, dim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, bg_sample <span class="op">=</span> <span class="fl">5000</span>,</span>
@@ -609,7 +614,7 @@ workflow. Let’s save the three species we have defined so far.</p>
 <span><span class="fu"><a href="../reference/save_nicheR.html">save_nicheR</a></span><span class="op">(</span><span class="va">ell4</span>, file <span class="op">=</span> <span class="va">temp_file3</span><span class="op">)</span></span></code></pre></div>
 <p><br></p>
 <p>We can reload any of these objects and work with them exactly as
-before. Below we reimport the first species and visualize it to confirm
+before. Below we import the first species and visualize it to confirm
 the niche has been recovered correctly.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Import an ellipsoid object from a local directory</span></span>
@@ -702,7 +707,7 @@ it is important to review these limits before making adjustments.</p>
 <code><a href="../reference/update_ellipsoid_covariance.html">update_ellipsoid_covariance()</a></code>. Here we introduce a positive
 covariance between bio_1 and bio_12, no covariance between bio_1 and
 bio_15, and a negative covariance between bio_12 and bio_15, reflecting
-that this species is more tolerant of comprably dryer environments when
+that this species is more tolerant of comparably dryer environments when
 those environments have extreme seasonal pulses of precipitation.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ell5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/update_ellipsoid_covariance.html">update_ellipsoid_covariance</a></span><span class="op">(</span><span class="va">ell5</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bio_1-bio_12"</span>  <span class="op">=</span>    <span class="fl">200</span>,</span>
@@ -745,6 +750,9 @@ primarily for quick exploratory visualization.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ellipsoid_pairs.html">plot_ellipsoid_pairs</a></span><span class="op">(</span><span class="va">ell5</span>, background <span class="op">=</span> <span class="va">bios_df</span>, pch <span class="op">=</span> <span class="st">"."</span>, cex_bg <span class="op">=</span> <span class="fl">1.5</span>,</span>
 <span>                     col_bg <span class="op">=</span> <span class="st">"gray50"</span>, lwd <span class="op">=</span> <span class="fl">3</span>, lty <span class="op">=</span> <span class="fl">6</span>, col_ell <span class="op">=</span> <span class="st">"blue"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="creating_ellipsoid_based_niches_files/figure-html/plot_pairs-1.png" class="r-plt" alt="" width="95%"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Reset plotting parameters</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">original_par</span><span class="op">)</span></span></code></pre></div>
 <p><br></p>
 <p>This three-dimensional species shares the wide thermal and
 precipitation tolerances of the first example, including an avoidance of
@@ -753,7 +761,7 @@ characterizes the species in terms of precipitation seasonality: the
 strong negative covariance between bio_12 and bio_15 means the species
 tolerates less seasonal precipitation regimes only where total
 precipitation is high, but depends on strongly seasonal rainfall where
-precipitation is comprably lower. This makes it a good example of a
+precipitation is comparably lower. This makes it a good example of a
 species adapted to seasonally pulsed precipitation environments.</p>
 <p><br></p>
 <div class="section level3">
@@ -761,14 +769,15 @@ species adapted to seasonally pulsed precipitation environments.</p>
 </h3>
 <p>We can save this three-dimensional species for use in later sessions
 alongside the two-dimensional examples defined above.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">temp_file4</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"example_sp_4.rda"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/save_nicheR.html">save_nicheR</a></span><span class="op">(</span><span class="va">ell5</span>, file <span class="op">=</span> <span class="va">temp_file4</span><span class="op">)</span></span></code></pre></div>
 <p><br></p>
 <p>This concludes the basics for defining ellipsoid-based tolerances for
 species in E-space. To learn how to make predictions from these
 ellipsoid niches and visualize them in geographic space (G-space), see
-the next vignette: <a href="link">Making Predictions</a>.</p>
+the next vignette: <a href="https://castanedam.github.io/nicheR/articles/predict.html">Making
+Predictions</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

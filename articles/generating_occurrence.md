@@ -47,7 +47,7 @@ complexity:
     on theoretical preferences.
 
 3.  **Biased Occurrence Data:** Introducing real-world collection bias
-    (e.g., ninghttime light, proximity to roads, species richness, land
+    (e.g., nighttime light, proximity to roads, species richness, land
     use land cover) to see how human sampling effort distorts our view
     of a species’ niche.
 
@@ -64,6 +64,9 @@ rely on data created in previous vignettes.
 
 # Load packages
 library(nicheR)
+
+# Saving original plotting parameters
+original_par <- par(no.readonly = TRUE)
 
 # 1. Load environmental background raster
 bios <- terra::rast(system.file("extdata", "ma_bios.tif", package = "nicheR"))
@@ -493,6 +496,12 @@ add_data(as.data.frame(t(example_sp_4$centroid)), x = "bio_1", y = "bio_15", pts
 ```
 
 ![](generating_occurrence_files/figure-html/unnamed-chunk-12-1.png)
+
+``` r
+
+# Reset plotting parameters
+par(original_par)
+```
 
   
 

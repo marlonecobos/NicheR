@@ -29,7 +29,7 @@ The `nicheR` package allows you to simulate these spatial sampling
 biases. This workflow involves two steps:
 
 1.  **[`prepare_bias()`](https://castanedam.github.io/nicheR/reference/prepare_bias.md)**:
-    Standardizing raw environmental or anthropogenic covariates into
+    Standardizing raw environmental or anthropocentric covariates into
     probability-scaling surfaces.
 
 2.  **[`apply_bias()`](https://castanedam.github.io/nicheR/reference/apply_bias.md)**:
@@ -48,6 +48,9 @@ nicheR_ellipsoid object.
 
 library(nicheR)
 library(terra)
+
+# Saving original plotting parameters
+original_par <- par(no.readonly = TRUE)
 
 # 1. Load reference niche (nicheR_ellipsoid object)
 data("ref_ellipse", package = "nicheR")
@@ -261,6 +264,12 @@ terra::plot(applied_bias_3d[[1]], main = "3D Suitability + Composite Bias")
 ```
 
 ![](bias_files/figure-html/unnamed-chunk-4-1.png)
+
+``` r
+
+# Reset plotting parameters
+par(original_par)
+```
 
 ## Save and export
 

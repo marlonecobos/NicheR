@@ -1,7 +1,7 @@
 # Ellipsoid-Based Virtual Niches and Visualization
 
 Mariana Castaneda-Guzman, Connor Hughes, Paanwaris Paansri, Marlon E.
-Cobos ![](reference/figures/logo.png)
+Cobos ![](reference/figures/nicheR_lg.png)
 
 - [Background](#background)
 - [Package description](#package-description)
@@ -180,7 +180,7 @@ non-random, biased occurrence sampling.
 
 > For details on bias surface construction, directional effects, and how
 > bias interacts with predictions and sampling, see the [Sampling bias
-> data](https://castanedam.github.io/nicheR/articles/sampling_bias_data.html)
+> data](https://castanedam.github.io/nicheR/articles/bias.html)
 > vignette.
 
   
@@ -202,7 +202,7 @@ sampling probability: `"suitability"` weights by suitability score and
 > For a full guide to sampling strategies, methods, strict
 > vs. non-strict modes, and biased sampling workflows, see the [Sampling
 > occurrence
-> data](https://castanedam.github.io/nicheR/articles/sampling_occurrence_data.html)
+> data](https://castanedam.github.io/nicheR/articles/generating_occurrence.html)
 > vignette.
 
   
@@ -269,8 +269,8 @@ vignette("creating_ellipsoid_based_niches")
 # Guide to predicting suitability and Mahalanobis distance
 vignette("predict")
 
-# Guide to sampling occurrence data from virtual niches
-vignette("generating_occurrence")
+# Guide to generate occurrence data from virtual niches
+vignette("generate_occurrence")
 
 # Guide to preparing and applying sampling bias
 vignette("bias")

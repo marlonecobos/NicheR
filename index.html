@@ -7,13 +7,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Ellipsoid-Based Virtual Niches and Visualization • nicheR</title>
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Ellipsoid-Based Virtual Niches and Visualization">
-<meta name="description" content="Provides a robust set of tools for researchers and modelers to construct and define virtual ecological niches using ellipsoid geometries. It enables the identification and extraction of suitable environmental areas, simulation of species occurrence points with various sampling strategies, and visualization of niche boundaries and simulated occurrences in both environmental and geographic space. Inspired by methodologies in NicheA and the virtualspecies R package, NicheR aims to streamline the process of niche conceptualization and data generation for ecological studies.">
-<meta property="og:description" content="Provides a robust set of tools for researchers and modelers to construct and define virtual ecological niches using ellipsoid geometries. It enables the identification and extraction of suitable environmental areas, simulation of species occurrence points with various sampling strategies, and visualization of niche boundaries and simulated occurrences in both environmental and geographic space. Inspired by methodologies in NicheA and the virtualspecies R package, NicheR aims to streamline the process of niche conceptualization and data generation for ecological studies.">
-<meta property="og:image" content="https://castanedam.github.io/nicheR/logo.png">
+<meta name="description" content="Provides a robust set of tools for researchers and modelers to construct and define virtual ecological niches using ellipsoid geometries. It enables the identification and extraction of suitable environmental areas, simulation of species occurrence points with various sampling strategies, and visualization of niche boundaries and simulated occurrences in both environmental and geographic space. Inspired by methodologies in NicheA and the virtualspecies R package, nicheR aims to streamline the process of niche conceptualization and data generation for ecological studies. Methodological and theoretical foundations are described in Peterson et al. (2011, ISBN:9780691136882), Etherington et al. (2009) &lt;doi:10.1111/j.1365-2699.2008.02041.x&gt;, Qiao et al. (2015) &lt;doi:10.1111/ecog.01961&gt;, Nunez-Penichet et al. (2021) &lt;doi:10.21425/F5FBG52142&gt;, Cobos and Peterson (2022) &lt;doi:10.17161/bi.v17i.15985&gt;, Alkishe et al. (2022) &lt;doi:10.5194/we-22-33-2022&gt;, and Leroy et al. (2015) &lt;doi:10.1111/ecog.01388&gt;.">
+<meta property="og:description" content="Provides a robust set of tools for researchers and modelers to construct and define virtual ecological niches using ellipsoid geometries. It enables the identification and extraction of suitable environmental areas, simulation of species occurrence points with various sampling strategies, and visualization of niche boundaries and simulated occurrences in both environmental and geographic space. Inspired by methodologies in NicheA and the virtualspecies R package, nicheR aims to streamline the process of niche conceptualization and data generation for ecological studies. Methodological and theoretical foundations are described in Peterson et al. (2011, ISBN:9780691136882), Etherington et al. (2009) &lt;doi:10.1111/j.1365-2699.2008.02041.x&gt;, Qiao et al. (2015) &lt;doi:10.1111/ecog.01961&gt;, Nunez-Penichet et al. (2021) &lt;doi:10.21425/F5FBG52142&gt;, Cobos and Peterson (2022) &lt;doi:10.17161/bi.v17i.15985&gt;, Alkishe et al. (2022) &lt;doi:10.5194/we-22-33-2022&gt;, and Leroy et al. (2015) &lt;doi:10.1111/ecog.01388&gt;.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -23,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">nicheR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +49,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/castanedaM/NicheR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/castanedaM/nicheR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -67,11 +66,9 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1 id="ellipsoid-based-virtual-niches-and-visualization">Ellipsoid-Based Virtual Niches and Visualization<a class="anchor" aria-label="anchor" href="#ellipsoid-based-virtual-niches-and-visualization"></a>
-</h1>
-</div>
-<p>Mariana Castaneda-Guzman, Connor Hughes, Paanwaris Paansri, Marlon E. Cobos <img src="reference/figures/logo.png" align="right" height="25%" width="25%"></p>
+<div class="page-header"><h1 id="ellipsoid-based-virtual-niches-and-visualization">Ellipsoid-Based Virtual Niches and Visualization<a class="anchor" aria-label="anchor" href="#ellipsoid-based-virtual-niches-and-visualization"></a>
+</h1></div>
+<p>Mariana Castaneda-Guzman, Connor Hughes, Paanwaris Paansri, Marlon E. Cobos <img src="reference/figures/nicheR_lg.png" align="right" height="25%" width="25%"></p>
 <ul>
 <li><a href="#background">Background</a></li>
 <li><a href="#package-description">Package description</a></li>
@@ -134,7 +131,7 @@
 <p><br></p>
 <p>To load the package use:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/castanedaM/NicheR" class="external-link">nicheR</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/castanedaM/nicheR" class="external-link">nicheR</a></span><span class="op">)</span></span></code></pre></div>
 <p><br></p>
 </div>
 <div class="section level2">
@@ -179,7 +176,7 @@
 </h3>
 <p>Bias layers represent external factors that influence sampling detectability or effort, independent of the species’ actual niche. Each layer is assigned a direction: <code>"direct"</code> means higher values increase sampling probability, while <code>"inverse"</code> means higher values decrease it. <code><a href="reference/prepare_bias.html">prepare_bias()</a></code> standardizes all layers to [0, 1], applies the directional transformations, and combines them into a single composite bias surface. <code><a href="reference/apply_bias.html">apply_bias()</a></code> then weights the suitability prediction by this surface to simulate non-random, biased occurrence sampling.</p>
 <blockquote>
-<p>For details on bias surface construction, directional effects, and how bias interacts with predictions and sampling, see the <a href="https://castanedam.github.io/nicheR/articles/sampling_bias_data.html">Sampling bias data</a> vignette.</p>
+<p>For details on bias surface construction, directional effects, and how bias interacts with predictions and sampling, see the <a href="https://castanedam.github.io/nicheR/articles/bias.html">Sampling bias data</a> vignette.</p>
 </blockquote>
 <p><br></p>
 </div>
@@ -188,7 +185,7 @@
 </h3>
 <p>nicheR provides two sampling functions: <code><a href="reference/sample_data.html">sample_data()</a></code> for unbiased sampling directly from suitability or Mahalanobis surfaces, and <code><a href="reference/sample_biased_data.html">sample_biased_data()</a></code> for sampling from a bias-weighted prediction surface. Three sampling strategies are available: <code>"centroid"</code> samples preferentially near the niche center, <code>"edge"</code> samples near the boundary, and <code>"random"</code> samples uniformly across the suitable area. Two weighting methods control sampling probability: <code>"suitability"</code> weights by suitability score and <code>"mahalanobis"</code> weights by distance from the centroid.</p>
 <blockquote>
-<p>For a full guide to sampling strategies, methods, strict vs. non-strict modes, and biased sampling workflows, see the <a href="https://castanedam.github.io/nicheR/articles/sampling_occurrence_data.html">Sampling occurrence data</a> vignette.</p>
+<p>For a full guide to sampling strategies, methods, strict vs. non-strict modes, and biased sampling workflows, see the <a href="https://castanedam.github.io/nicheR/articles/generating_occurrence.html">Sampling occurrence data</a> vignette.</p>
 </blockquote>
 <p><br></p>
 </div>
@@ -224,8 +221,8 @@
 <span><span class="co"># Guide to predicting suitability and Mahalanobis distance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"predict"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Guide to sampling occurrence data from virtual niches</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"generating_occurrence"</span><span class="op">)</span></span>
+<span><span class="co"># Guide to generate occurrence data from virtual niches</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"generate_occurrence"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Guide to preparing and applying sampling bias</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"bias"</span><span class="op">)</span></span>
@@ -263,8 +260,9 @@
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/castanedaM/NicheR/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/castanedaM/NicheR/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://cloud.r-project.org/package=nicheR" class="external-link">View on CRAN</a></li>
+<li><a href="https://github.com/castanedaM/nicheR/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/castanedaM/nicheR/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 
@@ -298,7 +296,6 @@
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/castanedaM/nicheR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/castanedaM/NicheR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 </ul>
 </div>
 
